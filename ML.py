@@ -47,10 +47,10 @@ class RF:
                 x_list_new.append(x)
             X=df_temp[x_list_new]
             Y=df_temp[y_list]
-            selected_labels=self.multi_colliner(x_list_new,y_list,X,Y)
+            # selected_labels=self.multi_colliner(x_list_new,y_list,X,Y)
 
             # Partial_Dependence_Plots().partial_dependent_plot(X,Y,selected_labels)
-            self.train_classfication_permutation_importance(X,Y,selected_labels)
+            self.train_classfication_permutation_importance(X,Y,x_list_new)
 
             # self.train_classfication(X,Y,selected_labels=selected_labels)
 
@@ -60,12 +60,12 @@ class RF:
         f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
         df, _ = self.__load_df(f)
         df = df[df['row'] < 120]
-        # df=df[df['landcover']=='Grassland']
-        # df = df.drop_duplicates(subset=('pix'))
+        df=df[df['landcover']=='BF']
+        df = df.drop_duplicates(subset=('pix'))
 
-        x_variable_dic = self.x_variable_greeness()
+        x_variable_dic = self.x_variable_trend()
 
-        y_variable_dic = self.y_variable_greeness()
+        y_variable_dic = self.y_variable_trend()
 
         for period in x_variable_dic:
 
@@ -88,10 +88,11 @@ class RF:
                 x_list_new.append(x)
             X = df_temp[x_list_new]
             Y = df_temp[y_list]
-            selected_labels = self.multi_colliner(x_list_new, y_list, X, Y)
 
-            # Partial_Dependence_Plots().partial_dependent_plot(X,Y,selected_labels)
-            self.train_classfication_permutation_importance(X, Y, selected_labels)
+            # selected_labels = self.multi_colliner(x_list_new, y_list, X, Y)
+
+            Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,x_list_new)
+            # self.train_classfication_permutation_importance(X, Y, x_list_new)
 
             # self.train_classfication(X,Y,selected_labels=selected_labels)
         pass
@@ -255,6 +256,18 @@ class RF:
 
         return rf
 
+    def train_regression(self,X,Y,selected_labels):
+
+        rf = RandomForestRegressor(n_jobs=1, n_estimators=100, )
+        X = X[selected_labels]
+        X = pd.DataFrame(X)
+
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=1)
+        Y_train=np.array(Y_train)
+        rf.fit(X_train, Y_train)
+
+        return rf
+
 
     def train_classfication_permutation_importance(self,X,Y,selected_labels):
         # X = X.loc[:, ~X.columns.duplicated()]
@@ -288,7 +301,6 @@ class RF:
         # plt.barh(selected_labels, importances)
         # plt.tight_layout()
         # plt.show()
-
 
         result = permutation_importance(rf, X_train, Y_train, n_repeats=10,
                                         random_state=42)
@@ -465,6 +477,79 @@ class RF:
 
         return y_variable_dic
 
+    def x_variable_trend(self):
+
+        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        df,_=self.__load_df(f)
+        # for i in df:
+        #     print(i)
+        # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+
+        period_list=['early','peak','late']
+        x_variable_dic={}
+        for period in period_list:
+            x_list=[]
+            for i in df:
+                if period in i:
+                    if not '1982-2015' in i:
+                        continue
+                    if 'NIRv' in i:
+                        continue
+                    if 'GIMMS_NDVI' in i:
+                        continue
+                    if 'CV' in i:
+                        # x_list.append(i)
+                        continue
+                    if 'mean' in i:
+                        # x_list.append(i)
+                        continue
+                    if 'trend' in i:
+                        x_list.append(i)
+
+            for i in df:
+                if 'anomaly' in i:
+                    continue
+
+                if 'winter' in i:
+                    x_list.append(i)
+            for i in ['BDOD', 'CEC', 'clay', 'Nitrogen', 'OCD', 'PH', 'sand','MAT','MAP',]:
+                # x_list.append(i)
+                continue
+
+            x_list.sort()
+            x_variable_dic[period]=x_list
+        # for period in x_variable_dic:
+        #     x_list=x_variable_dic[period]
+        #     for i in x_list:
+        #         print(i)
+        #     print('********************************')
+
+
+        return x_variable_dic
+
+    def y_variable_trend(self):
+
+        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        df,_=self.__load_df(f)
+        # for i in df:
+        #     print(i)
+        # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+
+        period_list=['early','peak','late']
+        y_variable_dic={}
+        for period in period_list:
+            y_list=[]
+            for i in df:
+                if 'original_during_{}_GIMMS_NDVI_trend_1982-2015'.format(period) in i:
+                    y_list.append(i)
+            y_variable_dic[period]=y_list
+        # for period in y_variable_dic:
+        #     y_list = y_variable_dic[period]
+        #     for i in y_list:
+        #         print(i)
+        #     print('********************************')
+
+        return y_variable_dic
     def x_variable_greeness(self):
 
         f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
@@ -584,7 +669,7 @@ class Partial_Dependence_Plots:
             # raise Warning('{} is already existed'.format(self.dff))
 
 
-    def partial_dependent_plot(self,X,Y,selected_labels):
+    def partial_dependent_plot_classification(self,X,Y,selected_labels):
 
         outpngdir = results_root + 'partial_plot/partial_dependent_fig/'
         T.mk_dir(outpngdir, force=True)
@@ -596,7 +681,7 @@ class Partial_Dependence_Plots:
 
         print(selected_labels)
         yv = Y
-        model = RF().train_classfication(xv, yv,selected_labels)
+        model = RF().train_regression(xv, yv,selected_labels)
 
         # plt.figure(figsize=(12, 8))
 
@@ -606,6 +691,7 @@ class Partial_Dependence_Plots:
             # ax = plt.subplot(1, len(selected_labels), flag)
 
             sequence, Y_pdp_mean = self.__get_PDPvalues_classification_1(var, xv, model)
+
 
             # ppx_smooth = SMOOTH().smooth_convolve(ppx,window_len=11)
             # ppy_smooth = SMOOTH().smooth_convolve(ppy,window_len=11)
@@ -629,6 +715,41 @@ class Partial_Dependence_Plots:
             plt.close()
         # plt.show()
 
+    def partial_dependent_plot_regression(self,X,Y,selected_labels):
+
+        outpngdir = results_root + 'partial_plot/partial_dependent_fig/'
+        T.mk_dir(outpngdir, force=True)
+        outdir = results_root + 'partial_plot/partial_dependent_plot_file/'
+        T.mk_dir(outdir,force=True)
+
+        flag = 0
+        xv = X[selected_labels]
+
+        print(selected_labels)
+
+        yv = Y
+        model = RF().train_regression(xv, yv,selected_labels)
+
+        # plt.figure(figsize=(12, 8))
+
+        for var in tqdm(xv,total=len(xv.columns)):
+            flag += 1
+
+            # ax = plt.subplot(1, len(selected_labels), flag)
+
+            df_result = self.__get_PDPvalues_regression(var, xv, model)
+
+            # ppx_smooth = SMOOTH().smooth_convolve(ppx,window_len=11)
+            # ppy_smooth = SMOOTH().smooth_convolve(ppy,window_len=11)
+            self.__plot_PDP(var,df_result,model,)
+
+
+            plt.legend()
+            plt.show()
+            plt.title(var)
+            # plt.savefig(outpngdir + var + '.png')
+            # plt.close()
+        # plt.show()
 
 
 
@@ -639,9 +760,13 @@ class Partial_Dependence_Plots:
         for each in sequence:
             Xnew[col_name] = each
             # T.print_head_n(Xnew)
-
-            Y_temp = model.predict(Xnew)
-            Y_pdp.append(np.mean(Y_temp))
+            try:
+                Y_temp = model.predict(Xnew)
+                Y_pdp.append(np.mean(Y_temp))
+            except Exception as e:
+                print(e)
+                print(col_name, data, model)
+                print(123)
         return pd.DataFrame({col_name: sequence, 'PDs': Y_pdp})
 
     def __get_PDPvalues_classification(self, col_name, data, model, grid_resolution=50):
@@ -694,14 +819,16 @@ class Partial_Dependence_Plots:
 
         return sequence,Y_pdp_ratio
 
+
+
     def __plot_PDP(self,col_name, data, model):
-        df = self.__get_PDPvalues(col_name, data, model)
+        df = self.__get_PDPvalues_regression(col_name, data, model)
         plt.rcParams.update({'font.size': 16})
         plt.rcParams["figure.figsize"] = (6,5)
         fig, ax = plt.subplots()
         # ax.plot(data[col_name], np.zeros(data[col_name].shape)+min(df['PDs'])-1, 'k|', ms=15)  # rug plot
         ax.plot(df[col_name], df['PDs'], lw = 2)
-        ax.set_ylabel('Recovery time')
+        ax.set_ylabel('trend')
         ax.set_xlabel(col_name)
         plt.tight_layout()
         return ax
