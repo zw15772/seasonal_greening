@@ -7,10 +7,10 @@ from pingouin import partial_corr
 class Build_dataframe:
 
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_1982-2015/'
+        self.this_class_arr = results_root + 'Data_frame_1982-1998/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Data_frame_1982-2015_df.df'
+        self.dff = self.this_class_arr + 'Data_frame_1982-1998_df.df'
         pass
 
 
@@ -25,9 +25,9 @@ class Build_dataframe:
         df=self.__gen_df_init(self.dff)
 
 
-        # df=self.foo(df)
+        df=self.foo(df)
         # df=self.add_anomaly_GIMMIS_NDVI_to_df(df)
-        # df=self.drop_field_df(df)
+        df = self.add_Pierre_GIMMIS_NDVI_to_df(df)
         # df=self.add_original_GIMMIS_NDVI_to_df(df)
         # df=self.add_trend_to_df(df)
         # df=self.add_p_val_trend_to_df(df)
@@ -35,18 +35,18 @@ class Build_dataframe:
         # df=self.add_CV_to_df(df)
         # df=self.add_anomaly_to_df(df)
         # df=self.show_field(df)
-        df=self.drop_field_df(df)
+        # df=self.drop_field_df(df)
         # df=self.add_soil_data_to_df(df)
         # df=self.add_MAP_MAT_to_df(df)
         # df=self.add_winter_to_df(df)
         # df=self.__rename_dataframe_columns(df)
-        # df=self.add_p_val_correlation_to_df(df)
-        # df = self.add_correlation_to_df(df)
+
         # df=self.add_Koppen_data_to_df(df)
         # df=self.add_landcover_data_to_df(df)
         # df=self.add_row(df)
         # df=self.add_trend_to_df(df)
         # df=self.add_NDVI_trend_label(df)
+
 
 
         # x_f_list, x_var_list=self.genetate_x_var_list(fdir,period)
@@ -149,6 +149,31 @@ class Build_dataframe:
 
         NDVI_dic = T.load_npy(f)
         f_name = '{}_GIMMS_NDVI_{}_anomaly'.format(time,period)
+        print(f_name)
+        # exit()
+        NDVI_list = []
+        for i, row in tqdm(df.iterrows(), total=len(df)):
+            year = row['year']
+            # pix = row.pix
+            pix = row['pix']
+            if not pix in NDVI_dic:
+                NDVI_list.append(np.nan)
+                continue
+            vals = NDVI_dic[pix]
+            if len(vals) != 34:
+                NDVI_list.append(np.nan)
+                continue
+            v1 = vals[year - 1982]
+            NDVI_list.append(v1)
+        df[f_name] = NDVI_list
+        return df
+    def add_Pierre_GIMMIS_NDVI_to_df(self, df):
+        period = 'early'
+        time='1982-2015'
+        f = results_root + '%NDVI_Pierre/{}_{}.npy'.format(time,period)
+
+        NDVI_dic = T.load_npy(f)
+        f_name = '{}_GIMMS_NDVI_{}_change%'.format(time,period)
         print(f_name)
         # exit()
         NDVI_list = []

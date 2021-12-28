@@ -1134,15 +1134,15 @@ class Main_flow_Early_Peak_Late_Dormant:
         np.save(outf + '_p_value', p_value_arr)
 
 
-    def changes_NDVI_method1(self): # 方案1 GCB Gonsamo et al., 2021
+    def changes_NDVI_method1(self): # 方案1 GCB Gonsamo et al., 2021 and Pierre
         periods=['early','peak','late']
-        time_range='1982-2015'
-        len_year=34
+        time_range='1982-1998'
+        len_year=17
 
         for period in periods:
             fdir = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(
                 time_range, time_range, period)
-            outdir = result_root + '%NDVI/'.format(time_range, period)
+            outdir = result_root + '%NDVI_Pierre/'.format(time_range, period)
             Tools().mk_dir(outdir, force=True)
             dic_NDVI = {}
 
@@ -1171,20 +1171,23 @@ class Main_flow_Early_Peak_Late_Dormant:
 
                 NDVI_min = np.nanmin(val_NDVI)
                 NDVI_max = np.nanmax(val_NDVI)
+                NDVI_mean=np.nanmean(val_NDVI)
 
 
                 delta_time_series = []
 
                 for i in range(row):
-                    delta = ((val_NDVI[i] - NDVI_min) / (NDVI_max-NDVI_min))*100
+                    # delta = ((val_NDVI[i] - NDVI_min) / (NDVI_max-NDVI_min))*100
+                    delta = ((val_NDVI[i] - NDVI_mean) / (NDVI_mean)) * 100
                     delta_time_series.append(delta)
+                delta_dic[pix]=delta_time_series
                 # print(delta_time_series)
                 # delta_dic[pix]=delta_time_series[0:17]
-                delta_dic[pix]=delta_time_series[17:]
+                # delta_dic[pix]=delta_time_series[17:]
                 # print(delta_time_series[0:17])
                 # exit()
 
-                # dic_spatial_count[pix] = len(delta_time_series)
+                dic_spatial_count[pix] = len(delta_time_series)
 
                 # 画每个pix的时间序列
                 # plt.plot(delta_time_series)
@@ -1202,7 +1205,7 @@ class Main_flow_Early_Peak_Late_Dormant:
                 # plt.plot(result_dic[pix])
                 # plt.show()
 
-            np.save(outdir + '1999-2015_{}.npy'.format(period), delta_dic)
+            np.save(outdir + '1982-1998_{}.npy'.format(period), delta_dic)
 
     def changes_NDVI_method2(self): # 方案1
         periods=['early','peak','late']
@@ -5922,7 +5925,7 @@ def main():
     # Main_flow_Early_Peak_Late_Dormant().annual_phelogy()
     # Main_flow_Early_Peak_Late_Dormant().trend()
     # Main_flow_Early_Peak_Late_Dormant().contribution()
-    # Main_flow_Early_Peak_Late_Dormant().changes_NDVI_method2()
+    Main_flow_Early_Peak_Late_Dormant().changes_NDVI_method1()
     # Main_flow_Early_Peak_Late_Dormant().anonmaly_variables()
     # Main_flow_Early_Peak_Late_Dormant().anonmaly_winter()
 
@@ -5940,7 +5943,7 @@ def main():
     # mask_with_p_trend_trend()
     # mask_with_p_trend_max_contribution()
     # Hydrothemal().plot_matrix()
-    statistic_anaysis().run()
+    # statistic_anaysis().run()
     # Unify_date_range().run()
     # rename()
     # plot_results().run()

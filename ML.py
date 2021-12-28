@@ -47,9 +47,9 @@ class RF:
                 x_list_new.append(x)
             X=df_temp[x_list_new]
             Y=df_temp[y_list]
-            # selected_labels=self.multi_colliner(x_list_new,y_list,X,Y)
+            selected_labels=self.multi_colliner(x_list_new,y_list,X,Y)
 
-            # Partial_Dependence_Plots().partial_dependent_plot(X,Y,selected_labels)
+            Partial_Dependence_Plots().partial_dependent_plot(X,Y,selected_labels)
             self.train_classfication_permutation_importance(X,Y,x_list_new)
 
             # self.train_classfication(X,Y,selected_labels=selected_labels)
@@ -61,15 +61,16 @@ class RF:
         df, _ = self.__load_df(f)
         df = df[df['row'] < 120]
         df=df[df['landcover']=='BF']
-        df = df.drop_duplicates(subset=('pix'))
+        # df = df.drop_duplicates(subset=('pix'))
 
-        x_variable_dic = self.x_variable_trend()
+        x_variable_dic = self.x_variable_greeness()
 
-        y_variable_dic = self.y_variable_trend()
+        y_variable_dic = self.y_variable_greeness()
 
         for period in x_variable_dic:
 
             x_list = x_variable_dic[period]
+
             y_list = y_variable_dic[period]
             df_temp = pd.DataFrame()
             df_temp[x_list] = df[x_list]
@@ -89,10 +90,10 @@ class RF:
             X = df_temp[x_list_new]
             Y = df_temp[y_list]
 
-            # selected_labels = self.multi_colliner(x_list_new, y_list, X, Y)
+            selected_labels = self.multi_colliner(x_list_new, y_list, X, Y)
 
-            Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,x_list_new)
-            # self.train_classfication_permutation_importance(X, Y, x_list_new)
+            Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,selected_labels)
+            self.train_classfication_permutation_importance(X, Y, selected_labels)
 
             # self.train_classfication(X,Y,selected_labels=selected_labels)
         pass

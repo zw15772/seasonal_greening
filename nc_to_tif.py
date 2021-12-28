@@ -31,7 +31,7 @@ import copy
 import scipy
 import sklearn
 import random
-import h5py
+
 from netCDF4 import Dataset, numpy
 import shutil
 import requests
@@ -180,6 +180,67 @@ def nc_to_tif_BESS():
             # plt.imshow(array)
             # plt.colorbar()
             # plt.show()
+            to_raster.array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeight,array,ndv = -999999)
+
+def nc_to_tif_burning():
+
+    fdir = '/Volumes/SSD_sumsang/project_greening/Data/burning_areas/burning_nc/'
+    outdir = '/Volumes/SSD_sumsang/project_greening/Data/burning_areas/burning_tif/'
+    mk_dir(outdir)
+    for f in os.listdir(fdir):
+        if f.endswith('.nc'):
+            fpath = fdir + f
+            nc = Dataset(fpath)
+            fname2=fpath.split('.')[1][1:5]
+            if fname2=='2016' or fname2=='2017'or fname2=='2018':
+                continue
+            print(nc)
+            print(nc.variables.keys())
+            #t = nc['time']
+        # since 1582 - 10 - 15
+            lat_list = nc['lat']
+            lon_list = nc['lon']
+            # lat_list=lat_list[::-1]  #取反
+            # print(lat_list[:])
+            # print(lon_list[:])
+            origin_x = lon_list[0]  #要为负数-180
+            origin_y = lat_list[0]  #要为正数90
+            pix_width = lon_list[1] - lon_list[0]
+            pix_height = lat_list[1] - lat_list[0]
+            # print (origin_x)
+            # print (origin_y)
+            # print (pix_width)
+            # print (pix_height)
+            # exit()
+            # SIF_arr_list = nc['SIF']
+            GPCP_arr_list = nc['fraction_of_burnable_area']
+            # print(GPCP_arr_list.shape)
+            # plt.imshow(GPCP_arr_list[::])
+            # plt.show()
+            # print(SIF_arr_list[0])
+            # exit()
+            # t=nc['doy']
+            # print(t[:])
+            fname = '{}.tif'.format(f.split('.')[1][1:])
+            print (fname)
+            newRasterfn = outdir + fname
+            # if os.path.isfile(newRasterfn):
+            #     continue
+            # print newRasterfn
+            longitude_start = origin_x
+            latitude_start = origin_y
+            pixelWidth = pix_width
+            pixelHeight = pix_height
+            # array = val
+            array=GPCP_arr_list[::]
+            array = np.array(array)
+            array = array.T
+            # method 2
+            array= numpy.rot90(array, 1,(0,1))
+            array = array[::-1]
+            plt.imshow(array)
+            plt.colorbar()
+            plt.show()
             to_raster.array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeight,array,ndv = -999999)
 
 def nc_to_tif_SPEI3():
@@ -494,7 +555,8 @@ def main():
 
     # nc_to_tif_BESS()
     # nc_to_tif_SPEI3()
-    nc_to_tif_CO2()
+    # nc_to_tif_CO2()
+    nc_to_tif_burning()
     # nc_to_tif_GLEAM()
     # montly_composite()
 
