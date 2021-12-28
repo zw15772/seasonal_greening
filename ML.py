@@ -8,12 +8,12 @@ from sklearn import base
 # y_mark=['greening','browning','notrend']
 y_mark=['greening']
 y_mark.sort()
-
+dff = '/Users/liyang/Downloads/Data_frame_1982-2015_df-2.df'
 
 class RF:
     def __init__(self):
         self.this_class_arr = results_root + 'RF/'
-        Tools().mk_dir(self.this_class_arr, force=True)
+        # Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
         self.dff =results_root+ 'Data_frame/'
 
@@ -57,10 +57,11 @@ class RF:
         pass
 
     def run1(self):
-        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        # f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        f = dff
         df, _ = self.__load_df(f)
         df = df[df['row'] < 120]
-        df=df[df['landcover']=='BF']
+        # df=df[df['landcover']=='BF']
         # df = df.drop_duplicates(subset=('pix'))
 
         x_variable_dic = self.x_variable_greeness()
@@ -92,7 +93,7 @@ class RF:
 
             selected_labels = self.multi_colliner(x_list_new, y_list, X, Y)
 
-            Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,selected_labels)
+            # Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,selected_labels)
             self.train_classfication_permutation_importance(X, Y, selected_labels)
 
             # self.train_classfication(X,Y,selected_labels=selected_labels)
@@ -273,9 +274,10 @@ class RF:
     def train_classfication_permutation_importance(self,X,Y,selected_labels):
         # X = X.loc[:, ~X.columns.duplicated()]
         outfir_fig=self.this_class_arr+'train_classfication_fig_driver/'  #修改
-        Tools().mk_dir(outfir_fig)
+        # Tools().mk_dir(outfir_fig)
+        rf = RandomForestRegressor(n_jobs=4,n_estimators=1000,)
 
-        rf = RandomForestRegressor(n_jobs=1,n_estimators=100,)
+
         X=X[selected_labels]
         X=pd.DataFrame(X)
         # T.print_head_n(X)
@@ -284,11 +286,14 @@ class RF:
         # print(X.columns)
         # print(selected_labels)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=1)
-        print(Y_train)
+        # print(Y_train)
         # exit()
-
-
+        # T.print_head_n(X_train)
+        # T.print_head_n(Y_train)
+        print('Training RF')
         rf.fit(X_train,Y_train)
+        print('Training RF Done')
+
         score = rf.score(X_test,Y_test)
 
         probability=rf.predict(X)
@@ -302,9 +307,10 @@ class RF:
         # plt.barh(selected_labels, importances)
         # plt.tight_layout()
         # plt.show()
-
+        print('Start Permutation')
         result = permutation_importance(rf, X_train, Y_train, n_repeats=10,
-                                        random_state=42)
+                                        random_state=42,n_jobs=4)
+        print('Permutation Done')
 
         perm_sorted_idx = result.importances_mean.argsort()
         selected_labels_sorted = []
@@ -354,7 +360,7 @@ class RF:
 
         x_val_label = x_list
 
-        print('len(x_val_label):',len(x_list))  # 修改
+        # print('len(x_val_label):',len(x_list))  # 修改
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 8))
         corr = spearmanr(X).correlation
@@ -364,27 +370,30 @@ class RF:
         )
         dendro_idx = np.arange(0, len(dendro['ivl']))
 
-        ax2.imshow(corr[dendro['leaves'], :][:, dendro['leaves']])
-        ax2.set_xticks(dendro_idx)
-        ax2.set_yticks(dendro_idx)
-        ax2.set_xticklabels(dendro['ivl'], rotation='vertical')
-        ax2.set_yticklabels(dendro['ivl'])
-        fig.tight_layout()
-        plt.show()
+        # ______ plot matrix _______
+        # ax2.imshow(corr[dendro['leaves'], :][:, dendro['leaves']])
+        # ax2.set_xticks(dendro_idx)
+        # ax2.set_yticks(dendro_idx)
+        # ax2.set_xticklabels(dendro['ivl'], rotation='vertical')
+        # ax2.set_yticklabels(dendro['ivl'])
+        # fig.tight_layout()
+        # plt.show()
+        # ______ plot matrix _______
+
 
         cluster_ids = hierarchy.fcluster(corr_linkage, 1, criterion='distance')
         cluster_id_to_feature_ids = defaultdict(list)
         for idx, cluster_id in enumerate(cluster_ids):
             cluster_id_to_feature_ids[cluster_id].append(idx)
         selected_features = [v[0] for v in cluster_id_to_feature_ids.values()]
-        print(selected_features)
+        # print(selected_features)
         selected_labels=[]
 
         for i in selected_features:
             selected_labels.append(x_list[i])  # 修改
 
-        print(selected_labels)
-        print('len of selected labels:',len(selected_labels))
+        # print(selected_labels)
+        # print('len of selected labels:',len(selected_labels))
         # exit()
         return selected_labels
 
@@ -553,7 +562,8 @@ class RF:
         return y_variable_dic
     def x_variable_greeness(self):
 
-        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        f = dff
         df,_=self.__load_df(f)
         # for i in df:
         #     print(i)
@@ -600,7 +610,8 @@ class RF:
 
     def y_variable_greeness(self):
 
-        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        f = dff
         df,_=self.__load_df(f)
         # for i in df:
         #     print(i)
@@ -611,7 +622,7 @@ class RF:
         for period in period_list:
             y_list=[]
             for i in df:
-                if 'GIMMS_NDVI_{}_anomaly'.format(period) in i:
+                if '1982-2015_GIMMS_NDVI_{}_change%'.format(period) in i:
                     y_list.append(i)
             y_variable_dic[period]=y_list
         # for period in y_variable_dic:
@@ -631,7 +642,7 @@ class RF:
             val_valid=val.dropna()
             valid=len(val_valid)
             ratio=valid/total
-            print(i,ratio)
+            # print(i,ratio)
             if ratio<0.8:
                 invalid_variables.append(i)
         return invalid_variables
@@ -644,7 +655,7 @@ class Partial_Dependence_Plots:
     '''
     def __init__(self):
         self.this_class_arr = results_root + 'Data_frame/'
-        Tools().mk_dir(self.this_class_arr, force=True)
+        # Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'late_df.df'
         pass
 
