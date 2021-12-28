@@ -737,11 +737,10 @@ class Partial_Dependence_Plots:
 
             # ax = plt.subplot(1, len(selected_labels), flag)
 
-            df_result = self.__get_PDPvalues_regression(var, xv, model)
 
             # ppx_smooth = SMOOTH().smooth_convolve(ppx,window_len=11)
             # ppy_smooth = SMOOTH().smooth_convolve(ppy,window_len=11)
-            self.__plot_PDP(var,df_result,model,)
+            self.__plot_PDP(var,xv,model,)
 
 
             plt.legend()
