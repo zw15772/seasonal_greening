@@ -3,6 +3,7 @@ from __init__ import *
 from dataframe import *
 # import xgboost as xgb
 from collections import defaultdict
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 from sklearn import base
 #
 # y_mark=['greening','browning','notrend']
@@ -350,7 +351,21 @@ class RF:
         model['importance']=imp_dic
         return model,
 
-
+    def select_vif_vars(self, df, x_vars_list, threshold=5):
+        vars_list_copy = copy.copy(x_vars_list)
+        X = df[vars_list_copy]
+        X = X.dropna()
+        vif = pd.DataFrame()
+        vif["features"] = X.columns
+        vif["VIF Factor"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+        vif.round(1)
+        selected_vif_list = []
+        for i in range(len(vif)):
+            feature = vif['features'][i]
+            VIF_val = vif['VIF Factor'][i]
+            if VIF_val < threshold:
+                selected_vif_list.append(feature)
+        return selected_vif_list
 
     def multi_colliner(self,x_list, y_list,X,Y):
 
