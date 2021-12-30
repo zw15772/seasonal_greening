@@ -1340,14 +1340,14 @@ class Multi_liner_regression:  # 实现求beta 功能
     def __init__(self):
 
         self.period='late'
-        self.time_range='1982-2015'
-        self.result_dir=results_root+'partial_correlation_anomaly_NDVI/'
+        self.time_range='1999-2015'
+        self.result_dir=results_root+'detrend_partial_correlation_anomaly_NDVI/'
         # self.result_f = self.result_dir+'/{}_multi_linear{}_anomaly.npy'.format(self.time_range,self.period,)
         self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation{}_anomaly.npy'.format(self.time_range,self.period,)
         self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_anomaly.npy'.format(
             self.time_range, self.period, )
-        self.x_dir = results_root+'/anomaly_variables_independently/{}_during_{}/'.format(self.time_range,self.period,)
-        self.y_f = results_root+'anomaly_NDVI_method2/anomaly_NDVI_independent/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period)
+        self.x_dir = results_root+'detrend_extraction_anomaly/{}_during_{}_detrend/'.format(self.time_range,self.period,)
+        self.y_f = results_root+'anomaly_NDVI_method2/detrend_anomaly_NDVI_independent/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period)
         # self.y_mean = results_root + 'mean_variables/{}_during_{}/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period,self.time_range,self.period)
         T.mk_dir(self.result_dir)
         pass
@@ -1379,7 +1379,7 @@ class Multi_liner_regression:  # 实现求beta 功能
                 continue
             if x_f == '{}_during_{}_SPEI3.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_Precip.npy'.format(time_range, period, ):
+            if x_f == '{}_during_{}_CCI_SM.npy'.format(time_range, period, ):
                 continue
             x_f_list.append(x_dir + x_f)
         print(x_f_list)
@@ -1427,7 +1427,7 @@ class Multi_liner_regression:  # 实现求beta 功能
                 continue
             if x_f == '{}_during_{}_SPEI3.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_Precip.npy'.format(time_range, period, ):
+            if x_f == '{}_during_{}_CCI_SM.npy'.format(time_range, period, ):
                 continue
             x_f_list.append(x_dir + x_f)
         print(x_f_list)
@@ -1684,11 +1684,11 @@ class Multi_liner_regression:  # 实现求beta 功能
 
 
 
-    def plot_spatial_max_contribution(self):
+    def max_contribution(self):
         x_var_list = self.__get_x_var_list(self.x_dir, self.period, self.time_range)
         x_var_list.sort()
         result_f = self.partial_correlation_result_f
-        ourdir =self.result_dir=results_root+'partial_correlation_anomaly_NDVI/max_correlation/'
+        ourdir =self.result_dir+'/max_correlation/'
         T.mk_dir(ourdir)
         result_dic = T.load_npy(result_f)
         output_dic={}

@@ -854,10 +854,10 @@ class Plot_dataframe:
 
 class Plot_partial_correlation:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_1982-2015/'
+        self.this_class_arr = results_root + 'Data_frame_1999-2015/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Build_partial_correlation_dataframe_df.df'
+        self.dff = self.this_class_arr + 'Data_frame_1999-2015_df.df'
 
 
 
@@ -916,16 +916,16 @@ class Plot_partial_correlation:
             return df
             # raise Warning('{} is already existed'.format(self.dff))
     def call_plot_bar_contribution(self,df):
-        outdir = results_root+'partial_correlation_anomaly_NDVI/plot_bar_contribution/'
+        outdir = results_root+'detrend_partial_correlation_anomaly_NDVI/plot_bar_contribution/'
         T.mk_dir(outdir)
-        time_range='1982-1998'
+        time_range='1999-2015'
         df = df[df['row'] < 120]
-        period='early'
+        period='peak'
 
         # outf =  f'{time_range}_max_contribution_{period}_koppen'
         outf = f'{time_range}_max_contribution_{period}_landcover'
 
-        df = df[df['{}_{}_max_correlation'.format(period,time_range)] >= 0]
+        # df = df[df['anomaly_with_detrend_partial_{}_{}_max_correlation'.format(period,time_range)] >= 0]
 
         # koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
         landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
@@ -960,7 +960,7 @@ class Plot_partial_correlation:
 
         for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
 
-            contribution = row['{}_{}_max_correlation'.format(period,time_range)]
+            contribution = row['anomaly_with_detrend_partial_{}_{}_max_correlation'.format(period,time_range)]
 
 
 

@@ -77,7 +77,7 @@ def tif2dict(fdir, outdir):
     mk_dir(outdir)
     flist=os.listdir(fdir)
     all_array=[]
-    year_list=list(range(1982,2019))  # 作为筛选条件
+    year_list=list(range(2002,2016))  # 作为筛选条件
     for f in tqdm(sorted(flist),desc='loading...'):
         if f.startswith('.'):
             continue
@@ -120,7 +120,7 @@ def tif2dict(fdir, outdir):
             for arr in all_array:
                 value=arr[r][c]
                 dic[(r,c)].append(value)
-            #print(dic)
+            # print(dic)
     time_series=[]
     flag=0
     temp_dic={}
@@ -1136,7 +1136,7 @@ class Main_flow_Early_Peak_Late_Dormant:
 
     def changes_NDVI_method1(self): # 方案1 GCB Gonsamo et al., 2021 and Pierre
         periods=['early','peak','late']
-        time_range='1982-1998'
+        time_range='1999-2015'
         len_year=17
 
         for period in periods:
@@ -1205,7 +1205,7 @@ class Main_flow_Early_Peak_Late_Dormant:
                 # plt.plot(result_dic[pix])
                 # plt.show()
 
-            np.save(outdir + '1982-1998_{}.npy'.format(period), delta_dic)
+            np.save(outdir + '1999-2015_{}.npy'.format(period), delta_dic)
 
     def changes_NDVI_method2(self): # 方案1
         periods=['early','peak','late']
@@ -1642,7 +1642,7 @@ class statistic_anaysis:
         # self.extraction_pre_window()
         # self.daily_anomaly()
         # self.extraction_variables_static_pre_month()
-        # self.detrend_extraction_during_pre_variables()
+        self.detrend_extraction_during_pre_variables()
         # self.univariate_correlation()
         # self.univariate_correlation_partial()
         # self.partial_correlation_test()
@@ -1653,7 +1653,7 @@ class statistic_anaysis:
         # self.correlation_calculation()
         # self.mean_winter_calculation()
         # self.trend_calculation()
-        self.CV_calculation()
+        # self.CV_calculation()
 
 
 
@@ -2082,18 +2082,20 @@ class statistic_anaysis:
 
     def detrend_extraction_during_pre_variables(self): ############--------------------detrend extraction_during variables------------------------
         period='late'
-        time_range='1982-2015'
+        time_range='1999-2015'
         # month=1
 
-        fdir_all = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(time_range,time_range,period)
-        outdir = result_root + 'detrend_extraction_original/{}_during_{}_growing_season_static/'.format(time_range,period)
+        fdir_all = result_root + 'anomaly_NDVI_method2/anomaly_NDVI_independent/'.format(time_range,period,)
+        outdir = result_root + 'anomaly_NDVI_method2/detrend_anomaly_NDVI_independent/{}_during_{}_detrend/'.format(time_range,period)
 
         Tools().mk_dir(outdir, force=True)
         for f in tqdm(sorted(os.listdir(fdir_all))):
-            # if f !='during_{}month_{}_NIRv_new.npy'.format(month,period):
-            #     continue
-            # if f !='during_{}_root_soil_moisture.npy'.format(period):
-            #     continue
+            if f == '{}_during_{}_root_soil_moisture.npy'.format(time_range, period):
+                continue
+            if f == '{}_during_{}_surf_soil_moisture.npy'.format(time_range, period):
+                continue
+            if f == '{}_during_{}_NIRv.npy'.format(time_range, period):
+                continue
             dic={}
             print(f)
             # exit()
@@ -3310,17 +3312,18 @@ class statistic_anaysis:
         #                  'temperature','VPD','NIRv',] # '修改'
         # variable_list=['CCI_SM','GIMMS_NDVI'] #  长度为34
         # variable_list=['VOD'] #  长度29
-        variable_list=['Precip'] # 降雨是累计量 长度37
+        # variable_list=['Precip'] # 降雨是累计量 长度37
+        variable_list=['MODIS_NDVI'] #  长度为34
 
 
-        period='peak'
+        period='late'
         f1 = result_root + '20%_transform_early_peak_late_dormant_period_multiyear_CSIF_par/early_end_mon.npy'  # !!修改
         f2 = result_root + '20%_transform_early_peak_late_dormant_period_multiyear_CSIF_par/late_start_mon.npy'
 
         for variable in variable_list:
 
-            fdir2=data_root+'anomaly_datasets/{}_zscore/'.format(variable)
-            outdir = result_root + 'extraction_anomaly_val/extraction_during_{}_growing_season_static/'.format(period)
+            fdir2=data_root+'MOD_NDVI_dic/'.format(variable)
+            outdir = result_root + 'extraction_original_val/extraction_during_{}_growing_season_static_MODIS/'.format(period)
 
 
             Tools().mk_dir(outdir,True)
@@ -3366,13 +3369,13 @@ class statistic_anaysis:
 
                 # if len(time_series) != 348:
                 #     continue
-                if len(time_series) != 444:
+                if len(time_series) != 168:
                     continue
                 # plt.plot(time_series)
                 # plt.show()
-                time_series = time_series.reshape(37, -1)  # 修改
+                time_series = time_series.reshape(-12, 1)  # 修改
 
-                for year in range(37):  # 修改
+                for year in range(14):  # 修改
 
                     during_time_series = time_series[year][start_index-1:end_index]  #!!!!!
                     during_time_series=np.array(during_time_series, dtype=float)
@@ -3382,25 +3385,22 @@ class statistic_anaysis:
                     # if np.isnan(np.nanmean(during_time_series)):  # 修改
                     #     continue
 
-                    variable_sum = np.nansum(during_time_series)
-                    dic_during_variables[pix].append(variable_sum)
-                    # variable_mean = np.nanmean(during_time_series)  # !!! 降雨需要是sum  # 其他变量是平均值 nanmean
-                    # dic_during_variables[pix].append(variable_mean)
+                    # # variable_sum = np.nansum(during_time_series)
+                    # dic_during_variables[pix].append(variable_sum)
+                    variable_mean = np.nanmean(during_time_series)  # !!! 降雨需要是sum  # 其他变量是平均值 nanmean
+                    dic_during_variables[pix].append(variable_mean/10000)
 
 
                 dic_spatial_count[pix] = len(dic_during_variables[pix])
             arr = DIC_and_TIF().pix_dic_to_spatial_arr(dic_spatial_count)
-            # plt.imshow(arr, cmap='jet')
-            # plt.colorbar()
-            # plt.title('')
-            # plt.show()
+            plt.imshow(arr, cmap='jet')
+            plt.colorbar()
+            plt.title('')
+            plt.show()
             # np.save(outdir + 'pre_{}mo_CO2_original'.format(N), dic_pre_variables) #修改
             np.save(outdir + 'during_{}_{}'.format(period,variable), dic_during_variables)  # 修改
 
     def extraction_winter_during(self):  # 静态提取winter
-
-
-
 
         f1 = result_root + '20%_transform_early_peak_late_dormant_period_multiyear_CSIF_par/winter.npy'  # !!修改
 
@@ -4874,14 +4874,14 @@ class statistic_anaysis:
         pass
 
     def trend_calculation(self):
-        period = 'winter'
-        time='1982-2015'
+        period = 'peak'
+        time='2002-2015'
         # fdir_X = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(time,time,period)
         # print(fdir_X)
         # exit()
-        fdir_X = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(time,time,period)
+        fdir_X = result_root + 'extraction_original_val/{}_original_extraction_all_seasons_MODIS_NDVI/'.format(time)
 
-        outdir = result_root + 'trend_calculation_original/during_{}_{}/'.format(period,time)
+        outdir = result_root + 'trend_calculation_original/{}_during_MODIS_NDVI/'.format(time,period)
         Tools().mk_dir(outdir,force=True)
         # exit()
         all_list=[]
@@ -5899,7 +5899,7 @@ def main():
     # statistic_anaysis().univariate_correlation_window()
     # statistic_anaysis().plot_moving_window_correlation()
     # statistic_anaysis().save_moving_window_correlation()
-    # statistic_anaysis().trend_calculation()
+    statistic_anaysis().trend_calculation()
     # statistic_anaysis().mean_calculation()
     # statistic_anaysis().CV_calculation()
     # statistic_anaysis().extraction_winter_index()
@@ -5916,16 +5916,19 @@ def main():
     # Hants_annually_smooth()
     # Hants_annually_smooth_NDVI()
     # Phenology_retrieval()
-    # fdir=data_root+'CO2_1980_2021/CO2_tif/'
+    # fdir=data_root+''
     # outdir=data_root+'CO2_1980_2021/CO2_dic/'
     # tif2dict(fdir,outdir)
+    # fdir = '/Volumes/Seagate_5T/data/Data/MODIS_NDVI/MOD13C1.NDVI_MVC/'
+    # outdir = '/Volumes/Seagate_5T/data/Data/MODIS_NDVI/MOD_NDVI_dic/'
+    # tif2dict(fdir, outdir)
     # Phenology_retrieval()
     # average_peak_calculation()
     # trend()
     # Main_flow_Early_Peak_Late_Dormant().annual_phelogy()
     # Main_flow_Early_Peak_Late_Dormant().trend()
     # Main_flow_Early_Peak_Late_Dormant().contribution()
-    Main_flow_Early_Peak_Late_Dormant().changes_NDVI_method1()
+    # Main_flow_Early_Peak_Late_Dormant().changes_NDVI_method1()
     # Main_flow_Early_Peak_Late_Dormant().anonmaly_variables()
     # Main_flow_Early_Peak_Late_Dormant().anonmaly_winter()
 

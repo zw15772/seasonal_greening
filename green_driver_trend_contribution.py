@@ -7,10 +7,10 @@ from pingouin import partial_corr
 class Build_dataframe:
 
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_1982-1998/'
+        self.this_class_arr = results_root + 'Data_frame_1999-2015/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Data_frame_1982-1998_df.df'
+        self.dff = self.this_class_arr + 'Data_frame_1999-2015_df.df'
         pass
 
 
@@ -25,25 +25,27 @@ class Build_dataframe:
         df=self.__gen_df_init(self.dff)
 
 
-        df=self.foo(df)
+        # df=self.foo(df)
         # df=self.add_anomaly_GIMMIS_NDVI_to_df(df)
-        df = self.add_Pierre_GIMMIS_NDVI_to_df(df)
-        # df=self.add_original_GIMMIS_NDVI_to_df(df)
+        # df = self.add_Pierre_GIMMIS_NDVI_to_df(df)
+        # df=self.add_row(df)
+        # df = self.add_anomaly_to_df(df)
         # df=self.add_trend_to_df(df)
         # df=self.add_p_val_trend_to_df(df)
         # df=self.add_mean_to_df(df)
         # df=self.add_CV_to_df(df)
-        # df=self.add_anomaly_to_df(df)
-        # df=self.show_field(df)
-        # df=self.drop_field_df(df)
         # df=self.add_soil_data_to_df(df)
         # df=self.add_MAP_MAT_to_df(df)
         # df=self.add_winter_to_df(df)
-        # df=self.__rename_dataframe_columns(df)
-
         # df=self.add_Koppen_data_to_df(df)
         # df=self.add_landcover_data_to_df(df)
-        # df=self.add_row(df)
+        df=self.add_max_correlation_to_df(df)
+
+        # df=self.show_field(df)
+        # df=self.drop_field_df(df)
+        # df=self.__rename_dataframe_columns(df)
+
+
         # df=self.add_trend_to_df(df)
         # df=self.add_NDVI_trend_label(df)
 
@@ -92,7 +94,7 @@ class Build_dataframe:
 
     def foo(self,df):
 
-        f = results_root+'extraction_original_val/1982-2015_original_extraction_all_seasons/1982-2015_extraction_during_early_growing_season_static/during_early_GIMMS_NDVI.npy'
+        f = results_root+'%NDVI_Pierre/1999-2015_early.npy'
         dic = {}
         outf = self.dff
         result_dic = {}
@@ -100,16 +102,18 @@ class Build_dataframe:
         pix_list=[]
         change_rate_list=[]
         year=[]
+        f_name = '1999-2015_GIMMS_NDVI_early_change%'
+        print(f_name)
         for pix in tqdm(dic):
             time_series=dic[pix]
             y=0
             for val in time_series:
                 pix_list.append(pix)
-                change_rate_list.append(val/10000)
-                year.append(y+1982)
+                change_rate_list.append(val)
+                year.append(y+1999)
                 y=y+1
         df['pix']=pix_list
-        df['GIMMS_NDVI_early_original'] = change_rate_list
+        df[f_name] = change_rate_list
         df['year'] = year
         # T.save_df(df, outf)
         # df = df.head(1000)
@@ -143,12 +147,11 @@ class Build_dataframe:
 
     def add_anomaly_GIMMIS_NDVI_to_df(self, df):
         period = 'late'
-        time='1982-2015'
-        f = results_root + 'anomaly_NDVI_method2/anomaly_NDVI_independent/{}_during_{}_GIMMS_NDVI.npy'.format(
-            time, period)
+        time='1982-1998'
+        f = results_root + 'anomaly_NDVI_method2/detrend_anomaly_NDVI_independent/{}_during_{}_GIMMS_NDVI.npy'.format(time,period)
 
         NDVI_dic = T.load_npy(f)
-        f_name = '{}_GIMMS_NDVI_{}_anomaly'.format(time,period)
+        f_name = 'detrend_{}_GIMMS_NDVI_{}_anomaly'.format(time,period)
         print(f_name)
         # exit()
         NDVI_list = []
@@ -160,16 +163,16 @@ class Build_dataframe:
                 NDVI_list.append(np.nan)
                 continue
             vals = NDVI_dic[pix]
-            if len(vals) != 34:
+            if len(vals) != 17:
                 NDVI_list.append(np.nan)
                 continue
-            v1 = vals[year - 1982]
+            v1 = vals[year - 1999]
             NDVI_list.append(v1)
         df[f_name] = NDVI_list
         return df
     def add_Pierre_GIMMIS_NDVI_to_df(self, df):
-        period = 'early'
-        time='1982-2015'
+        period = 'late'
+        time='1999-2015'
         f = results_root + '%NDVI_Pierre/{}_{}.npy'.format(time,period)
 
         NDVI_dic = T.load_npy(f)
@@ -185,10 +188,10 @@ class Build_dataframe:
                 NDVI_list.append(np.nan)
                 continue
             vals = NDVI_dic[pix]
-            if len(vals) != 34:
+            if len(vals) != 17:
                 NDVI_list.append(np.nan)
                 continue
-            v1 = vals[year - 1982]
+            v1 = vals[year - 1999]
             NDVI_list.append(v1)
         df[f_name] = NDVI_list
         return df
@@ -224,9 +227,9 @@ class Build_dataframe:
         return df
 
     def add_trend_to_df(self, df):
-        # period_list=['early', 'peak', 'late']
-        period_list = ['early']
-        time='1982-2015'
+        period_list=['early', 'peak', 'late']
+        # period_list = ['early']
+        time='1999-2015'
         for period in period_list:
             fdir = results_root + 'trend_calculation_original/during_{}_{}/'.format(period, time)
             for f in (os.listdir(fdir)):
@@ -235,7 +238,13 @@ class Build_dataframe:
                     continue
                 if 'p_value' in f:
                     continue
-                if f != 'during_{}_VPD_trend.npy'.format(period):
+                if f == '{}_during_{}_root_soil_moisture_trend.npy'.format(time, period):
+                    continue
+                if f == '{}_during_{}_surf_soil_moisture_trend.npy'.format(time, period):
+                    continue
+                if f == '{}_during_{}_VOD_trend.npy'.format(time, period):
+                    continue
+                if f == '{}_during_{}_NIRv_trend.npy'.format(time, period):
                     continue
 
                 val_array = np.load(fdir + f)
@@ -262,7 +271,7 @@ class Build_dataframe:
 
     def add_p_val_trend_to_df(self, df):
         period_list = ['early', 'peak', 'late']
-        time='1982-2015'
+        time='1999-2015'
         for period in period_list:
 
             fdir = results_root + 'trend_calculation_original/during_{}_{}/'.format(period, time)
@@ -294,9 +303,9 @@ class Build_dataframe:
         return df
 
     def add_mean_to_df(self, df):
-        # period_list = ['early', 'peak', 'late']
-        period_list = ['winter']
-        time = '1982-2015'
+        period_list = ['early', 'peak', 'late']
+        # period_list = ['winter']
+        time = '1999-2015'
         df = df[df['row'] < 120]
         for period in period_list:
             fdir = results_root + 'mean_calculation_original/during_{}_{}/'.format(period, time)
@@ -309,12 +318,11 @@ class Build_dataframe:
                     continue
                 if f == 'during_{}_surf_soil_moisture_mean.npy'.format(period):
                     continue
-                if f == 'during_{}_VOD.npy'.format(period):
+                if f == 'during_{}_VOD_mean.npy'.format(period):
                     continue
-                if f == 'during_{}_NIRv.npy'.format(period):
+                if f == 'during_{}_NIRv_mean.npy'.format(period):
                     continue
-                if f == 'during_{}_VOD.npy'.format(period):
-                    continue
+
                 val_array = np.load(fdir + f)
                 val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
                 f_name = 'mean_' + f.split('.')[0] + '_{}'.format(time)
@@ -430,7 +438,7 @@ class Build_dataframe:
         time = '1982-2015'
         df = df[df['row'] < 120]
         for period in period_list:
-            fdir = results_root + 'anomaly_variables_independently/{}_during_{}/'.format(time, period)
+            fdir = results_root + 'detrend_extraction_anomaly/{}_during_{}_detrend/'.format(time, period)
             for f in (os.listdir(fdir)):
                 # print()
                 if not f.endswith('.npy'):
@@ -447,7 +455,7 @@ class Build_dataframe:
 
                 val_dic = T.load_npy(fdir+f)
 
-                f_name = 'anomaly_' + f.split('.')[0]
+                f_name = 'detrend_anomaly_' + f.split('.')[0]
                 print(f_name)
                 val_list = []
                 for i, row in tqdm(df.iterrows(), total=len(df)):
@@ -458,10 +466,10 @@ class Build_dataframe:
                         val_list.append(np.nan)
                         continue
                     vals = val_dic[pix]
-                    if len(vals) != 34:
+                    if len(vals) != 17:
                         val_list.append(np.nan)
                         continue
-                    v1 = vals[year - 1982]
+                    v1 = vals[year - 1999]
                     val_list.append(v1)
                 df[f_name] = val_list
         return df
@@ -495,6 +503,34 @@ class Build_dataframe:
                     continue
                 val_list.append(vals)
             df[f_name] = val_list
+        return df
+
+    def add_max_correlation_to_df(self,df):
+
+        time = '1999-2015'
+        period='late'
+        fdir = results_root + 'detrend_partial_correlation_anomaly_NDVI/max_correlation/'
+        f='{}_{}_max_correlation.npy'.format(period,time)
+
+        val_dic = T.load_npy(fdir + f)
+        # val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
+        f_name = 'anomaly_with_detrend_partial_' + f.split('.')[0]
+        print(f_name)
+        # exit()
+        val_list = []
+        for i, row in tqdm(df.iterrows(), total=len(df)):
+            year = row['year']
+            # pix = row.pix
+            pix = row['pix']
+            if not pix in val_dic:
+                val_list.append(np.nan)
+                continue
+            vals = val_dic[pix]
+            if vals < -99:
+                val_list.append(np.nan)
+                continue
+            val_list.append(vals)
+        df[f_name] = val_list
         return df
 
     def add_correlation_to_df(self, df):
@@ -575,12 +611,12 @@ class Build_dataframe:
 
 
     def add_MAP_MAT_to_df(self, df):
-        f='/Volumes/SSD_sumsang/project_greening/Data/Map_Mat/MAT.tif'
+        f='/Volumes/SSD_sumsang/project_greening/Data/Map_Mat/MAP.tif'
 
         array, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(f)
         array = np.array(array, dtype=np.float)
         val_dic = DIC_and_TIF().spatial_arr_to_dic(array)
-        f_name = 'MAT'
+        f_name = 'MAP'
         print(f_name)
         # exit()
         val_list = []
@@ -1192,31 +1228,7 @@ class Build_partial_correlation_dataframe:
                 df[df_column_name] = val_list
         return df
 
-    def add_max_correlation_to_df(self,df):
-        periods = ['early','peak','late']
-        time = '1999-2015'
-        fdir = results_root + 'partial_correlation_anomaly_NDVI/max_correlation/'
-        for period in periods:
-            f=f'{period}_{time}_max_correlation.npy'
-            val_dic = T.load_npy(fdir+f)
 
-            f_name = f.split('.')[0]
-            print(f_name)
-            # exit()
-            val_list = []
-            for i, row in tqdm(df.iterrows(), total=len(df)):
-
-                pix = row['pix']
-                if not pix in val_dic:
-                    val_list.append(np.nan)
-                    continue
-                vals = val_dic[pix]
-                if vals < -99:
-                    val_list.append(np.nan)
-                    continue
-                val_list.append(vals)
-            df[f_name] = val_list
-        return df
 
     def add_landcover_data_to_df(self, df):  #
 

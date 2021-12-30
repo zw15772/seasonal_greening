@@ -51,7 +51,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import pickle
 from dateutil import relativedelta
 from sklearn.inspection import permutation_importance
-from LY_Tools import *
+# from LY_Tools import *
 from LY_Tools_newest import *
 T=Tools()
 
@@ -706,7 +706,7 @@ def foo():
 
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/mean_variables/1982-2015_during_peak/1982-2015_during_peak_temperature.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2002-2015_original_extraction_all_seasons_MODIS_NDVI/during_early_MODIS_NDVI.npy'
     result_dic = {}
     spatial_dic={}
     # array = np.load(f)
@@ -1073,9 +1073,9 @@ def main():
     # per_pixel_all_year_PAR()
     # spatial_check()
     # CSIF_par_annually_transform()
-    # foo()
+    foo()
     # spatial_plot_Yang()
-    spatial_plot()
+    # spatial_plot()
     # beta_plot()
     # foo4()
     #  foo3()
