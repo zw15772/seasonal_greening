@@ -395,22 +395,21 @@ class interpolate:
         mask_dic=DIC_and_TIF().spatial_tif_to_dic(mask_tif)
 
         periods = ['early', 'peak', 'late']
-        time_range = '1982-2015'
-        len_year = 34
+        time_range = '2002-2015'
+        len_year = 14
 
 
         for period in periods:
-            fdir = result_root + '/extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(
-                time_range, time_range, period)
-            outdir = result_root + '/extraction_original_val_clean/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(
+            fdir = result_root + 'extraction_original_val/{}_original_extraction_all_seasons_MODIS/'.format(time_range)
+            outdir = result_root + '/extraction_original_val/{}_original_extraction_all_seasons/{}_original_extraction_all_seasons_clean/'.format(
                 time_range, time_range, period)
             Tools().mk_dir(outdir, force=True)
 
             dic_NDVI = {}
 
             for f in tqdm(os.listdir(fdir)):
-                if 'GIMMS' not in f:
-                    continue
+                # if 'GIMMS' not in f:
+                #     continue
                 if f.endswith('.npy'):
                     # if not '005' in f:
                     #     continue
@@ -456,6 +455,68 @@ class interpolate:
             # plt.imshow(arr)
             # plt.show()
             np.save(outdir + 'during_NDVI', result_dic)
+
+    def interpolation_MODIS_NDVI(self):
+
+        mask_tif='/Volumes/SSD_sumsang/project_greening/Data/GIMMS_NDVI/NDVI_mask.tif'
+
+        mask_dic=DIC_and_TIF().spatial_tif_to_dic(mask_tif)
+
+        periods = ['early', 'peak', 'late']
+        time_range = '2002-2015'
+        len_year = 14
+
+        fdir = result_root + 'extraction_original_val/{}_original_extraction_all_seasons_MODIS/'.format(time_range)
+        outdir = result_root + '/extraction_original_val/{}_original_extraction_all_seasons/{}_original_extraction_all_seasons_clean/'.format(
+            time_range, time_range)
+        Tools().mk_dir(outdir, force=True)
+
+        dic_NDVI = {}
+        for period in periods:
+            f='during_{}_MODIS_NDVI.npy'.format(period)
+
+            dic_NDVI = dict(np.load(fdir + f, allow_pickle=True, ).item())
+            # dic_NDVI.update(dic_i)
+
+            dic_spatial_count = {}
+            result_dic = {}
+            for pix in tqdm(mask_dic):
+                if pix not in dic_NDVI:
+                    continue
+                time_series = dic_NDVI[pix]
+
+                time_series = time_series / 10000.
+                if np.isnan(mask_dic[pix]):  # 用已经mask 好的模板
+                    continue
+
+                # 1. 去除无效值  2 插值
+                time_series[time_series<-1]=np.nan  #将序列中的无效值变成nan--进行下一步处理
+
+                matix = np.isnan(time_series)  # 因为检查time series 发现
+                matix = list(matix)
+                valid_number = matix.count(False)
+                # print(matix)
+                # print(pix,valid_number)
+                if valid_number / len(time_series) < 0.80:
+                    continue
+                ynew = np.array(time_series)
+                # if ynew[0][0] < -99:
+                #     continue
+                ynew = Tools().interp_nan(ynew)
+                if ynew[0]==None:
+                    continue
+                result_dic[pix] = ynew
+                # plt.plot(ynew)
+                # plt.title('{}'.format(pix))
+                # plt.show()
+                # print(len(result_dic[pix]))
+                dic_spatial_count[pix] = len(result_dic[pix])
+            arr = DIC_and_TIF().pix_dic_to_spatial_arr(dic_spatial_count)
+            # print(arr.shape)
+            # # # DIC_and_TIF().plot_back_ground_arr()
+            # plt.imshow(arr)
+            # plt.show()
+            np.save(outdir + 'during_{}_MODIS_NDVI'.format(period), result_dic)
 
 
     def interpolation_temp(self):  # 函数实现temp 的共计444个月的 的缺失值插值，最后生成一个字典
@@ -706,7 +767,7 @@ def foo():
 
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2002-2015_original_extraction_all_seasons_MODIS_NDVI/during_early_MODIS_NDVI.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/during_early_MODIS_2002-2015/during_early_MODIS_NDVI.npy'
     result_dic = {}
     spatial_dic={}
     # array = np.load(f)
@@ -1070,10 +1131,11 @@ def main():
     # interpolate().interpolation_NDVI()
     # interpolate().interpolation_VOD()
     # interpolate().interpolation_NIRv()
+    interpolate().interpolation_MODIS_NDVI()
     # per_pixel_all_year_PAR()
     # spatial_check()
     # CSIF_par_annually_transform()
-    foo()
+    # foo()
     # spatial_plot_Yang()
     # spatial_plot()
     # beta_plot()

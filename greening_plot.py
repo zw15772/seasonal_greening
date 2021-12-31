@@ -287,157 +287,6 @@ class Plot_dataframe:
         # plt.savefig('%CSIF_par_late_koppen', dpi=300)
         plt.show()
 
-    def call_plot_bar_contribution(self,df):
-        outdir = '/Volumes/SSD_sumsang/project_greening/Result/plot/plot_CSIF_par_new/'
-        T.mk_dir(outdir)
-
-        df = df[df['r_list'] < 120]
-        period='late'
-
-        # outf = outdir + 'max_contribution_' + period + '_0.05_koppen'
-        # outf = outdir + 'max_contribution_' + period + '_0.1_koppen'
-        # outf = outdir + 'max_contribution_' + period + '_both_koppen'
-        # outf = outdir + 'max_contribution_' + period + '_0.05_landuse'
-        # outf = outdir + 'max_contribution_' + period + '_0.1_landuse'
-        # outf = outdir + 'max_contribution_' + period + '_both_koppen'
-        # outf = outdir + 'max_contribution_' + period + '_0.1_landcover'
-        outf = outdir + 'browning_max_contribution_' + period + '_0.1_koppen'
-
-        # df = df[df['signigicant_max_index_among_all_variables_{}'.format(period)] >= 0]
-        # df = df.drop_duplicates(subset=['pix', 'signigicant_max_index_among_all_variables_{}'.format(period)], keep='first')
-
-        df = df[df['max_index_among_all_variables_{}'.format(period)] >= 0]
-        df = df.drop_duplicates(subset=['pix', 'max_index_among_all_variables_{}'.format(period)],keep='first')
-
-        y = df['during_{}_CSIF_par'.format(period)]
-        df = df[df['during_{}_CSIF_par'.format(period)] < 3]
-        df = df[df['during_{}_CSIF_par'.format(period)] > -3]
-        df = df[df['trend_during_{}_CSIF_par'.format(period)] < 0]
-        # y = df['%CSIF_par_peak']
-        # df = df[df['%CSIF_par_peak'] < 1]
-        # df = df[df['%CSIF_par_peak'] > -1]
-
-        # df = df[df['CSIF_par_p_value_{}'.format(period)]<= 0.05]
-        df = df[df['CSIF_par_p_value_{}'.format(period)] <= 0.1]
-
-
-        plt.hist(df['during_{}_CSIF_par'.format(period)], bins=80)
-        plt.show()
-        koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
-        landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
-        plt.figure(figsize=(6, 6))
-        for koppen in koppen_list:
-        # for landcover in landcover_list:
-            df_pick = df[df['koppen'] == koppen]  # 修改
-            # df_pick = df[df['landcover'] == landcover]
-            self.plot_bar_contribution(df_pick, koppen,period)
-        self.plot_bar_contribution(df, 'all',period)
-        # plt.legend()
-        # plt.title('late_pre_SPEI3')
-        # plt.savefig('%CSIF_par_late_koppen', dpi=300)
-        # plt.legend(["Negative_0.05", "Negative_0.1", "no trend", "Positive_0.1","Positive_0.05"])
-        # plt.title("Greening trend_late")
-        # plt.show()
-        # plt.legend(["contribution_CO2", "contribution_GPCP", "contribution_LST", "contribution_PAR", "contribution_SPEI"])
-
-        # plt.title('browning_max_contribution_' + period + '_0.1_landcover')
-        plt.title('browning_max_contribution_' + period + '_0.1_koppen')
-        # plt.title('max_contribution_' + period + '_0.05_koppen')
-        # plt.title('max_contribution_' + period + '_both_koppen')
-
-
-        # plt.show()
-        plt.savefig(outf+'.pdf', dpi=300,)
-        plt.close()
-
-
-
-    def call_CSIF_par_trend_bar(self,df):  # 实现的功能是greening_trend_percentage_bar
-
-        outdir =results_root+'Figure/'
-
-        df = df[df['row'] < 120]
-
-
-        period='early'
-        time='1982-1998'
-        # outf = outdir + 'greening_trend_' + period + '_'+time+'_landuse'
-
-        outf = outdir + 'greening_trend_' + period + '_'+time+ '_koppen'
-        print(outf)
-        # exit()
-
-        y = df['GIMMS_NDVI_{}_original'.format(period)]
-        df = df[df['GIMMS_NDVI_{}_original'.format(period)] < 1]
-        df = df[df['GIMMS_NDVI_{}_original'.format(period)] > 0.2]
-        plt.hist(df['GIMMS_NDVI_{}_original'.format(period)], bins=80)
-        plt.show()
-        koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
-        # landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
-        plt.figure(figsize=(6, 6))
-        for koppen in koppen_list:
-        # for landcover in landcover_list:
-            df_pick = df[df['koppen'] == koppen]  # 修改
-        #     df_pick = df[df['landcover'] == landcover]
-            self.plot_bar_CSIF_trend_par(df_pick, koppen,period,time)
-            # self.plot_bar_CSIF_trend_par(df_pick, landcover, period,time)
-        self.plot_bar_CSIF_trend_par(df, 'all',period,time)
-        # plt.legend()
-        plt.legend(["Negative_0.05", "Negative_0.1", "no trend", "Positive_0.1","Positive_0.05"])
-        # plt.title('greening_trend_' + period + '_landcover_'+time)
-        plt.title('greening_trend_' + period + '_koppen_'+time)
-
-        # plt.show()
-        plt.savefig(outf+'.pdf', dpi=300,)
-        plt.close()
-
-
-    def call_bar_correlation(self,df):  # 实现的功能是GIMMS_climate_variables_percentage_bar
-
-        outdir =results_root+'Figure/'
-
-        df = df[df['row'] < 120]
-
-
-        period='early'
-        time='1999-2015'
-        variable_list=['CO2','PAR','root_soil_moisture','SPEI3','surf_soil_moisture','CCI_SM', 'Precip','VPD','temperature']
-
-        # outf = outdir + 'greening_trend_' + period + '_'+time+'_landuse'
-
-        outf = outdir + 'greening_correlation_' + period + '_'+time+ '_koppen'
-
-        print(outf)
-        # exit()
-
-        y = df['GIMMS_NDVI_{}_anomaly'.format(period)]
-        df = df[df['GIMMS_NDVI_{}_anomaly'.format(period)] < 3]
-        df = df[df['GIMMS_NDVI_{}_anomaly'.format(period)] > -3]
-        df = df[df['anomaly_during_{}_GIMMS_NDVI_trend_{}'.format(period,time)] >0]
-        # plt.hist(df['GIMMS_NDVI_{}_anomaly'.format(period)], bins=80)
-        # plt.show()
-        koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
-        # landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
-        plt.figure(figsize=(18, 18))
-        flag=1
-        for variable in variable_list:
-            plt.subplot(3, 3,flag)
-            for koppen in koppen_list:
-            # for landcover in landcover_list:
-                df_pick = df[df['koppen'] == koppen]  # 修改
-                # df_pick = df[df['landcover'] == landcover]
-                self.plot_bar_correlation(df_pick, koppen,period,time,variable)
-                # self.plot_bar_CSIF_par(df_pick, landcover, period,time)
-            self.plot_bar_correlation(df, 'all',period,time,variable)
-            # plt.legend()
-            # plt.legend(["Negative_0.05", "Negative_0.1", "no trend", "Positive_0.1","Positive_0.05"])
-            # plt.title('greening_trend_' + period + '_landcover_'+time)
-            plt.title(period + '_' + time+'_' +variable)
-            flag=flag+1
-
-        # plt.show()
-        plt.savefig(outf+'.pdf', dpi=300,)
-        plt.close()
 
 
     def call_plot_LST_for_three_seasons(self):
@@ -617,7 +466,47 @@ class Plot_dataframe:
         plt.xticks(range(len(mean_value_yearly)),year_list)
         plt.show()
 
-    def plot_bar_CSIF_trend_par(self,df_pick,koppen,period,time):
+    def call_greening_trend_bar(self,df):  # 实现的功能是greening_trend_percentage_bar
+
+        outdir =results_root+'Figure/'
+
+        df = df[df['row'] < 120]
+
+
+        period='early'
+        time='1982-1998'
+        # outf = outdir + 'greening_trend_' + period + '_'+time+'_landuse'
+
+        outf = outdir + 'greening_trend_' + period + '_'+time+ '_koppen'
+        print(outf)
+        # exit()
+
+        y = df['GIMMS_NDVI_{}_original'.format(period)]
+        df = df[df['GIMMS_NDVI_{}_original'.format(period)] < 1]
+        df = df[df['GIMMS_NDVI_{}_original'.format(period)] > 0.2]
+        plt.hist(df['GIMMS_NDVI_{}_original'.format(period)], bins=80)
+        plt.show()
+        koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
+        # landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
+        plt.figure(figsize=(6, 6))
+        for koppen in koppen_list:
+        # for landcover in landcover_list:
+            df_pick = df[df['koppen'] == koppen]  # 修改
+        #     df_pick = df[df['landcover'] == landcover]
+            self.plot_greening_trend_bar(df_pick, koppen,period,time)
+            # self.plot_bar_CSIF_trend_par(df_pick, landcover, period,time)
+        self.plot_greening_trend_bar(df, 'all',period,time)
+        # plt.legend()
+        plt.legend(["Negative_0.05", "Negative_0.1", "no trend", "Positive_0.1","Positive_0.05"])
+        # plt.title('greening_trend_' + period + '_landcover_'+time)
+        plt.title('greening_trend_' + period + '_koppen_'+time)
+
+        # plt.show()
+        plt.savefig(outf+'.pdf', dpi=300,)
+        plt.close()
+
+
+    def plot_greening_trend_bar(self,df_pick,koppen,period,time): # greening and browning percentage
 
         count_no_trend=0
         count_greening_0_1=0
@@ -675,63 +564,9 @@ class Plot_dataframe:
         # plt.xlabel("landcover")
         plt.ylabel("Percentage")
 
-    def plot_bar_correlation(self, df_pick, koppen, period, time,variable):
 
-        count_no_trend = 0
-        count_greening_0_1 = 0
-        count_browning_0_1 = 0
-        count_greening_0_05 = 0
-        count_browning_0_05 = 0
 
-        for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
-
-            trend = row['anomaly_with_trend_during_{}_{}_GIMMS_NDVI_correlation_{}'.format(period, variable,time)]
-            p_val = row['anomaly_with_trend_during_{}_{}_GIMMS_NDVI_p_value_{}'.format(period, variable, time)]
-            if p_val > 0.1:
-                count_no_trend = count_no_trend + 1
-            elif 0.05 < p_val < 0.1:
-                if trend > 0:
-                    count_greening_0_1 = count_greening_0_1 + 1
-                else:
-                    count_browning_0_1 = count_browning_0_1 + 1
-            else:
-                if trend > 0:
-                    count_greening_0_05 = count_greening_0_05 + 1
-                else:
-                    count_browning_0_05 = count_browning_0_05 + 1
-        greening_0_1 = count_greening_0_1 / len(df_pick) * 100
-        browning_0_1 = count_browning_0_1 / len(df_pick) * 100
-        greening_0_05 = count_greening_0_05 / len(df_pick) * 100
-        browning_0_05 = count_browning_0_05 / len(df_pick) * 100
-        no_trend = count_no_trend / len(df_pick) * 100
-
-        y1 = np.array([browning_0_05])
-        y2 = np.array([browning_0_1])
-        y3 = np.array([no_trend])
-        y4 = np.array([greening_0_1])
-        y5 = np.array([greening_0_05])
-
-        # plot bars in stack manner
-
-        plt.bar(koppen, y1, color='sienna')
-        plt.bar(koppen, y2, bottom=y1, color='peru')
-        plt.bar(koppen, y3, bottom=y1 + y2, color='gray')
-        plt.bar(koppen, y4, bottom=y1 + y2 + y3, color='limegreen')
-        plt.bar(koppen, y5, bottom=y1 + y2 + y3 + y4, color='forestgreen')
-
-        plt.text(koppen, y1 / 2., round(browning_0_05), fontsize=10, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 / 2., round(browning_0_1), fontsize=10, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 + y3 / 2., round(no_trend), fontsize=10, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 + y3 + y4 / 2., round(greening_0_1), fontsize=10, color='w', ha='center',
-                 va='center')
-        plt.text(koppen, y1 + y2 + y3 + y4 + y5 / 2, round(greening_0_05), fontsize=10, color='w', ha='center',
-                 va='center')
-        plt.text(koppen, 102, len(df_pick), fontsize=10, color='k', ha='center', va='center')
-
-        # plt.xlabel("landcover")
-        plt.ylabel("Percentage")
-
-    def plot_bar_max_correlation(self,df_pick,koppen):
+    def plot_bar_correlation(self,df_pick,koppen):  # 每个变量 例如CO2 的correlation percentage
 
         count_no_relationship=0
         positive_relationship_0_1=0
@@ -791,66 +626,6 @@ class Plot_dataframe:
         plt.ylabel("Percentage")
         # plt.show()
 
-    def plot_bar_contribution(self,df_pick,koppen,period):
-
-        count_contribution_CO2 = 0
-        count_contribution_GPCP = 0
-        count_contribution_LST = 0
-        count_contribution_PAR = 0
-        count_contribution_SPEI = 0
-
-        contribution_CO2 = 0
-        contribution_GPCP = 0
-        contribution_LST = 0
-        contribution_PAR = 0
-        contribution_SPEI = 0
-
-        for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
-            # contribution = row['signigicant_max_index_among_all_variables_{}'.format(period)]
-            contribution = row['max_index_among_all_variables_{}'.format(period)]
-
-            if contribution==0:
-                count_contribution_CO2=count_contribution_CO2+1
-            if contribution==1:
-                count_contribution_GPCP = count_contribution_GPCP+1
-            if contribution==2:
-                count_contribution_LST = count_contribution_LST+1
-            if contribution==3:
-                count_contribution_PAR = count_contribution_PAR+1
-            if contribution==4:
-                count_contribution_SPEI = count_contribution_SPEI+1
-        print(len(df_pick))
-        contribution_CO2 = count_contribution_CO2 / len(df_pick) * 100
-        contribution_GPCP = count_contribution_GPCP / len(df_pick) * 100
-        contribution_LST = count_contribution_LST / len(df_pick) * 100
-        contribution_PAR= count_contribution_PAR / len(df_pick) * 100
-        contribution_SPEI = count_contribution_SPEI / len(df_pick) * 100
-
-        y1 = np.array([contribution_CO2])
-        y2 = np.array([contribution_GPCP])
-        y3 = np.array([contribution_LST])
-        y4 = np.array([contribution_PAR])
-        y5 = np.array([contribution_SPEI])
-
-        # plot bars in stack manner
-
-        plt.bar(koppen, y1, color='limegreen')
-        plt.bar(koppen, y2, bottom=y1, color='paleturquoise')
-        plt.bar(koppen, y3, bottom=y1 + y2, color='lightpink')
-        plt.bar(koppen, y4, bottom=y1 + y2 + y3, color='orange')
-        plt.bar(koppen, y5, bottom=y1 + y2 + y3 + y4, color='rosybrown')
-
-        plt.text(koppen, y1/2., round(contribution_CO2), fontsize=12,color='w',ha='center',va='center')
-        plt.text(koppen, y1+y2/2., round(contribution_GPCP), fontsize=12,color='w',ha='center',va='center')
-        plt.text(koppen, y1+y2+y3/2., round(contribution_LST), fontsize=12,color='w',ha='center',va='center')
-        plt.text(koppen, y1+y2+y3+y4/2., round(contribution_PAR), fontsize=12,color='w',ha='center',va='center')
-        plt.text(koppen, y1+y2+y3+y4+y5/2, round(contribution_SPEI), fontsize=12,color='w',ha='center',va='center')
-        plt.text(koppen, 102, len(df_pick), fontsize=12, color='k',ha='center',va='center')
-        # plt.xlabel("landcover")
-        plt.ylabel("Percentage")
-        # plt.show()
-
-
 
 class Plot_partial_correlation:
     def __init__(self):
@@ -866,9 +641,10 @@ class Plot_partial_correlation:
         # self.call_plot_LST_for_three_seasons()
         # self.call_CSIF_par_trend_bar(df)
         # self.plot_bar(df)
-        # self.call_CSIF_par_trend_bar(df)
-        # self.call_bar_correlation(df)
-        self.call_plot_bar_contribution(df)
+
+
+        # self.call_plot_bar_max_contribution(df)
+        self.call_plot_box_correlation(df)
 
 
 
@@ -915,17 +691,18 @@ class Plot_partial_correlation:
             df= self.__load_df_wen(file)
             return df
             # raise Warning('{} is already existed'.format(self.dff))
-    def call_plot_bar_contribution(self,df):
+
+    def call_plot_bar_max_contribution(self,df):
         outdir = results_root+'detrend_partial_correlation_anomaly_NDVI/plot_bar_contribution/'
         T.mk_dir(outdir)
         time_range='1999-2015'
         df = df[df['row'] < 120]
-        period='peak'
+        period='early'
 
         # outf =  f'{time_range}_max_contribution_{period}_koppen'
         outf = f'{time_range}_max_contribution_{period}_landcover'
 
-        # df = df[df['anomaly_with_detrend_partial_{}_{}_max_correlation'.format(period,time_range)] >= 0]
+        df = df[df['during_{}_GIMMS_NDVI_trend_{}'.format(period,time_range)] >= 0]
 
         # koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
         landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
@@ -934,8 +711,8 @@ class Plot_partial_correlation:
         for landcover in landcover_list:
         #     df_pick = df[df['koppen'] == koppen]  # 修改
             df_pick = df[df['landcover'] == landcover]
-            self.plot_bar_contribution(df_pick, landcover,period,time_range)
-        self.plot_bar_contribution(df, 'all',period,time_range)
+            self.plot_bar_max_contribution(df_pick, landcover,period,time_range)
+        self.plot_bar_max_contribution(df, 'all',period,time_range)
 
         # plt.title(f'{time_range}_max_contribution_{period}_koppen')
         plt.title(f'{time_range}_max_contribution_{period}_landcover')
@@ -944,7 +721,7 @@ class Plot_partial_correlation:
         plt.savefig(outdir+ outf +'.pdf', dpi=300,)
         plt.close()
 
-    def plot_bar_contribution(self,df_pick,koppen,period,time_range):
+    def plot_bar_max_contribution(self,df_pick,koppen,period,time_range):
 
         count_contribution_SM = 0
         count_contribution_CO2 = 0
@@ -1005,6 +782,75 @@ class Plot_partial_correlation:
         # plt.xlabel("landcover")
         plt.ylabel("Percentage")
         # plt.show()
+
+
+
+    def call_plot_box_correlation(self, df):  # lian_2021 Figure2d
+
+        outdir = results_root + 'Lian_Figure/'
+
+        df = df[df['row'] < 120]
+
+        period = 'early'
+        time = '1999-2015'
+        variable_list = ['CO2', 'PAR', 'CCI_SM', 'Precip', 'VPD', 'temperature']
+
+        outf = outdir + 'greening_partial_correlation_detrend_' + period + '_' + time + '_koppen'
+
+        print(outf)
+        # exit()
+
+        df = df[df['during_{}_GIMMS_NDVI_trend_{}'.format(period, time)] >= 0]
+
+        koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
+        # landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
+        plt.figure(figsize=(18, 18))
+        flag = 1
+        for variable in variable_list:
+            plt.subplot(3, 3, flag)
+            for koppen in koppen_list:
+                # for landcover in landcover_list:
+                df_pick = df[df['koppen'] == koppen]  # 修改
+                # df_pick = df[df['landcover'] == landcover]
+                self.plot_boxplot_correlation(df_pick, koppen, period, time)
+                # self.plot_bar_CSIF_par(df_pick, landcover, period,time)
+            self.plot_boxplot_correlation(df, 'all', period, time)
+            # plt.legend()
+            # plt.legend(["Negative_0.05", "Negative_0.1", "no trend", "Positive_0.1","Positive_0.05"])
+            # plt.title('greening_trend_' + period + '_landcover_'+time)
+            plt.title(period + '_' + time + '_' + variable)
+            flag = flag + 1
+
+        # plt.show()
+        plt.savefig(outf + '.pdf', dpi=300, )
+        plt.close()
+
+
+    def plot_boxplot_correlation(self, df_pick, koppen, period, time): ### Wen 2021/12/30
+
+        variable_list = ['CO2', 'PAR', 'Precip', 'VPD', 'temperature']
+
+        mean_variable={}
+
+        for variable in variable_list:
+            val_list = []
+            for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
+
+                val = row['partial_correlation_{}_{}_{}'.format(time,period,variable)]
+                val_list.append(val)
+
+            mean_variable[variable]=val_list
+
+        for variable in mean_variable:
+            flag = 1
+
+            vals=mean_variable[variable]
+            print(vals)
+            plt.boxplot(vals)
+            plt.title(variable)
+            flag=flag+1
+            plt.show()
+
 
 
 

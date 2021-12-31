@@ -59,11 +59,12 @@ class RF:
         pass
 
     def run1(self):
-        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1999-2015/Data_frame_1999-2015_df.df'
+        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-1998/Data_frame_1982-1998_df.df'
         df, _ = self.__load_df(f)
+
         df = df[df['row'] < 120]
         df=df[df['landcover']=='shrub']
-        # df = df.drop_duplicates(subset=('pix'))
+
 
         x_variable_dic = self.x_variable_greeness()
 
@@ -78,7 +79,7 @@ class RF:
             df_temp[x_list] = df[x_list]
             df_temp[y_list] = df[y_list]
             invalid = self.check_non_ratio(df_temp)
-            exit()
+
             df_temp = df_temp.drop(columns=invalid)
             # print(len(df_temp))
             df_temp = df_temp.dropna()
@@ -94,8 +95,11 @@ class RF:
             Y = df_temp[y_list]
 
             # selected_labels = self.multi_colliner(x_list_new, y_list, X, Y)
+            selected_labels=self.select_vif_vars(X,x_list_new,threshold=3)
+            print(selected_labels)
+            exit()
 
-            Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,x_list_new)
+            # Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,x_list_new)
             # self.train_classfication_permutation_importance(X, Y, x_list_new)
 
             # self.train_classfication(X,Y,selected_labels=selected_labels)
@@ -351,7 +355,7 @@ class RF:
         model['importance']=imp_dic
         return model,
 
-    def select_vif_vars(self, df, x_vars_list, threshold=5):
+    def select_vif_vars(self, df, x_vars_list, threshold=2):
         vars_list_copy = copy.copy(x_vars_list)
         X = df[vars_list_copy]
         X = X.dropna()
@@ -573,14 +577,16 @@ class RF:
 
         f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-1998/Data_frame_1982-1998_df.df'
         df,_=self.__load_df(f)
+
         # for i in df:
         #     print(i)
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
         period_list = ['late']
         x_variable_dic={}
-        time_range='1983-1998'
+        time_range='1982-1998'
         # x_list=[]
         for period in period_list:
+            df = df[df['during_{}_GIMMS_NDVI_trend_{}'.format(period, time_range)] >= 0]
             x_list = []
             if period =='peak':
                 for i in df:
@@ -633,6 +639,7 @@ class RF:
 
 
             if period == 'early':
+                df = df[df['during_{}_GIMMS_NDVI_trend_{}'.format(period, time_range)] >= 0]
                 for i in df:
                     if period in i:
                         if not '{}'.format(time_range) in i:
@@ -673,6 +680,7 @@ class RF:
             #     print('********************************')
 
             if period == 'late':
+                df = df[df['during_{}_GIMMS_NDVI_trend_{}'.format(period, time_range)] >= 0]
                 for i in df:
                     if period in i:
                         if not '{}'.format(time_range) in i:
@@ -738,7 +746,7 @@ class RF:
         # for i in df:
         #     print(i)
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-        time_range='1983-1998'
+        time_range='1982-1998'
 
         period_list=['late']
         y_variable_dic={}
@@ -766,7 +774,7 @@ class RF:
             val_valid=val.dropna()
             valid=len(val_valid)
             ratio=valid/total
-            print(i,ratio)
+            # print(i,ratio)
             if ratio<0.8:
                 invalid_variables.append(i)
 

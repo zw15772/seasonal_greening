@@ -39,7 +39,8 @@ class Build_dataframe:
         # df=self.add_winter_to_df(df)
         # df=self.add_Koppen_data_to_df(df)
         # df=self.add_landcover_data_to_df(df)
-        df=self.add_max_correlation_to_df(df)
+        # df=self.add_max_correlation_to_df(df)
+        df=self.add_partial_correlation_to_df(df)
 
         # df=self.show_field(df)
         # df=self.drop_field_df(df)
@@ -533,35 +534,33 @@ class Build_dataframe:
         df[f_name] = val_list
         return df
 
-    def add_correlation_to_df(self, df):
-        period_list=['early','peak','late']
-        time='1999-2015'
+    def add_partial_correlation_to_df(self, df):
 
-        for period in period_list:
-            fdir = results_root +'partial_correlation_anomaly_NDVI/'
-            for f in (os.listdir(fdir)):
-                # print()
-                if not f.endswith('.npy'):
-                    continue
-                val_array = np.load(fdir + f)
-                val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
-                f_name = 'anomaly_with_trend_'+f.split('.')[0]+'_{}'.format(time)
-                print(f_name)
+        time='1999-2015'
+        fdir = results_root + 'detrend_partial_correlation_anomaly_NDVI/variables_contribution/'
+        for f in (os.listdir(fdir)):
+            if not time in f:
+                continue
+            if not f.endswith('.npy'):
+                continue
+            val_dic = T.load_npy(fdir + f)
+            f_name = 'partial_correlation_'+f.split('.')[0]
+            print(f_name)
                 # exit()
-                val_list = []
-                for i, row in tqdm(df.iterrows(), total=len(df)):
-                    year = row['year']
-                    # pix = row.pix
-                    pix = row['pix']
-                    if not pix in val_dic:
-                        val_list.append(np.nan)
-                        continue
-                    vals = val_dic[pix]
-                    if vals < -99:
-                        val_list.append(np.nan)
-                        continue
-                    val_list.append(vals)
-                df[f_name] = val_list
+            val_list = []
+            for i, row in tqdm(df.iterrows(), total=len(df)):
+                year = row['year']
+                # pix = row.pix
+                pix = row['pix']
+                if not pix in val_dic:
+                    val_list.append(np.nan)
+                    continue
+                vals = val_dic[pix]
+                if vals < -99:
+                    val_list.append(np.nan)
+                    continue
+                val_list.append(vals)
+            df[f_name] = val_list
         return df
 
     def add_NDVI_trend_label(self,df):
@@ -824,14 +823,15 @@ class Build_dataframe:
        T.print_head_n(df)
 
        return df
+
     def drop_field_df(self, df):
         # for i in df:
+        #
+        #     if i.startswith('anomaly'):
+        #         print(i)
+        #         df=df.drop(columns=[i])
 
-            # if i.startswith('anomaly'):
-            #     print(i)
-            #     df=df.drop(columns=[i])
-
-        df = df.drop(columns=['CV_during_peak_VOD_CV_1982-2015','during_peak_root_soil_moisture_trend_1982-2015','mean_during_peak_VOD_mean_1982-2015'])
+        # df = df.drop(columns=['CV_during_peak_VOD_CV_1982-2015','during_peak_root_soil_moisture_trend_1982-2015','mean_during_peak_VOD_mean_1982-2015'])
         for i in df:
             print(i)
 

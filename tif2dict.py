@@ -3313,17 +3313,18 @@ class statistic_anaysis:
         # variable_list=['CCI_SM','GIMMS_NDVI'] #  长度为34
         # variable_list=['VOD'] #  长度29
         # variable_list=['Precip'] # 降雨是累计量 长度37
-        variable_list=['MODIS_NDVI'] #  长度为34
+        # variable_list=['MODIS_NDVI'] #  长度为168
+        # variable_list = ['CSIF_fpar']  # 长度为
+        variable_list = ['CSIF']  # 长度为
 
-
-        period='late'
+        period='early'
         f1 = result_root + '20%_transform_early_peak_late_dormant_period_multiyear_CSIF_par/early_end_mon.npy'  # !!修改
         f2 = result_root + '20%_transform_early_peak_late_dormant_period_multiyear_CSIF_par/late_start_mon.npy'
 
         for variable in variable_list:
 
-            fdir2=data_root+'MOD_NDVI_dic/'.format(variable)
-            outdir = result_root + 'extraction_original_val/extraction_during_{}_growing_season_static_MODIS/'.format(period)
+            fdir2=data_root+'CSIF/CSIF_dic_interpolation/'
+            outdir = result_root + 'extraction_original_val/during_{}_CSIF_2001-2016/'.format(period)
 
 
             Tools().mk_dir(outdir,True)
@@ -3369,13 +3370,13 @@ class statistic_anaysis:
 
                 # if len(time_series) != 348:
                 #     continue
-                if len(time_series) != 168:
+                if len(time_series) != 192:
                     continue
                 # plt.plot(time_series)
                 # plt.show()
-                time_series = time_series.reshape(-12, 1)  # 修改
+                time_series = time_series.reshape(-1, 12)  # 修改
 
-                for year in range(14):  # 修改
+                for year in range(16):  # 修改
 
                     during_time_series = time_series[year][start_index-1:end_index]  #!!!!!
                     during_time_series=np.array(during_time_series, dtype=float)
@@ -3388,7 +3389,7 @@ class statistic_anaysis:
                     # # variable_sum = np.nansum(during_time_series)
                     # dic_during_variables[pix].append(variable_sum)
                     variable_mean = np.nanmean(during_time_series)  # !!! 降雨需要是sum  # 其他变量是平均值 nanmean
-                    dic_during_variables[pix].append(variable_mean/10000)
+                    dic_during_variables[pix].append(variable_mean)
 
 
                 dic_spatial_count[pix] = len(dic_during_variables[pix])
@@ -5894,12 +5895,12 @@ def main():
     # statistic_anaysis().call_partial_window()
 
     # statistic_anaysis().extraction_variables_static_pre_month()
-    # statistic_anaysis().extraction_variables_static_during()
+    statistic_anaysis().extraction_variables_static_during()
     # statistic_anaysis().univariate_correlation_calculation()
     # statistic_anaysis().univariate_correlation_window()
     # statistic_anaysis().plot_moving_window_correlation()
     # statistic_anaysis().save_moving_window_correlation()
-    statistic_anaysis().trend_calculation()
+    # statistic_anaysis().trend_calculation()
     # statistic_anaysis().mean_calculation()
     # statistic_anaysis().CV_calculation()
     # statistic_anaysis().extraction_winter_index()

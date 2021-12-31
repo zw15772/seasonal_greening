@@ -1339,15 +1339,15 @@ class Multi_liner_regression:  # 实现求beta 功能
 
     def __init__(self):
 
-        self.period='late'
+        self.period='early'
         self.time_range='1999-2015'
-        self.result_dir=results_root+'detrend_partial_correlation_anomaly_NDVI/'
+        self.result_dir=results_root+'partial_correlation_anomaly_NDVI/'
         # self.result_f = self.result_dir+'/{}_multi_linear{}_anomaly.npy'.format(self.time_range,self.period,)
         self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation{}_anomaly.npy'.format(self.time_range,self.period,)
         self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_anomaly.npy'.format(
             self.time_range, self.period, )
-        self.x_dir = results_root+'detrend_extraction_anomaly/{}_during_{}_detrend/'.format(self.time_range,self.period,)
-        self.y_f = results_root+'anomaly_NDVI_method2/detrend_anomaly_NDVI_independent/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period)
+        self.x_dir = results_root+'anomaly_variables_independently/{}_during_{}/'.format(self.time_range,self.period,)
+        self.y_f = results_root+'anomaly_NDVI_method2/anomaly_NDVI_independent/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period)
         # self.y_mean = results_root + 'mean_variables/{}_during_{}/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period,self.time_range,self.period)
         T.mk_dir(self.result_dir)
         pass
@@ -1356,12 +1356,13 @@ class Multi_liner_regression:  # 实现求beta 功能
     def run(self):
 
         # step 1 build dataframe
-        # df = self.build_df(self.x_dir,self.y_f,self.period,self.time_range,)
-        # x_var_list = self.__get_x_var_list(self.x_dir,self.period, self.time_range)
-        # # # # step 2 cal correlation
-        # # self.cal_multi_regression_beta(df, x_var_list,34)  #修改参数
-        # self.cal_partial_correlation(df, x_var_list,17)  #修改参数
-        self.plot_spatial_max_contribution()
+        df = self.build_df(self.x_dir,self.y_f,self.period,self.time_range,)
+        x_var_list = self.__get_x_var_list(self.x_dir,self.period, self.time_range)
+        # # # step 2 cal correlation
+        # self.cal_multi_regression_beta(df, x_var_list,34)  #修改参数
+        self.cal_partial_correlation(df, x_var_list,17)  #修改参数
+        # self.max_contribution()
+        # self.variables_contribution()
 
 
 
@@ -1730,6 +1731,50 @@ class Multi_liner_regression:  # 实现求beta 功能
         DIC_and_TIF().arr_to_tif(arr,ourdir+outf_tif)
         output_dic=DIC_and_TIF().spatial_arr_to_dic(arr)
         np.save(ourdir+outf_npy, output_dic)
+        pass
+
+    def variables_contribution(self):
+        x_var_list = self.__get_x_var_list(self.x_dir, self.period, self.time_range)
+        x_var_list.sort()
+        result_f = self.partial_correlation_result_f
+        ourdir = self.result_dir + '/variables_contribution/'
+        T.mk_dir(ourdir)
+        result_dic = T.load_npy(result_f)
+        output_dic = {}
+
+        # color_map = dict(zip(x_var_list, list(range(len(x_var_list)))))
+        # print(color_map)
+        # exit()
+        spatial_dic = {}
+        var_name_list = []
+        for pix in result_dic:
+            result = result_dic[pix]
+            for var_i in result:
+                var_name_list.append(var_i)
+            var_name_list = list(set(var_name_list))
+            var_name_list.sort()
+
+
+        for x in var_name_list:
+            for pix in result_dic:
+                if x not in result_dic[pix]:
+                    continue
+                spatial_dic[pix] = result_dic[pix][x]
+
+            tif_template = '/Volumes/SSD_sumsang/project_greening/Data/NIRv_tif_05/1982-2018/198205.tif'
+            arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)[:120]
+            DIC_and_TIF().plot_back_ground_arr_north_sphere(tif_template)
+        # cmap = sns.color_palette('hls',as_cmap=True)
+        # plt.imshow(arr,cmap='jet')
+        # plt.colorbar()
+        # plt.show()
+
+            outf_tif = f'{self.time_range}_{x}.tif'
+            outf_npy = f'{self.time_range}_{x}.npy'
+
+            DIC_and_TIF().arr_to_tif(arr, ourdir + outf_tif)
+            output_dic = DIC_and_TIF().spatial_arr_to_dic(arr)
+            np.save(ourdir + outf_npy, output_dic)
         pass
 
 
