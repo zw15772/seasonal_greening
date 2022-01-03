@@ -19,7 +19,7 @@ class RF:
         self.dff =results_root+ 'Data_frame/'
 
     def run(self):
-        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-1998/Data_frame_1982-1998_df.df'
+        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_2002-2015/Data_frame_2002-2015_df.df'
         df, _ = self.__load_df(f)
         df=df[df['row']<120]
         # df=df[df['landcover']=='Grassland']
@@ -59,11 +59,11 @@ class RF:
         pass
 
     def run1(self):
-        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-1998/Data_frame_1982-1998_df.df'
+        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_2002-2015/Data_frame_2002-2015_df.df'
         df, _ = self.__load_df(f)
 
         df = df[df['row'] < 120]
-        df=df[df['landcover']=='shrub']
+        df=df[df['landcover']=='NF']
 
 
         x_variable_dic = self.x_variable_greeness()
@@ -94,13 +94,13 @@ class RF:
             X = df_temp[x_list_new]
             Y = df_temp[y_list]
 
-            # selected_labels = self.multi_colliner(x_list_new, y_list, X, Y)
-            selected_labels=self.select_vif_vars(X,x_list_new,threshold=3)
-            print(selected_labels)
-            exit()
+            selected_labels = self.multi_colliner(x_list_new, y_list, X, Y)
+            # selected_labels=self.select_vif_vars(X,x_list_new,threshold=3)
+            # print(selected_labels)
+            # exit()
 
             # Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,x_list_new)
-            # self.train_classfication_permutation_importance(X, Y, x_list_new)
+            self.train_classfication_permutation_importance(X, Y, x_list_new)
 
             # self.train_classfication(X,Y,selected_labels=selected_labels)
         pass
@@ -355,7 +355,7 @@ class RF:
         model['importance']=imp_dic
         return model,
 
-    def select_vif_vars(self, df, x_vars_list, threshold=2):
+    def select_vif_vars(self, df, x_vars_list, threshold=5):
         vars_list_copy = copy.copy(x_vars_list)
         X = df[vars_list_copy]
         X = X.dropna()
@@ -575,7 +575,7 @@ class RF:
 
     def x_variable_greeness(self,):
 
-        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-1998/Data_frame_1982-1998_df.df'
+        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_2002-2015/Data_frame_2002-2015_df.df'
         df,_=self.__load_df(f)
 
         # for i in df:
@@ -583,44 +583,50 @@ class RF:
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
         period_list = ['late']
         x_variable_dic={}
-        time_range='1982-1998'
+        time_range='2002-2015'
         # x_list=[]
         for period in period_list:
-            df = df[df['during_{}_GIMMS_NDVI_trend_{}'.format(period, time_range)] >= 0]
+            # df = df[df['during_{}_MODIS_NDVI_trend_{}'.format(period, time_range)] >= 0]
             x_list = []
             if period =='peak':
-                for i in df:
-                    if period in i:
+                # for i in df:
+                #     if period in i:
                         # if not '{}'.format(time_range) in i:
                         #     continue
-                        if 'NIRv' in i:
-                            continue
-                        if 'VOD' in i:
-                            continue
-                        if 'GIMMS_NDVI' in i:
-                            continue
+
                         # if 'CV' in i:
                         #     x_list.append(i)
-                        if 'mean' in i:
-                            x_list.append(i)
-                        if 'trend' in i:
-                            x_list.append(i)
-
+                        # if 'mean' in i:
+                        #     x_list.append(i)
+                        # if 'MODIS_NDVI_trend' in i:
+                        #     x_list.append(i)
+                        # if 'trend' in i:
+                        #     x_list.append(i)
 
                 for i in df:
                     if 'CO2' in i:
                         continue
-                    if 'trend' in i:
+                    if 'CSIF' in i:
                         continue
-                    if 'detrend_anomaly_{}_during_early_temperature'.format(time_range) in i:
+                    if 'CSIF_fpar' in i:
+                        continue
+                    if 'GIMMS_NDVI' in i:
+                        continue
+                    if 'MODIS_NDVI' in i:
+                        continue
+                    if 'trend' in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_early_CCI_SM'.format(time_range) in i:
+                    if 'anomaly_{}_during_early_VPD'.format(time_range) in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_early_SPEI3'.format(time_range) in i:
+                    if 'anomaly_{}_during_early_temperature'.format(time_range) in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_early_Precip'.format(time_range) in i:
+                    if 'anomaly_{}_during_early_CCI_SM'.format(time_range) in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_peak_'.format(time_range) in i:
+                    if 'anomaly_{}_during_early_SPEI3'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_early_Precip'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_peak_'.format(time_range) in i:
                         x_list.append(i)
                     if 'original' in i:
                         continue
@@ -639,14 +645,10 @@ class RF:
 
 
             if period == 'early':
-                df = df[df['during_{}_GIMMS_NDVI_trend_{}'.format(period, time_range)] >= 0]
+                # df = df[df['during_{}_GIMMS_NDVI_trend_{}'.format(period, time_range)] >= 0]
                 for i in df:
                     if period in i:
                         if not '{}'.format(time_range) in i:
-                            continue
-                        if 'NIRv' in i:
-                            continue
-                        if 'GIMMS_NDVI' in i:
                             continue
 
                         # if 'CV' in i:
@@ -657,11 +659,19 @@ class RF:
                             x_list.append(i)
 
                 for i in df:
-                    # if 'CO2' in i:
-                    #     continue
-                    if 'trend' in i:
+                    if 'CO2' in i:
                         continue
-                    if 'detrend_anomaly_{}_during_early'.format(time_range) in i:
+                    if 'CSIF' in i:
+                        continue
+                    if 'CSIF_fpar' in i:
+                        continue
+                    if 'GIMMS_NDVI' in i:
+                        continue
+                    if 'MODIS_NDVI' in i:
+                        continue
+                    if 'trend' in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_early'.format(time_range) in i:
                         x_list.append(i)
                     if 'original' in i:
                         continue
@@ -680,15 +690,12 @@ class RF:
             #     print('********************************')
 
             if period == 'late':
-                df = df[df['during_{}_GIMMS_NDVI_trend_{}'.format(period, time_range)] >= 0]
+                # df = df[df['during_{}_GIMMS_NDVI_trend_{}'.format(period, time_range)] >= 0]
                 for i in df:
                     if period in i:
                         if not '{}'.format(time_range) in i:
                             continue
-                        if 'NIRv' in i:
-                            continue
-                        if 'GIMMS_NDVI' in i:
-                            continue
+
 
                         # if 'CV' in i:
                         #     x_list.append(i)
@@ -698,27 +705,40 @@ class RF:
                         #     x_list.append(i)
 
                 for i in df:
-                    # if 'CO2' in i:
-                    #     continue
-                    # if 'trend' in i:
-                    #     continue
-                    if 'detrend_anomaly_{}_during_late'.format(time_range) in i:
+                    if 'CO2' in i:
+                        continue
+                    if 'CSIF' in i:
+                        continue
+                    if 'CSIF_fpar' in i:
+                        continue
+                    if 'GIMMS_NDVI' in i:
+                        continue
+                    if 'MODIS_NDVI' in i:
+                        continue
+                    if 'trend' in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_peak_temperature'.format(time_range) in i:
+
+                    if 'anomaly_{}_during_late'.format(time_range) in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_peak_SPEI3'.format(time_range) in i:
+                    if 'anomaly_{}_during_peak_temperature'.format(time_range) in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_peak_CCI_SM'.format(time_range) in i:
+                    if 'anomaly_{}_during_peak_SPEI3'.format(time_range) in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_peak_Precip'.format(time_range) in i:
+                    if 'anomaly_{}_during_peak_CCI_SM'.format(time_range) in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_early_temperature'.format(time_range) in i:
+                    if 'anomaly_{}_during_peak_Precip'.format(time_range) in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_early_CCI_SM'.format(time_range) in i:
+                    if 'anomaly_{}_during_peak_VPD'.format(time_range) in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_early_SPEI3'.format(time_range) in i:
+                    if 'anomaly_{}_during_early_VPD'.format(time_range) in i:
                         x_list.append(i)
-                    if 'detrend_anomaly_{}_during_early_Precip'.format(time_range) in i:
+                    if 'anomaly_{}_during_early_temperature'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_early_CCI_SM'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_early_SPEI3'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_early_Precip'.format(time_range) in i:
                         x_list.append(i)
                     if 'original' in i:
                         continue
@@ -740,20 +760,20 @@ class RF:
 
     def y_variable_greeness(self):
 
-        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-1998/Data_frame_1982-1998_df.df'
+        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_2002-2015/Data_frame_2002-2015_df.df'
 
         df,_=self.__load_df(f)
         # for i in df:
         #     print(i)
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-        time_range='1982-1998'
+        time_range='2002-2015'
 
         period_list=['late']
         y_variable_dic={}
         for period in period_list:
             y_list=[]
             for i in df:
-                if 'detrend_{}_GIMMS_NDVI_{}_anomaly'.format(time_range,period) in i:
+                if 'anomaly_{}_during_{}_MODIS_NDVI'.format(time_range,period) in i:
                     y_list.append(i)
             y_variable_dic[period]=y_list
         # for period in y_variable_dic:
