@@ -1279,20 +1279,18 @@ class Main_flow_Early_Peak_Late_Dormant:
 
     def anonmaly_variables(self):  # 方案 张永光方法求气候变量anomaly
         periods = ['early', 'peak', 'late']
-        time_range = '1999-2015'
-        len_year = 17
+        time_range = '2002-2015'
+        len_year = 14
 
         for period in periods:
-            fdir = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(
-                time_range, time_range, period)
-            outdir = result_root + 'anomaly_NDVI_method2/anomaly_NDVI_independent/'
+            fdir = result_root + 'extraction_original_val/{}_extraction_during_{}_growing_season_static/'.format(time_range,period)
+            outdir = result_root + 'anomaly_variables_independently/{}_during_{}/'.format(time_range,period)
             Tools().mk_dir(outdir, force=True)
 
 
             for f in tqdm(os.listdir(fdir)):
 
-                if 'GIMMS' not in f:
-                    continue
+
 
                 dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
                 dic_NDVI=dic_i
@@ -1342,6 +1340,7 @@ class Main_flow_Early_Peak_Late_Dormant:
                 # plt.show()
 
                 np.save(outdir + '{}_{}.npy'.format(time_range,f.split('.')[0]), delta_dic)
+                # np.save(outdir + '{}_during_{}_CSIF.npy'.format(time_range, period), delta_dic)
 
     def anonmaly_winter(self):  # 方案 张永光方法求winter precipitation_anomaly
      f=result_root+'extraction_original_val/1982-2015_original_extraction_all_seasons/winter_temperature_extraction.npy'
@@ -2082,11 +2081,11 @@ class statistic_anaysis:
 
     def detrend_extraction_during_pre_variables(self): ############--------------------detrend extraction_during variables------------------------
         period='late'
-        time_range='1999-2015'
+        time_range='2002-2015'
         # month=1
 
-        fdir_all = result_root + 'anomaly_NDVI_method2/anomaly_NDVI_independent/'.format(time_range,period,)
-        outdir = result_root + 'anomaly_NDVI_method2/detrend_anomaly_NDVI_independent/{}_during_{}_detrend/'.format(time_range,period)
+        fdir_all = result_root + 'anomaly_variables_independently/{}_during_{}/'.format(time_range,period,)
+        outdir = result_root + 'detrend_extraction_anomaly/{}_during_{}_detrend/'.format(time_range,period)
 
         Tools().mk_dir(outdir, force=True)
         for f in tqdm(sorted(os.listdir(fdir_all))):
@@ -2095,6 +2094,8 @@ class statistic_anaysis:
             if f == '{}_during_{}_surf_soil_moisture.npy'.format(time_range, period):
                 continue
             if f == '{}_during_{}_NIRv.npy'.format(time_range, period):
+                continue
+            if f == '{}_during_{}_VOD.npy'.format(time_range, period):
                 continue
             dic={}
             print(f)
@@ -3313,18 +3314,18 @@ class statistic_anaysis:
         # variable_list=['CCI_SM','GIMMS_NDVI'] #  长度为34
         # variable_list=['VOD'] #  长度29
         # variable_list=['Precip'] # 降雨是累计量 长度37
-        # variable_list=['MODIS_NDVI'] #  长度为168
+        variable_list=['MODIS_NDVI'] #  长度为168
         # variable_list = ['CSIF_fpar']  # 长度为
-        variable_list = ['CSIF']  # 长度为
+        # variable_list = ['CSIF']  # 长度为
 
-        period='early'
+        period='peak'
         f1 = result_root + '20%_transform_early_peak_late_dormant_period_multiyear_CSIF_par/early_end_mon.npy'  # !!修改
         f2 = result_root + '20%_transform_early_peak_late_dormant_period_multiyear_CSIF_par/late_start_mon.npy'
 
         for variable in variable_list:
 
-            fdir2=data_root+'CSIF/CSIF_dic_interpolation/'
-            outdir = result_root + 'extraction_original_val/during_{}_CSIF_2001-2016/'.format(period)
+            fdir2=data_root+'MOD_NDVI_dic/'
+            outdir = result_root + 'extraction_original_val/extraction_during_{}_growing_season_static/'.format(period)
 
 
             Tools().mk_dir(outdir,True)
@@ -3370,13 +3371,13 @@ class statistic_anaysis:
 
                 # if len(time_series) != 348:
                 #     continue
-                if len(time_series) != 192:
+                if len(time_series) != 168:
                     continue
                 # plt.plot(time_series)
                 # plt.show()
                 time_series = time_series.reshape(-1, 12)  # 修改
 
-                for year in range(16):  # 修改
+                for year in range(14):  # 修改
 
                     during_time_series = time_series[year][start_index-1:end_index]  #!!!!!
                     during_time_series=np.array(during_time_series, dtype=float)
@@ -4875,14 +4876,14 @@ class statistic_anaysis:
         pass
 
     def trend_calculation(self):
-        period = 'peak'
+        period = 'late'
         time='2002-2015'
         # fdir_X = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(time,time,period)
         # print(fdir_X)
         # exit()
-        fdir_X = result_root + 'extraction_original_val/{}_original_extraction_all_seasons_MODIS_NDVI/'.format(time)
+        fdir_X = result_root + 'anomaly_variables_independently/{}_during_{}/'.format(time,period)
 
-        outdir = result_root + 'trend_calculation_original/{}_during_MODIS_NDVI/'.format(time,period)
+        outdir = result_root + 'trend_calculation_anomaly/during_{}_{}/'.format(period,time)
         Tools().mk_dir(outdir,force=True)
         # exit()
         all_list=[]
@@ -5640,11 +5641,11 @@ class Unify_date_range:
 
     def run(self):
         # self.__data_range_index()
-        start = 1982
+        start = 2002
         end = 2015
         period='late'
 
-        X_dir=result_root+'/extraction_original_val/extraction_during_{}_growing_season_static/'.format(period)
+        X_dir=result_root+'extraction_original_val/extraction_during_{}_growing_season_static'.format(period)
         outdirX=result_root+'/extraction_original_val/{}-{}_extraction_during_{}_growing_season_static/'.format(start, end, period)
         # X_dir=result_root+'extraction_anomaly_val/extraction_during_{}_growing_season_static/'.format(period)
         # outdirX=result_root+'extraction_anomaly_val/{}-{}_extraction_during_{}_growing_season_static/'.format(start, end, period)
@@ -5676,6 +5677,7 @@ class Unify_date_range:
             'CSIF_fpar':list(range(2000,2018)),
             'CSIF':list(range(2001,2017)),
             'GIMMS_NDVI':list(range(1982,2016)),
+            'MODIS_NDVI': list(range(2002, 2016)),
             'CCI_SM':list(range(1982,2016)),
             'VOD': list(range(1988, 2017)),
 
@@ -5895,7 +5897,7 @@ def main():
     # statistic_anaysis().call_partial_window()
 
     # statistic_anaysis().extraction_variables_static_pre_month()
-    statistic_anaysis().extraction_variables_static_during()
+    # statistic_anaysis().extraction_variables_static_during()
     # statistic_anaysis().univariate_correlation_calculation()
     # statistic_anaysis().univariate_correlation_window()
     # statistic_anaysis().plot_moving_window_correlation()
@@ -5942,10 +5944,7 @@ def main():
     # Main_flow_Early_Peak_Late_Dormant().clean_data()
     # extraction_monthly_data()
     # soil_preprocess()
-    # mask_with_p_trend_max_contribution()
-    # mask_with_p_trend_correlation()
-    # mask_with_p_trend_trend()
-    # mask_with_p_trend_max_contribution()
+
     # Hydrothemal().plot_matrix()
     # statistic_anaysis().run()
     # Unify_date_range().run()

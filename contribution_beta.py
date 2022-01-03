@@ -1339,15 +1339,15 @@ class Multi_liner_regression:  # 实现求beta 功能
 
     def __init__(self):
 
-        self.period='early'
-        self.time_range='1999-2015'
-        self.result_dir=results_root+'partial_correlation_anomaly_NDVI/'
+        self.period='late'
+        self.time_range='2002-2015'
+        self.result_dir=results_root+'partial_correlation_anomaly/MODIS_NDVI/'
         # self.result_f = self.result_dir+'/{}_multi_linear{}_anomaly.npy'.format(self.time_range,self.period,)
         self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation{}_anomaly.npy'.format(self.time_range,self.period,)
         self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_anomaly.npy'.format(
             self.time_range, self.period, )
-        self.x_dir = results_root+'anomaly_variables_independently/{}_during_{}/'.format(self.time_range,self.period,)
-        self.y_f = results_root+'anomaly_NDVI_method2/anomaly_NDVI_independent/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period)
+        self.x_dir = results_root+'partial_correlation_X_variables/{}_during_{}/'.format(self.time_range,self.period,)
+        self.y_f = results_root+'anomaly_variables_independently/{}_during_{}/{}_during_{}_MODIS_NDVI.npy'.format(self.time_range,self.period,self.time_range,self.period)
         # self.y_mean = results_root + 'mean_variables/{}_during_{}/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period,self.time_range,self.period)
         T.mk_dir(self.result_dir)
         pass
@@ -1360,7 +1360,7 @@ class Multi_liner_regression:  # 实现求beta 功能
         x_var_list = self.__get_x_var_list(self.x_dir,self.period, self.time_range)
         # # # step 2 cal correlation
         # self.cal_multi_regression_beta(df, x_var_list,34)  #修改参数
-        self.cal_partial_correlation(df, x_var_list,17)  #修改参数
+        self.cal_partial_correlation(df, x_var_list,14)  #修改参数
         # self.max_contribution()
         # self.variables_contribution()
 
@@ -1370,18 +1370,17 @@ class Multi_liner_regression:  # 实现求beta 功能
         # x_dir = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/2001-2015/X_2001-2015/'
         x_f_list = []
         for x_f in T.listdir(x_dir):
-            if x_f == '{}_during_{}_NIRv.npy'.format(time_range, period, ):
+
+
+            if x_f == '{}_during_{}_CSIF.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_VOD.npy'.format(time_range, period, ):
+            if x_f == '{}_during_{}_CSIF_fpar.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_root_soil_moisture.npy'.format(time_range, period, ):
+            if x_f == '{}_during_{}_GIMMS_NDVI.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_surf_soil_moisture.npy'.format(time_range, period, ):
+            if x_f == '{}_during_{}_MODIS_NDVI.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_SPEI3.npy'.format(time_range, period, ):
-                continue
-            if x_f == '{}_during_{}_CCI_SM.npy'.format(time_range, period, ):
-                continue
+
             x_f_list.append(x_dir + x_f)
         print(x_f_list)
         x_var_list = []
@@ -1418,18 +1417,16 @@ class Multi_liner_regression:  # 实现求beta 功能
         x_f_list = []
         for x_f in T.listdir(x_dir):
 
-            if x_f == '{}_during_{}_NIRv.npy'.format(time_range, period,):
+
+            if x_f == '{}_during_{}_CSIF.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_VOD.npy'.format(time_range, period, ):
+            if x_f == '{}_during_{}_CSIF_fpar.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_root_soil_moisture.npy'.format(time_range, period, ):
+            if x_f == '{}_during_{}_GIMMS_NDVI.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_surf_soil_moisture.npy'.format(time_range, period, ):
+            if x_f == '{}_during_{}_MODIS_NDVI.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_SPEI3.npy'.format(time_range, period, ):
-                continue
-            if x_f == '{}_during_{}_CCI_SM.npy'.format(time_range, period, ):
-                continue
+
             x_f_list.append(x_dir + x_f)
         print(x_f_list)
         df = pd.DataFrame()

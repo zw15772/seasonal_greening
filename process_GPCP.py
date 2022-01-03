@@ -458,7 +458,7 @@ class interpolate:
 
     def interpolation_MODIS_NDVI(self):
 
-        mask_tif='/Volumes/SSD_sumsang/project_greening/Data/GIMMS_NDVI/NDVI_mask.tif'
+        mask_tif='/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
 
         mask_dic=DIC_and_TIF().spatial_tif_to_dic(mask_tif)
 
@@ -466,14 +466,16 @@ class interpolate:
         time_range = '2002-2015'
         len_year = 14
 
-        fdir = result_root + 'extraction_original_val/{}_original_extraction_all_seasons_MODIS/'.format(time_range)
+
         outdir = result_root + '/extraction_original_val/{}_original_extraction_all_seasons/{}_original_extraction_all_seasons_clean/'.format(
             time_range, time_range)
         Tools().mk_dir(outdir, force=True)
 
         dic_NDVI = {}
         for period in periods:
-            f='during_{}_MODIS_NDVI.npy'.format(period)
+            fdir = result_root + '/extraction_original_val/{}_extraction_during_{}_growing_season_static/'.format(
+                time_range, period)
+            f='during_{}_CSIF_fpar.npy'.format(period)
 
             dic_NDVI = dict(np.load(fdir + f, allow_pickle=True, ).item())
             # dic_NDVI.update(dic_i)
@@ -484,22 +486,27 @@ class interpolate:
                 if pix not in dic_NDVI:
                     continue
                 time_series = dic_NDVI[pix]
+                time_series_array=np.array(time_series)
 
-                time_series = time_series / 10000.
+                # time_series_array = time_series_array/10000.
+                time_series_array = time_series_array
                 if np.isnan(mask_dic[pix]):  # 用已经mask 好的模板
                     continue
+                # print(time_series_array)
 
                 # 1. 去除无效值  2 插值
-                time_series[time_series<-1]=np.nan  #将序列中的无效值变成nan--进行下一步处理
+                if len(time_series_array)==0:
+                    continue
+                time_series_array[time_series_array<-1]=np.nan  #将序列中的无效值变成nan--进行下一步处理
 
-                matix = np.isnan(time_series)  # 因为检查time series 发现
+                matix = np.isnan(time_series_array)  # 因为检查time series 发现
                 matix = list(matix)
                 valid_number = matix.count(False)
                 # print(matix)
                 # print(pix,valid_number)
-                if valid_number / len(time_series) < 0.80:
+                if valid_number / len(time_series_array) < 0.80:
                     continue
-                ynew = np.array(time_series)
+                ynew = np.array(time_series_array)
                 # if ynew[0][0] < -99:
                 #     continue
                 ynew = Tools().interp_nan(ynew)
@@ -513,10 +520,10 @@ class interpolate:
                 dic_spatial_count[pix] = len(result_dic[pix])
             arr = DIC_and_TIF().pix_dic_to_spatial_arr(dic_spatial_count)
             # print(arr.shape)
-            # # # DIC_and_TIF().plot_back_ground_arr()
-            # plt.imshow(arr)
-            # plt.show()
-            np.save(outdir + 'during_{}_MODIS_NDVI'.format(period), result_dic)
+            # DIC_and_TIF().plot_back_ground_arr()
+            plt.imshow(arr)
+            plt.show()
+            np.save(outdir + 'during_{}_CSIF_fpar'.format(period), result_dic)
 
 
     def interpolation_temp(self):  # 函数实现temp 的共计444个月的 的缺失值插值，最后生成一个字典
@@ -767,7 +774,7 @@ def foo():
 
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/during_early_MODIS_2002-2015/during_early_MODIS_NDVI.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2002-2015_extraction_during_early_growing_season_static/during_early_GIMMS_NDVI.npy'
     result_dic = {}
     spatial_dic={}
     # array = np.load(f)
@@ -898,7 +905,7 @@ def foo3(): #做平均
 def spatial_plot():
     spatial_dic_value={}
     # fdir1= data_root + 'CSIF/CSIF_dic/'
-    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/mean_variables/1982-2015_during_peak/1982-2015_during_peak_temperature.npy'
+    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2001-2017_original_extraction_all_seasons_CSIF_par/during_early_CSIF_fpar.npy'
     dic=T.load_npy(f)
     spatial_dic={}
 
@@ -906,18 +913,20 @@ def spatial_plot():
 
         val=dic[pix]
         val=val
-        print(val)
+        if len(val)==0:
+            continue
+        # print(val)
         # exit()
 
-        val = np.array(val)
-        spatial_dic[pix]=val
+        val_array = np.array(val)
+        spatial_dic[pix]=val_array[6]
 
 
     arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
     arr = np.array(arr)
 
     plt.figure()
-    plt.imshow(arr, cmap='jet', vmin=-0.1, vmax=1)
+    plt.imshow(arr, cmap='jet', vmin=-0.1, vmax=0.01)
     plt.colorbar()
     plt.show()
 
@@ -1030,7 +1039,7 @@ def beta_save_():  # 该功能实现所有因素的beta
 
 def spatial_check():  ## 空间上查看有多少个月
 
-    fdir = data_root + 'l_moisture/per_pix_dic_004.npy'
+    fdir = data_root + '/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2002-2015_original_extraction_all_seasons/2002-2015_original_extraction_all_seasons_clean/during_early_MODIS_NDVI.npy'
     outdir = data_root + 'VOD/VOD_interpolation/'
     Tools().mk_dir(outdir, True)
     dic = {}
@@ -1131,11 +1140,11 @@ def main():
     # interpolate().interpolation_NDVI()
     # interpolate().interpolation_VOD()
     # interpolate().interpolation_NIRv()
-    interpolate().interpolation_MODIS_NDVI()
+    # interpolate().interpolation_MODIS_NDVI()
     # per_pixel_all_year_PAR()
     # spatial_check()
     # CSIF_par_annually_transform()
-    # foo()
+    foo()
     # spatial_plot_Yang()
     # spatial_plot()
     # beta_plot()

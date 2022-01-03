@@ -11,22 +11,19 @@ def mk_dir(outdir):
 
 class Plot_dataframe:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_1982-2015/'
+        self.this_class_arr = results_root + 'Data_frame_2002-2015/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_1982-2015_df.df'
+        self.dff = self.this_class_arr + 'Data_frame_2002-2015_df.df'
 
 
 
 
     def run(self):
         df = self.__gen_df_init()
-        # self.call_plot_LST_for_three_seasons()
-        # self.call_CSIF_par_trend_bar(df)
-        # self.plot_bar(df)
-        # self.call_CSIF_par_trend_bar(df)
-        # self.call_bar_correlation(df)
-        self.call_plot_bar_contribution(df)
+
+        self.call_greening_trend_bar(df)
+
 
 
 
@@ -468,38 +465,39 @@ class Plot_dataframe:
 
     def call_greening_trend_bar(self,df):  # 实现的功能是greening_trend_percentage_bar
 
-        outdir =results_root+'Figure/'
+        outdir =results_root+'Figure/2002-2015/'
+        T.mk_dir(outdir)
 
         df = df[df['row'] < 120]
 
+        variable='CSIF'
+        period='late'
+        time='2002-2015'
+        outf = outdir + 'greening_trend_' + period + '_'+time+'_landuse'+'_'+variable
 
-        period='early'
-        time='1982-1998'
-        # outf = outdir + 'greening_trend_' + period + '_'+time+'_landuse'
-
-        outf = outdir + 'greening_trend_' + period + '_'+time+ '_koppen'
+        # outf = outdir + 'greening_trend_' + period + '_'+time+ '_koppen'+'_'+variable
         print(outf)
         # exit()
 
-        y = df['GIMMS_NDVI_{}_original'.format(period)]
-        df = df[df['GIMMS_NDVI_{}_original'.format(period)] < 1]
-        df = df[df['GIMMS_NDVI_{}_original'.format(period)] > 0.2]
-        plt.hist(df['GIMMS_NDVI_{}_original'.format(period)], bins=80)
-        plt.show()
-        koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
-        # landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
+        # y = df['anomaly_{}_during_{}_MODIS_NDVI'.format(time,period)]
+        # # df = df[df['GIMMS_NDVI_{}_original'.format(period)] < 1]
+        # # df = df[df['GIMMS_NDVI_{}_original'.format(period)] > 0.2]
+        # plt.hist(df['anomaly_{}_during_{}_MODIS_NDVI'.format(time,period)], bins=80)
+        # plt.show()
+        # koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
+        landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
         plt.figure(figsize=(6, 6))
-        for koppen in koppen_list:
-        # for landcover in landcover_list:
-            df_pick = df[df['koppen'] == koppen]  # 修改
-        #     df_pick = df[df['landcover'] == landcover]
-            self.plot_greening_trend_bar(df_pick, koppen,period,time)
-            # self.plot_bar_CSIF_trend_par(df_pick, landcover, period,time)
+        # for koppen in koppen_list:
+        for landcover in landcover_list:
+            # df_pick = df[df['koppen'] == koppen]  # 修改
+            df_pick = df[df['landcover'] == landcover]
+            # self.plot_greening_trend_bar(df_pick, koppen,period,time)
+            self.plot_greening_trend_bar(df_pick, landcover, period,time)
         self.plot_greening_trend_bar(df, 'all',period,time)
         # plt.legend()
         plt.legend(["Negative_0.05", "Negative_0.1", "no trend", "Positive_0.1","Positive_0.05"])
-        # plt.title('greening_trend_' + period + '_landcover_'+time)
-        plt.title('greening_trend_' + period + '_koppen_'+time)
+        plt.title('greening_trend_' + period + '_landcover_'+time+'_'+variable)
+        # plt.title('greening_trend_' + period + '_koppen_'+time+'_'+variable)
 
         # plt.show()
         plt.savefig(outf+'.pdf', dpi=300,)
@@ -516,8 +514,9 @@ class Plot_dataframe:
 
 
         for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
-            trend = row['original_during_{}_GIMMS_NDVI_trend_{}'.format(period,time)]
-            p_val=row['original_during_{}_GIMMS_NDVI_p_value_{}'.format(period,time)]
+            trend = row['{}_during_{}_CSIF_trend_{}'.format(time,period,time)]
+            p_val=row['{}_during_{}_CSIF_p_value_{}'.format(time,period,time)]
+
 
             if p_val>0.1:
                 count_no_trend=count_no_trend+1
@@ -856,8 +855,8 @@ class Plot_partial_correlation:
 
 def main():
 
-    # Plot_dataframe().run()
-    Plot_partial_correlation().run()
+    Plot_dataframe().run()
+    # Plot_partial_correlation().run()
 
 
 if __name__ == '__main__':
