@@ -590,10 +590,10 @@ class RF:
 
             x_list = []
             if period =='peak':
-                # for i in df:
-                #     if period in i:
-                        # if not '{}'.format(time_range) in i:
-                        #     continue
+                for i in df:
+                    if period in i:
+                        if not '{}'.format(time_range) in i:
+                            continue
                         # if 'CV' in i:
                         #     x_list.append(i)
                         # if 'mean' in i:
