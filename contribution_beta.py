@@ -1339,14 +1339,14 @@ class Multi_liner_regression:  # 实现求beta 功能
 
     def __init__(self):
 
-        self.period='late'
+        self.period='peak'
         self.time_range='2002-2015'
         self.result_dir=results_root+'partial_correlation_anomaly/MODIS_NDVI/'
         # self.result_f = self.result_dir+'/{}_multi_linear{}_anomaly.npy'.format(self.time_range,self.period,)
-        self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation{}_anomaly.npy'.format(self.time_range,self.period,)
-        self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_anomaly.npy'.format(
+        self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_anomaly1.npy'.format(self.time_range,self.period,)
+        self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_anomaly1.npy'.format(
             self.time_range, self.period, )
-        self.x_dir = results_root+'partial_correlation_X_variables/{}_during_{}/'.format(self.time_range,self.period,)
+        self.x_dir = results_root+'partial_correlation_X_variables/{}_during_{} copy/'.format(self.time_range,self.period,)
         self.y_f = results_root+'anomaly_variables_independently/{}_during_{}/{}_during_{}_MODIS_NDVI.npy'.format(self.time_range,self.period,self.time_range,self.period)
         # self.y_mean = results_root + 'mean_variables/{}_during_{}/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period,self.time_range,self.period)
         T.mk_dir(self.result_dir)

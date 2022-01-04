@@ -774,7 +774,7 @@ def foo():
 
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2002-2015_extraction_during_early_growing_season_static/during_early_GIMMS_NDVI.npy'
+    # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/anomaly_variables_independently/2002-2015_during_early/2002-2015_during_early_CCI_SM.npy'
     result_dic = {}
     spatial_dic={}
     # array = np.load(f)
@@ -905,7 +905,7 @@ def foo3(): #做平均
 def spatial_plot():
     spatial_dic_value={}
     # fdir1= data_root + 'CSIF/CSIF_dic/'
-    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2001-2017_original_extraction_all_seasons_CSIF_par/during_early_CSIF_fpar.npy'
+    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly/MODIS_NDVI/2002-2015_partial_correlation_p_value_early_anomaly.npy'
     dic=T.load_npy(f)
     spatial_dic={}
 
@@ -970,7 +970,7 @@ def beta_plot():  # 该功能实现所有因素的beta
     # period='early'
     # f = '/Volumes/sult/multi_linear_anomaly_NDVI/{}_multi_linear{}_anomaly.npy'.format(time_range,period)
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly_NDVI/1982-1998_partial_correlationpeak_anomaly.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_window/1982-2015_during_early_window15/partial_correlation_early_1982-2015_window1_correlation.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly/MODIS_NDVI/2002-2015_partial_correlationpeak_anomaly.npy'
     # outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/multi_linear_anomaly_NDVI_window/TIFF_{}_{}_8/'.format(time_range,period)
     # T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
@@ -1144,10 +1144,10 @@ def main():
     # per_pixel_all_year_PAR()
     # spatial_check()
     # CSIF_par_annually_transform()
-    foo()
+    # foo()
     # spatial_plot_Yang()
     # spatial_plot()
-    # beta_plot()
+    beta_plot()
     # foo4()
     #  foo3()
     # interpolate().run()
