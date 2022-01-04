@@ -279,10 +279,10 @@ class RF:
 
     def train_classfication_permutation_importance(self,X,Y,selected_labels):
         # X = X.loc[:, ~X.columns.duplicated()]
-        outfir_fig=self.this_class_arr+'train_classfication_fig_driver/'  #修改
-        Tools().mk_dir(outfir_fig)
+        outfir_fig_dir=self.this_class_arr+'train_classfication_fig_driver/'  #修改
+        Tools().mk_dir(outfir_fig_dir)
 
-        rf = RandomForestRegressor(n_jobs=4,n_estimators=1000,)
+        rf = RandomForestRegressor(n_jobs=4,n_estimators=100,)
         X=X[selected_labels]
         X=pd.DataFrame(X)
         # T.print_head_n(X)
@@ -333,9 +333,11 @@ class RF:
         plt.title('peak') # 修改
         fig.tight_layout()
         # plt.show()  #如果是存数据就不能有show
-        plt.savefig(outfir_fig, dpi=300)
-        # plt.close()
-        np.save(outfir_fig, result.importances_mean)
+        now = datetime.datetime.now()
+        a = now.strftime('%Y-%m-%d-%H-%M')
+        plt.savefig(outfir_fig_dir + a, dpi=300)
+        plt.close()
+        np.save(outfir_fig_dir + a, result)
         pass
     ##-----------------------------------------储存数据---------------------------------------------------------
 
@@ -600,8 +602,8 @@ class RF:
                         #     x_list.append(i)
                         # if 'MODIS_NDVI_trend' in i:
                         #     x_list.append(i)
-                        if 'trend' in i:
-                            x_list.append(i)
+                        # if 'trend' in i:
+                        #     x_list.append(i)
 
                 for i in df:
 
@@ -615,19 +617,15 @@ class RF:
                         continue
                     if 'SPEI3' in i:
                         continue
-                    if 'Precip' in i:
-                        continue
 
-                    # if 'anomaly_{}_during_early_VPD'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_early_temperature'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_early_CCI_SM'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_early_SPEI3'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_early_Precip'.format(time_range) in i:
-                    #     x_list.append(i)
+                    if 'anomaly_{}_during_early_VPD'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_early_temperature'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_early_CCI_SM'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_early_Precip'.format(time_range) in i:
+                        x_list.append(i)
                     if 'anomaly_{}_during_peak_'.format(time_range) in i:
                         x_list.append(i)
                     if 'original' in i:
@@ -657,8 +655,8 @@ class RF:
                         #     x_list.append(i)
                         if 'mean' in i:
                             x_list.append(i)
-                        if 'trend' in i:
-                            x_list.append(i)
+                        # if 'trend' in i:
+                        #     x_list.append(i)
 
 
                 for i in df:
@@ -672,8 +670,6 @@ class RF:
                     if 'MODIS_NDVI' in i:
                         continue
                     if 'SPEI3' in i:
-                        continue
-                    if 'Precip' in i:
                         continue
 
                     if 'anomaly_{}_during_early'.format(time_range) in i:
@@ -706,8 +702,8 @@ class RF:
                         #     x_list.append(i)
                         if 'mean' in i:
                             x_list.append(i)
-                        if 'trend' in i:
-                            x_list.append(i)
+                        # if 'trend' in i:
+                        #     x_list.append(i)
 
 
                 for i in df:
@@ -722,30 +718,19 @@ class RF:
                         continue
                     if 'SPEI3' in i:
                         continue
-                    if 'Precip' in i:
-                        continue
+
                     if 'anomaly_{}_during_late'.format(time_range) in i:
                         x_list.append(i)
-                    # if 'anomaly_{}_during_peak_temperature'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_peak_SPEI3'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_peak_CCI_SM'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_peak_Precip'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_peak_VPD'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_early_VPD'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_early_temperature'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_early_CCI_SM'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_early_SPEI3'.format(time_range) in i:
-                    #     x_list.append(i)
-                    # if 'anomaly_{}_during_early_Precip'.format(time_range) in i:
-                    #     x_list.append(i)
+                    if 'anomaly_{}_during_peak_temperature'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_peak_CCI_SM'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_peak_Precip'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_peak_VPD'.format(time_range) in i:
+                        x_list.append(i)
+                    if 'anomaly_{}_during_early_Precip'.format(time_range) in i:
+                        x_list.append(i)
                     if 'original' in i:
                         continue
                     if 'winter' in i:
@@ -769,14 +754,17 @@ class RF:
         f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_2002-2015/Data_frame_2002-2015_df.df'
 
         df,_=self.__load_df(f)
+
         # for i in df:
         #     print(i)
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
         time_range='2002-2015'
 
         period_list=['early','peak','late']
+
         y_variable_dic={}
         for period in period_list:
+            df = df[df['{}_during_{}_MODIS_NDVI_trend'.format(time_range, period)] >= 0]
             y_list=[]
             for i in df:
                 if 'anomaly_{}_during_{}_MODIS_NDVI'.format(time_range,period) in i:
