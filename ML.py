@@ -600,8 +600,8 @@ class RF:
                         #     x_list.append(i)
                         # if 'MODIS_NDVI_trend' in i:
                         #     x_list.append(i)
-                        # if 'trend' in i:
-                        #     x_list.append(i)
+                        if 'trend' in i:
+                            x_list.append(i)
 
                 for i in df:
 
@@ -617,8 +617,7 @@ class RF:
                         continue
                     if 'Precip' in i:
                         continue
-                    if 'trend' in i:
-                        x_list.append(i)
+
                     # if 'anomaly_{}_during_early_VPD'.format(time_range) in i:
                     #     x_list.append(i)
                     # if 'anomaly_{}_during_early_temperature'.format(time_range) in i:
@@ -658,6 +657,8 @@ class RF:
                         #     x_list.append(i)
                         if 'mean' in i:
                             x_list.append(i)
+                        if 'trend' in i:
+                            x_list.append(i)
 
 
                 for i in df:
@@ -674,8 +675,7 @@ class RF:
                         continue
                     if 'Precip' in i:
                         continue
-                    if 'trend' in i:
-                        x_list.append(i)
+
                     if 'anomaly_{}_during_early'.format(time_range) in i:
                         x_list.append(i)
                     if 'original' in i:
@@ -706,6 +706,8 @@ class RF:
                         #     x_list.append(i)
                         if 'mean' in i:
                             x_list.append(i)
+                        if 'trend' in i:
+                            x_list.append(i)
 
 
                 for i in df:
@@ -722,8 +724,6 @@ class RF:
                         continue
                     if 'Precip' in i:
                         continue
-                    if 'trend' in i:
-                        x_list.append(i)
                     if 'anomaly_{}_during_late'.format(time_range) in i:
                         x_list.append(i)
                     # if 'anomaly_{}_during_peak_temperature'.format(time_range) in i:
