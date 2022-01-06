@@ -5,12 +5,12 @@ T = Tools()
 
 def plot_box():
     # f = '/Volumes/NVME2T/wen_proj/Matrix/data/2002-2015_partial_correlation_p_value_early_anomaly.npy'
-    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly/MODIS_NDVI/2002-2015_partial_correlation_late_anomaly1.npy'
+    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly/MODIS_NDVI/0105/2002-2015_partial_correlation_late_anomaly_MODIS_NDVI2.npy'
     dic = T.load_npy(f)
     df_temp= T.dic_to_df_different_columns(dic,'pix')
     df_f= results_root+'Data_frame_2002-2015/Data_frame_2002-2015_df.df'
     df=T.load_df(df_f)
-    df=df[df['2002-2015_during_early_MODIS_NDVI_trend']>0]
+    df=df[df['2002-2015_during_late_MODIS_NDVI_trend']>0]
     pix_list=T.get_df_unique_val_list(df,'pix')
     r_list=[]
     for i,row in df_temp.iterrows():

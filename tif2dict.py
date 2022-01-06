@@ -1136,8 +1136,8 @@ class Main_flow_Early_Peak_Late_Dormant:
 
     def changes_NDVI_method1(self): # 方案1 GCB Gonsamo et al., 2021 and Pierre
         periods=['early','peak','late']
-        time_range='1999-2015'
-        len_year=17
+        time_range='2002-2015'
+        len_year=14
 
         for period in periods:
             fdir = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(
@@ -1147,8 +1147,9 @@ class Main_flow_Early_Peak_Late_Dormant:
             dic_NDVI = {}
 
             for f in tqdm(os.listdir(fdir)):
-                if 'GIMMS'not in f:
+                if 'CSIF'not in f:
                     continue
+
                 if f.endswith('.npy'):
                     # if not '005' in f:
                     #     continue
@@ -1205,7 +1206,7 @@ class Main_flow_Early_Peak_Late_Dormant:
                 # plt.plot(result_dic[pix])
                 # plt.show()
 
-            np.save(outdir + '1999-2015_{}.npy'.format(period), delta_dic)
+            np.save(outdir + '{}_{}_CSIF.npy'.format(time_range,period), delta_dic)
 
     def changes_NDVI_method2(self): # 方案1
         periods=['early','peak','late']
@@ -4712,15 +4713,15 @@ class statistic_anaysis:
 
 
     def mean_calculation(self):  # 变量多年平均值
-        period = 'early'
-        time = '1982-2015'
+        period = 'peak'
+        time = '2002-2015'
         fdir_X = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(
             time, time, period)
         # print(fdir_X)
         # exit()
         # fdir_Y = result_root + 'extraction_anomaly_val/{}_during_{}_growing_season/Y_{}/'.format(time,period,time)
 
-        outdir = result_root + 'mean_calculation_original/during_{}_{}/'.format(period, time)
+        outdir = result_root + 'mean_calculation_original/during_{}_{}_first_five/'.format(period, time)
         Tools().mk_dir(outdir, force=True)
         # exit()
         all_list = []
@@ -4755,8 +4756,8 @@ class statistic_anaysis:
                     continue
                 try:
 
-
-                    spatial_dic[pix] = np.mean(val)
+                    # spatial_dic[pix] = np.mean(val[-5:])
+                    spatial_dic[pix] = np.mean(val[:5]) # ！！！！！修改
 
                     spatial_dic_count[pix] = len(val)
 
@@ -5903,7 +5904,7 @@ def main():
     # statistic_anaysis().plot_moving_window_correlation()
     # statistic_anaysis().save_moving_window_correlation()
     # statistic_anaysis().trend_calculation()
-    # statistic_anaysis().mean_calculation()
+    statistic_anaysis().mean_calculation()
     # statistic_anaysis().CV_calculation()
     # statistic_anaysis().extraction_winter_index()
     # statistic_anaysis().extraction_winter_during()
@@ -5931,7 +5932,7 @@ def main():
     # Main_flow_Early_Peak_Late_Dormant().annual_phelogy()
     # Main_flow_Early_Peak_Late_Dormant().trend()
     # Main_flow_Early_Peak_Late_Dormant().contribution()
-    # Main_flow_Early_Peak_Late_Dormant().changes_NDVI_method1()
+    Main_flow_Early_Peak_Late_Dormant().changes_NDVI_method1()
     # Main_flow_Early_Peak_Late_Dormant().anonmaly_variables()
     # Main_flow_Early_Peak_Late_Dormant().anonmaly_winter()
 

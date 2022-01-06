@@ -35,7 +35,7 @@ class Build_dataframe:
         # df=self.add_mean_to_df(df)
         # df=self.add_CV_to_df(df)
         # df=self.add_soil_data_to_df(df)
-        df=self.add_MAP_MAT_to_df(df)
+        # df=self.add_MAP_MAT_to_df(df)
         # df=self.add_winter_to_df(df)
         # df=self.add_Koppen_data_to_df(df)
         # df=self.add_landcover_data_to_df(df)
@@ -251,7 +251,7 @@ class Build_dataframe:
 
                 val_array = np.load(fdir + f)
                 val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
-                f_name = f.split('.')[0]+'_{}'.format(time)
+                f_name = f.split('.')[0]
                 print(f_name)
                 # exit()
                 val_list = []
@@ -285,13 +285,13 @@ class Build_dataframe:
                 #     continue
                 # if f!= '{}_during_{}_MODIS_NDVI_p_value.npy'.format(time,period):
                 #     continue
-                # if f!= '{}_during_{}_CSIF_p_value.npy'.format(time,period):
-                #     continue
-                if f!= '{}_during_{}_CSIF_fpar_p_value.npy'.format(time,period):
+                if f!= '{}_during_{}_CSIF_p_value.npy'.format(time,period):
                     continue
+                # if f!= '{}_during_{}_CSIF_fpar_p_value.npy'.format(time,period):
+                #     continue
                 val_array = np.load(fdir + f)
                 val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
-                f_name = f.split('.')[0]+'_{}'.format(time)
+                f_name = f.split('.')[0]
                 print(f_name)
                 # exit()
                 val_list = []
@@ -313,7 +313,7 @@ class Build_dataframe:
     def add_mean_to_df(self, df):
         period_list = ['early', 'peak', 'late']
         # period_list = ['winter']
-        time = '1999-2015'
+        time = '2002-2015'
         df = df[df['row'] < 120]
         for period in period_list:
             fdir = results_root + 'mean_calculation_original/during_{}_{}/'.format(period, time)
@@ -515,15 +515,16 @@ class Build_dataframe:
         return df
 
     def add_max_correlation_to_df(self,df):
+        variable='CSIF'
 
-        time = '1999-2015'
+        time = '2002-2015'
         period='late'
-        fdir = results_root + 'detrend_partial_correlation_anomaly_NDVI/max_correlation/'
+        fdir = results_root + 'partial_correlation_anomaly/MODIS_NDVI/0105/max_correlation/{}/'.format(variable)
         f='{}_{}_max_correlation.npy'.format(period,time)
 
         val_dic = T.load_npy(fdir + f)
         # val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
-        f_name = 'anomaly_with_detrend_partial_' + f.split('.')[0]
+        f_name = variable+'_'+f.split('.')[0]
         print(f_name)
         # exit()
         val_list = []
@@ -544,15 +545,18 @@ class Build_dataframe:
 
     def add_partial_correlation_to_df(self, df):
 
-        time='1999-2015'
-        fdir = results_root + 'detrend_partial_correlation_anomaly_NDVI/variables_contribution/'
+        time='2002-2015'
+        period='late'
+        fdir = results_root + 'partial_correlation_anomaly/MODIS_NDVI/0105/variables_contribution_MODIS_NDVI/{}/'.format(period)
         for f in (os.listdir(fdir)):
             if not time in f:
+                continue
+            if not 'p_value' in f:
                 continue
             if not f.endswith('.npy'):
                 continue
             val_dic = T.load_npy(fdir + f)
-            f_name = 'partial_correlation_'+f.split('.')[0]
+            f_name = 'MODIS_NDVI_'+f.split('.')[0]
             print(f_name)
                 # exit()
             val_list = []
@@ -837,6 +841,8 @@ class Build_dataframe:
 
     def drop_field_df(self, df):
         # for i in df:
+        #     # if 'partial_correlation':
+        #     #     df=df.drop(columns=[i])
         #
         #     if i.startswith('anomaly'):
         #         print(i)
@@ -1547,8 +1553,8 @@ class Build_partial_correlation_dataframe:
 
 
 def main():
-    Build_dataframe().run()
-    # Build_partial_correlation_dataframe().run()
+    # Build_dataframe().run()
+    Build_partial_correlation_dataframe().run()
     pass
 
 

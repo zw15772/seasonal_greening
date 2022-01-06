@@ -583,12 +583,12 @@ class RF:
         # for i in df:
         #     print(i)
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-        period_list = ['early','peak','late']
+        period_list = ['early','late']
         x_variable_dic={}
         time_range='2002-2015'
         # x_list=[]
         for period in period_list:
-            df = df[df['{}_during_{}_CSIF_fpar_trend'.format(time_range,period)] >= 0]
+            # df = df[df['{}_during_{}_CSIF_fpar_trend'.format(time_range,period)] >= 0]
 
             x_list = []
             if period =='peak':
@@ -600,13 +600,20 @@ class RF:
                         #     x_list.append(i)
                         # if 'mean' in i:
                         #     x_list.append(i)
-                        # if 'MODIS_NDVI_trend' in i:
-                        #     x_list.append(i)
-                        # if 'trend' in i:
-                        #     x_list.append(i)
+
+                        if 'CSIF' in i:
+                            continue
+                        if 'CSIF_fpar' in i:
+                            continue
+                        if 'GIMMS_NDVI' in i:
+                            continue
+                        if 'MODIS_NDVI' in i:
+                            continue
+
 
                 for i in df:
-
+                    if 'late' in i:
+                        continue
                     if 'CSIF' in i:
                         continue
                     if 'CSIF_fpar' in i:
@@ -615,10 +622,12 @@ class RF:
                         continue
                     if 'MODIS_NDVI' in i:
                         continue
-                    if 'SPEI3' in i:
-                        continue
-                    if 'Precip' in i:
-                        continue
+                    # if 'SPEI3' in i:
+                    #     continue
+                    if 'trend' in i:
+                        x_list.append(i)
+                    # if 'Precip' in i:
+                    #     continue
 
                     # if 'anomaly_{}_during_early_VPD'.format(time_range) in i:
                     #     x_list.append(i)
@@ -647,7 +656,7 @@ class RF:
 
 
             if period == 'early':
-                df = df[df['{}_during_{}_CSIF_fpar_trend'.format(time_range, period)] >= 0]
+                # df = df[df['{}_during_{}_CSIF_fpar_trend'.format(time_range, period)] >= 0]
                 for i in df:
                     if period in i:
                         if not '{}'.format(time_range) in i:
@@ -657,6 +666,14 @@ class RF:
                         #     x_list.append(i)
                         if 'mean' in i:
                             x_list.append(i)
+                        if 'CSIF' in i:
+                            continue
+                        if 'CSIF_fpar' in i:
+                            continue
+                        if 'GIMMS_NDVI' in i:
+                            continue
+                        if 'MODIS_NDVI' in i:
+                            continue
                         # if 'trend' in i:
                         #     x_list.append(i)
 
@@ -675,7 +692,6 @@ class RF:
                         continue
                     if 'Precip' in i:
                         continue
-
                     if 'anomaly_{}_during_early'.format(time_range) in i:
                         x_list.append(i)
                     if 'original' in i:
@@ -695,17 +711,24 @@ class RF:
             #     print('********************************')
 
             if period == 'late':
-                df = df[df['{}_during_{}_CSIF_fpar_trend'.format(time_range,period)] >= 0]
+                # df = df[df['{}_during_{}_CSIF_fpar_trend'.format(time_range,period)] >= 0]
                 for i in df:
                     if period in i:
                         if not '{}'.format(time_range) in i:
                             continue
 
-
                         # if 'CV' in i:
                         #     x_list.append(i)
                         if 'mean' in i:
                             x_list.append(i)
+                        if 'CSIF' in i:
+                            continue
+                        if 'CSIF_fpar' in i:
+                            continue
+                        if 'GIMMS_NDVI' in i:
+                            continue
+                        if 'MODIS_NDVI' in i:
+                            continue
                         # if 'trend' in i:
                         #     x_list.append(i)
 
@@ -724,15 +747,14 @@ class RF:
                         continue
                     if 'Precip' in i:
                         continue
-
                     if 'anomaly_{}_during_late'.format(time_range) in i:
                         x_list.append(i)
                     # if 'anomaly_{}_during_peak_temperature'.format(time_range) in i:
                     #     x_list.append(i)
                     # if 'anomaly_{}_during_peak_CCI_SM'.format(time_range) in i:
                     #     x_list.append(i)
-                    # if 'anomaly_{}_during_peak_Precip'.format(time_range) in i:
-                    #     x_list.append(i)
+                    if 'anomaly_{}_during_peak_Precip'.format(time_range) in i:
+                        x_list.append(i)
                     # if 'anomaly_{}_during_peak_VPD'.format(time_range) in i:
                     #     x_list.append(i)
                     # if 'anomaly_{}_during_early_Precip'.format(time_range) in i:
@@ -766,14 +788,14 @@ class RF:
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
         time_range='2002-2015'
 
-        period_list=['early','peak','late']
+        period_list=['early','late']
 
         y_variable_dic={}
         for period in period_list:
-            df = df[df['{}_during_{}_CSIF_fpar_trend'.format(time_range, period)] >= 0]
+            # df = df[df['{}_during_{}_CSIF_fpar_trend'.format(time_range, period)] >= 0]
             y_list=[]
             for i in df:
-                if 'anomaly_{}_during_{}_CSIF_fpar'.format(time_range,period) in i:
+                if 'anomaly_{}_during_{}_MODIS_NDVI'.format(time_range,period) in i:
                     y_list.append(i)
             y_variable_dic[period]=y_list
         # for period in y_variable_dic:
