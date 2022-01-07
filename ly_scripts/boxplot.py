@@ -91,6 +91,10 @@ def plot_scatter1():
     period_list = ['early','peak','late',]
     order_list = ['first','last']
     for period in period_list:
+        ############## change here ##################
+        if not period == 'early':
+            continue
+        ############## change here ##################
         corr_f = f'2002-2015_partial_correlation_{period}_anomaly_CSIF.npy'
         corr_fpath = join(corr_fdir,corr_f)
         corr_dic = T.load_npy(corr_fpath)
@@ -102,6 +106,11 @@ def plot_scatter1():
         product_list = list(set(product_list))
         product_list.sort()
         for product in product_list:
+            ## Y axis ##
+            ############## change here ##################
+            if not product == f'{period}_temperature':
+                continue
+            ############## change here ##################
             product_dic = {}
             for pix in corr_dic:
                 dic_i = corr_dic[pix]
@@ -110,55 +119,60 @@ def plot_scatter1():
                 val = dic_i[product]
                 product_dic[pix] = val
             order_dic = {}
-            for order in order_list:
-                folder_name = f'during_{period}_2002-2015_{order}_five'
-                fpath = join(fdir,folder_name,f'during_{product}_mean.npy')
-                arr = np.load(fpath)
-                arr[arr<-9999]=np.nan
-                order_dic[order] = arr
-            delta_arr = order_dic[order_list[1]] - order_dic[order_list[0]]
-            delta_dic = DIC_and_TIF().spatial_arr_to_dic(delta_arr)
+            for product1 in product_list:
+                ## X axis ##
+                ############## change here ##################
+                if not product1 == f'{period}_CCI_SM':
+                    continue
+                ############## change here ##################
+                for order in order_list:
+                    folder_name = f'during_{period}_2002-2015_{order}_five'
+                    fpath = join(fdir,folder_name,f'during_{product1}_mean.npy')
+                    arr = np.load(fpath)
+                    arr[arr<-9999]=np.nan
+                    order_dic[order] = arr
+                delta_arr = order_dic[order_list[1]] - order_dic[order_list[0]]
+                delta_dic = DIC_and_TIF().spatial_arr_to_dic(delta_arr)
+                x_list = []
+                y_list = []
+                for pix in delta_dic:
+                    if not pix in product_dic:
+                        continue
+                    x = delta_dic[pix]
+                    y = product_dic[pix]
+                    x_list.append(x)
+                    y_list.append(y)
+                x_mean = np.nanmean(x_list)
+                x_std = np.nanstd(x_list)
+                y_mean = np.nanmean(y_list)
+                y_std = np.nanstd(y_list)
 
-            x_list = []
-            y_list = []
-            for pix in delta_dic:
-                if not pix in product_dic:
-                    continue
-                x = delta_dic[pix]
-                y = product_dic[pix]
-                x_list.append(x)
-                y_list.append(y)
-            x_mean = np.nanmean(x_list)
-            x_std = np.nanstd(x_list)
-            y_mean = np.nanmean(y_list)
-            y_std = np.nanstd(y_list)
-
-            x_up = x_mean + 3*x_std
-            x_down = x_mean - 3*x_std
-            y_up = y_mean + 3*y_std
-            y_down = y_mean - 3*y_std
-            x_list_new = []
-            y_list_new = []
-            for i in range(len(x_list)):
-                x = x_list[i]
-                y = y_list[i]
-                if x > x_up:
-                    continue
-                if x < x_down:
-                    continue
-                if y > y_up:
-                    continue
-                if y < y_down:
-                    continue
-                x_list_new.append(x)
-                y_list_new.append(y)
-            # plt.figure()
-            # plt.scatter(x_list_new,y_list_new)
-            KDE_plot().plot_scatter(x_list_new,y_list_new)
-            plt.xlabel(f'Delta_{product}')
-            plt.ylabel(f'partial_correlation_{product}_anomaly_CSIF')
-            plt.title(product)
-    plt.show()
+                x_up = x_mean + 3*x_std
+                x_down = x_mean - 3*x_std
+                y_up = y_mean + 3*y_std
+                y_down = y_mean - 3*y_std
+                x_list_new = []
+                y_list_new = []
+                for i in range(len(x_list)):
+                    x = x_list[i]
+                    y = y_list[i]
+                    if x > x_up:
+                        continue
+                    if x < x_down:
+                        continue
+                    if y > y_up:
+                        continue
+                    if y < y_down:
+                        continue
+                    x_list_new.append(x)
+                    y_list_new.append(y)
+                plt.figure()
+                plt.scatter(x_list_new,y_list_new)
+                # KDE_plot().plot_scatter(x_list_new,y_list_new)
+                plt.xlabel(f'Delta_{product1}')
+                plt.ylabel(f'partial_correlation_{product}_anomaly_CSIF')
+                # plt.title(product)
+                plt.show()
 
 def main():
     # plot_box()
