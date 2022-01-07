@@ -1340,28 +1340,30 @@ class Multi_liner_regression:  # 实现求beta 功能
     def __init__(self):
 
         self.period='late'
+        self.variable='MODIS_NDVI'
         self.time_range='2002-2015'
-        self.result_dir=results_root+'partial_correlation_anomaly/MODIS_NDVI/'
-        # self.result_f = self.result_dir+'/{}_multi_linear{}_anomaly.npy'.format(self.time_range,self.period,)
-        self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_anomaly2.npy'.format(self.time_range,self.period,)
-        self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_anomaly2.npy'.format(
-            self.time_range, self.period, )
-        self.x_dir = results_root+'partial_correlation_X_variables/{}_during_{}_1/'.format(self.time_range,self.period,)
-        self.y_f = results_root+'anomaly_variables_independently/{}_during_{}/{}_during_{}_MODIS_NDVI.npy'.format(self.time_range,self.period,self.time_range,self.period)
-        # self.y_mean = results_root + 'mean_variables/{}_during_{}/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period,self.time_range,self.period)
-        T.mk_dir(self.result_dir)
+        # self.result_dir=results_root+'multiregression_anomaly/MODIS_NDVI/0104/'
+        self.result_dir = results_root + 'partial_correlation_anomaly/MODIS_NDVI/0105/'
+        # self.result_f = self.result_dir+'/{}_multi_linear{}_anomaly_{}.npy'.format(self.time_range,self.period,self.variable)
+        self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_anomaly_{}.npy'.format(self.time_range,self.period,self.variable)
+        self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_anomaly_{}.npy'.format(
+            self.time_range, self.period,self.variable)
+        self.x_dir = results_root+'partial_correlation_X_variables_2/{}_during_{}/'.format(self.time_range,self.period,)
+        self.y_f = results_root+'partial_correlation_X_variables_2/{}_during_{}/{}_during_{}_{}.npy'.format(self.time_range,self.period,self.time_range,self.period,self.variable)
+        self.y_mean = results_root + 'mean_calculation_original/during_{}_{}/during_{}_{}_mean.npy'.format(self.period,self.time_range,self.period,self.variable)
+        T.mk_dir(self.result_dir,force=True)
         pass
 
 
     def run(self):
 
         # step 1 build dataframe
-        df = self.build_df(self.x_dir,self.y_f,self.period,self.time_range,)
-        x_var_list = self.__get_x_var_list(self.x_dir,self.period, self.time_range)
+        # df = self.build_df(self.x_dir,self.y_f,self.period,self.time_range,)
+        # x_var_list = self.__get_x_var_list(self.x_dir,self.period, self.time_range)
         # # # step 2 cal correlation
-        # self.cal_multi_regression_beta(df, x_var_list,34)  #修改参数
-        self.cal_partial_correlation(df, x_var_list,14)  #修改参数
-        # self.max_contribution()
+        # self.cal_multi_regression_beta(df, x_var_list,14)  #修改参数
+        # self.cal_partial_correlation(df, x_var_list,14)  #修改参数
+        self.max_contribution()
         # self.variables_contribution()
 
 
@@ -1477,7 +1479,8 @@ class Multi_liner_regression:  # 实现求beta 功能
 
 
     def cal_multi_regression_beta(self,df,x_var_list,val_len):
-        mean_dic=T.load_npy(self.y_mean)
+        # mean_dic=T.load_npy(self.y_mean)
+        mean_dic= np.load(self.y_mean)
 
         outf = self.result_f
 
@@ -1733,9 +1736,10 @@ class Multi_liner_regression:  # 实现求beta 功能
     def variables_contribution(self):
         x_var_list = self.__get_x_var_list(self.x_dir, self.period, self.time_range)
         x_var_list.sort()
-        result_f = self.partial_correlation_result_f
-        ourdir = self.result_dir + '/variables_contribution/'
-        T.mk_dir(ourdir)
+        # result_f = self.partial_correlation_result_f
+        result_f=self.partial_correlation_p_value_result_f
+        ourdir = self.result_dir + '/variables_contribution_CSIF/{}/'.format(self.period)
+        T.mk_dir(ourdir,force=True)
         result_dic = T.load_npy(result_f)
         output_dic = {}
 
@@ -1766,8 +1770,11 @@ class Multi_liner_regression:  # 实现求beta 功能
         # plt.colorbar()
         # plt.show()
 
-            outf_tif = f'{self.time_range}_{x}.tif'
-            outf_npy = f'{self.time_range}_{x}.npy'
+            outf_tif = f'{self.time_range}_{x}_p_value.tif'
+            outf_npy = f'{self.time_range}_{x}_p_value.npy'
+
+            # outf_tif = f'{self.time_range}_{x}.tif'
+            # outf_npy = f'{self.time_range}_{x}.npy'
 
             DIC_and_TIF().arr_to_tif(arr, ourdir + outf_tif)
             output_dic = DIC_and_TIF().spatial_arr_to_dic(arr)

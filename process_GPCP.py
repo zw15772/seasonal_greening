@@ -774,7 +774,7 @@ def foo():
 
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/anomaly_variables_independently/2002-2015_during_early/2002-2015_during_early_CCI_SM.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2002-2015_original_extraction_all_seasons/2002-2015_extraction_during_early_growing_season_static/during_early_CSIF_fpar.npy'
     result_dic = {}
     spatial_dic={}
     # array = np.load(f)
@@ -905,7 +905,7 @@ def foo3(): #做平均
 def spatial_plot():
     spatial_dic_value={}
     # fdir1= data_root + 'CSIF/CSIF_dic/'
-    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly/MODIS_NDVI/2002-2015_partial_correlation_p_value_early_anomaly.npy'
+    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_anomaly/MODIS_NDVI/0104/2002-2015_multi_linearearly_anomaly_MODIS_NDVI.npy'
     dic=T.load_npy(f)
     spatial_dic={}
 
@@ -967,11 +967,11 @@ def foo4():
 
 def beta_plot():  # 该功能实现所有因素的beta
     # time_range='1982-1998'
-    # period='early'
+    period='early'
     # f = '/Volumes/sult/multi_linear_anomaly_NDVI/{}_multi_linear{}_anomaly.npy'.format(time_range,period)
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly_NDVI/1982-1998_partial_correlationpeak_anomaly.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly/MODIS_NDVI/2002-2015_partial_correlationpeak_anomaly.npy'
-    # outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/multi_linear_anomaly_NDVI_window/TIFF_{}_{}_8/'.format(time_range,period)
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly/MODIS_NDVI/0105/2002-2015_partial_correlation_late_anomaly_MODIS_NDVI.npy'
+    # outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_anomaly/MODIS_NDVI_{}/'.format(period)
     # T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
     var_list = []
