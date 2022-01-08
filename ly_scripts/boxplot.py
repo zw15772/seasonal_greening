@@ -86,8 +86,9 @@ def plot_scatter():
 
 
 def plot_scatter1():
-    fdir = '/Volumes/NVME2T/wen_proj/20220107/2002-2015_first_last_five_years'
-    corr_fdir = '/Volumes/NVME2T/wen_proj/20220107/corr'
+    fdir = results_root+'mean_calculation_original/2002-2015_first_last_five_years'
+    # fdir=results_root+'mean_calculation_original/during_early_2002-2015'
+    corr_fdir =results_root+'/multiregression_anomaly/MODIS_NDVI/0104/'
     period_list = ['early','peak','late',]
     order_list = ['first','last']
     for period in period_list:
@@ -95,24 +96,42 @@ def plot_scatter1():
         if not period == 'early':
             continue
         ############## change here ##################
-        corr_f = f'2002-2015_partial_correlation_{period}_anomaly_CSIF.npy'
+        NDVI_trend_f = results_root + '/trend_calculation_anomaly/during_{}_2002-2015/2002-2015_during_{}_MODIS_NDVI_trend.npy'.format(period,period)
+        temperature_trend_f = results_root + '/trend_calculation_anomaly/during_{}_2002-2015/2002-2015_during_{}_MODIS_NDVI_trend.npy'.format(period,period)
+        # corr_f = f'2002-2015_partial_correlation_{period}_anomaly_CSIF.npy'
+        corr_f = f'2002-2015_multi_linear{period}_anomaly_CSIF_fpar.npy'
         corr_fpath = join(corr_fdir,corr_f)
         corr_dic = T.load_npy(corr_fpath)
+        NDVI_trend_arr=np.load(NDVI_trend_f)
+        variable_trend_arr=np.load(temperature_trend_f)
+        NDVI_trend_dic=DIC_and_TIF().spatial_arr_to_dic(NDVI_trend_arr)
+        variable_trend_dic = DIC_and_TIF().spatial_arr_to_dic(variable_trend_arr)
         product_list = []
         for pix in corr_dic:
             vals = corr_dic[pix]
             for k in vals:
                 product_list.append(k)
+        product_list.append('{}_surf_soil_moisture'.format(period))
+        product_list.append('{}_SPEI3'.format(period))
         product_list = list(set(product_list))
         product_list.sort()
         for product in product_list:
             ## Y axis ##
             ############## change here ##################
-            if not product == f'{period}_temperature':
+            if not product == f'{period}_CO2':
                 continue
             ############## change here ##################
             product_dic = {}
             for pix in corr_dic:
+                r,c=pix
+                if r>120:
+                    continue
+                NDVI_trend=NDVI_trend_dic[pix]
+                if NDVI_trend>0:
+                    continue
+                variable_trend = variable_trend_dic[pix]
+                # if variable_trend < 0:
+                #     continue
                 dic_i = corr_dic[pix]
                 if not product in dic_i:
                     continue
@@ -124,18 +143,35 @@ def plot_scatter1():
                 ############## change here ##################
                 if not product1 == f'{period}_CCI_SM':
                     continue
-                ############## change here ##################
+                ############## change here delata as Xaxis##################
                 for order in order_list:
                     folder_name = f'during_{period}_2002-2015_{order}_five'
                     fpath = join(fdir,folder_name,f'during_{product1}_mean.npy')
+
                     arr = np.load(fpath)
                     arr[arr<-9999]=np.nan
                     order_dic[order] = arr
                 delta_arr = order_dic[order_list[1]] - order_dic[order_list[0]]
                 delta_dic = DIC_and_TIF().spatial_arr_to_dic(delta_arr)
+                ################mean as Xaxis###############################
+
+                # fpath = join(fdir, f'during_{product1}_mean.npy')
+                # arr = np.load(fpath)
+                # arr[arr<-9999]=np.nan
+                # delta_dic = DIC_and_TIF().spatial_arr_to_dic(arr)
+
                 x_list = []
                 y_list = []
                 for pix in delta_dic:
+                    r, c = pix
+                    if r > 120:
+                        continue
+                    NDVI_trend = NDVI_trend_dic[pix]
+                    if NDVI_trend > 0:
+                        continue
+                    variable_trend = variable_trend_dic[pix]
+                    # if variable_trend < 0:
+                    #     continue
                     if not pix in product_dic:
                         continue
                     x = delta_dic[pix]

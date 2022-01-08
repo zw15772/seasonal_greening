@@ -2,6 +2,7 @@
 # coding='utf-8'
 
 import sys
+import xarray as xr
 version = sys.version_info.major
 assert version == 3, 'Python Version Error'
 from matplotlib import pyplot as plt
@@ -182,66 +183,59 @@ def nc_to_tif_BESS():
             # plt.show()
             to_raster.array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeight,array,ndv = -999999)
 
-def nc_to_tif_burning():
+def nc_to_tif_PET():
+    f='/Volumes/SSD_sumsang/project_greening/Data/cru_ts4.05.1901.2020.pet.dat.nc'
+    outdir = results_root+'Terraclimate/PET/'
+    variable='pet'
+    T.mk_dir(outdir,force=True)
+    ncin = Dataset(f, 'r')
+    ncin_xarr = xr.open_dataset(f)
+    lat = ncin['lat'][::-1]
+    lon = ncin['lon']
+    pixelWidth = lon[1] - lon[0]
+    pixelHeight = lat[1] - lat[0]
+    longitude_start = lon[0]
+    latitude_start = lat[0]
 
-    fdir = '/Volumes/SSD_sumsang/project_greening/Data/burning_areas/burning_nc/'
-    outdir = '/Volumes/SSD_sumsang/project_greening/Data/burning_areas/burning_tif/'
-    mk_dir(outdir)
-    for f in os.listdir(fdir):
-        if f.endswith('.nc'):
-            fpath = fdir + f
-            nc = Dataset(fpath)
-            fname2=fpath.split('.')[1][1:5]
-            if fname2=='2016' or fname2=='2017'or fname2=='2018':
-                continue
-            print(nc)
-            print(nc.variables.keys())
-            #t = nc['time']
-        # since 1582 - 10 - 15
-            lat_list = nc['lat']
-            lon_list = nc['lon']
-            # lat_list=lat_list[::-1]  #取反
-            # print(lat_list[:])
-            # print(lon_list[:])
-            origin_x = lon_list[0]  #要为负数-180
-            origin_y = lat_list[0]  #要为正数90
-            pix_width = lon_list[1] - lon_list[0]
-            pix_height = lat_list[1] - lat_list[0]
-            # print (origin_x)
-            # print (origin_y)
-            # print (pix_width)
-            # print (pix_height)
-            # exit()
-            # SIF_arr_list = nc['SIF']
-            GPCP_arr_list = nc['fraction_of_burnable_area']
-            # print(GPCP_arr_list.shape)
-            # plt.imshow(GPCP_arr_list[::])
-            # plt.show()
-            # print(SIF_arr_list[0])
-            # exit()
-            # t=nc['doy']
-            # print(t[:])
-            fname = '{}.tif'.format(f.split('.')[1][1:])
-            print (fname)
-            newRasterfn = outdir + fname
-            # if os.path.isfile(newRasterfn):
-            #     continue
-            # print newRasterfn
-            longitude_start = origin_x
-            latitude_start = origin_y
-            pixelWidth = pix_width
-            pixelHeight = pix_height
-            # array = val
-            array=GPCP_arr_list[::]
-            array = np.array(array)
-            array = array.T
-            # method 2
-            array= numpy.rot90(array, 1,(0,1))
-            array = array[::-1]
-            plt.imshow(array)
-            plt.colorbar()
-            plt.show()
-            to_raster.array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeight,array,ndv = -999999)
+    time = ncin.variables['time']
+
+    # print(time)
+    # exit()
+    # time_bounds = ncin.variables['time_bounds']
+    # print(time_bounds)
+    start = datetime.datetime(1900, 1, 1)
+    # a = start + datetime.timedelta(days=5459)
+    # print(a)
+    # print(len(time_bounds))
+    # print(len(time))
+    # for i in time:
+    #     print(i)
+    # exit()
+    # nc_dic = {}
+    flag = 0
+
+
+    for i in tqdm(range(len(time))):
+        flag += 1
+        # print(time[i])
+        date = start + datetime.timedelta(days=int(time[i]))
+        year = str(date.year)
+        year_int=int(year)
+        month = '%02d' % date.month
+        month_int=date.month
+        days_number_of_one_month=T.number_of_days_in_month(year_int,month_int)
+        # day = '%02d'%date.day
+        date_str = year + month
+        # print(date_str)
+        # arr = ncin.variables[f'{variable}'][i][::-1]
+        arr = ncin_xarr.variables[f'{variable}'][i][::-1]
+        arr = np.array(arr)
+        arr_monthly=arr*days_number_of_one_month
+        grid = arr < 99999
+        arr_monthly[np.logical_not(grid)] = -999999
+        newRasterfn = outdir + date_str + '.tif'
+        ToRaster().array2raster(newRasterfn, longitude_start, latitude_start, pixelWidth, pixelHeight, arr_monthly)
+
 
 def nc_to_tif_SPEI3():
 
@@ -556,7 +550,7 @@ def main():
     # nc_to_tif_BESS()
     # nc_to_tif_SPEI3()
     # nc_to_tif_CO2()
-    nc_to_tif_burning()
+    nc_to_tif_PET()
     # nc_to_tif_GLEAM()
     # montly_composite()
 

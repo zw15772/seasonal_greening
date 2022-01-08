@@ -77,7 +77,7 @@ def tif2dict(fdir, outdir):
     mk_dir(outdir)
     flist=os.listdir(fdir)
     all_array=[]
-    year_list=list(range(2002,2016))  # 作为筛选条件
+    year_list=list(range(1982,2016))  # 作为筛选条件
     for f in tqdm(sorted(flist),desc='loading...'):
         if f.startswith('.'):
             continue
@@ -3315,7 +3315,8 @@ class statistic_anaysis:
         # variable_list=['CCI_SM','GIMMS_NDVI'] #  长度为34
         # variable_list=['VOD'] #  长度29
         # variable_list=['Precip'] # 降雨是累计量 长度37
-        variable_list=['MODIS_NDVI'] #  长度为168
+        variable_list=['PET'] # 降雨是累计量 长度37
+        # variable_list=['MODIS_NDVI'] #  长度为168
         # variable_list = ['CSIF_fpar']  # 长度为
         # variable_list = ['CSIF']  # 长度为
 
@@ -3325,7 +3326,7 @@ class statistic_anaysis:
 
         for variable in variable_list:
 
-            fdir2=data_root+'MOD_NDVI_dic/'
+            fdir2=data_root+'original_dataset/PET_dic/'
             outdir = result_root + 'extraction_original_val/extraction_during_{}_growing_season_static/'.format(period)
 
 
@@ -3372,13 +3373,13 @@ class statistic_anaysis:
 
                 # if len(time_series) != 348:
                 #     continue
-                if len(time_series) != 168:
+                if len(time_series) != 408:
                     continue
                 # plt.plot(time_series)
                 # plt.show()
                 time_series = time_series.reshape(-1, 12)  # 修改
 
-                for year in range(14):  # 修改
+                for year in range(34):  # 修改
 
                     during_time_series = time_series[year][start_index-1:end_index]  #!!!!!
                     during_time_series=np.array(during_time_series, dtype=float)
@@ -3388,10 +3389,10 @@ class statistic_anaysis:
                     # if np.isnan(np.nanmean(during_time_series)):  # 修改
                     #     continue
 
-                    # # variable_sum = np.nansum(during_time_series)
-                    # dic_during_variables[pix].append(variable_sum)
-                    variable_mean = np.nanmean(during_time_series)  # !!! 降雨需要是sum  # 其他变量是平均值 nanmean
-                    dic_during_variables[pix].append(variable_mean)
+                    variable_sum = np.nansum(during_time_series)
+                    dic_during_variables[pix].append(variable_sum)
+                    # variable_mean = np.nanmean(during_time_series)  # !!! 降雨需要是sum  # 其他变量是平均值 nanmean
+                    # dic_during_variables[pix].append(variable_mean)
 
 
                 dic_spatial_count[pix] = len(dic_during_variables[pix])
@@ -5898,13 +5899,13 @@ def main():
     # statistic_anaysis().call_partial_window()
 
     # statistic_anaysis().extraction_variables_static_pre_month()
-    # statistic_anaysis().extraction_variables_static_during()
+    statistic_anaysis().extraction_variables_static_during()
     # statistic_anaysis().univariate_correlation_calculation()
     # statistic_anaysis().univariate_correlation_window()
     # statistic_anaysis().plot_moving_window_correlation()
     # statistic_anaysis().save_moving_window_correlation()
     # statistic_anaysis().trend_calculation()
-    statistic_anaysis().mean_calculation()
+    # statistic_anaysis().mean_calculation()
     # statistic_anaysis().CV_calculation()
     # statistic_anaysis().extraction_winter_index()
     # statistic_anaysis().extraction_winter_during()
@@ -5920,8 +5921,8 @@ def main():
     # Hants_annually_smooth()
     # Hants_annually_smooth_NDVI()
     # Phenology_retrieval()
-    # fdir=data_root+''
-    # outdir=data_root+'CO2_1980_2021/CO2_dic/'
+    # fdir=data_root+'Terraclimate/PET/'
+    # outdir=data_root+'original_dataset/PEI_dic/'
     # tif2dict(fdir,outdir)
     # fdir = '/Volumes/Seagate_5T/data/Data/MODIS_NDVI/MOD13C1.NDVI_MVC/'
     # outdir = '/Volumes/Seagate_5T/data/Data/MODIS_NDVI/MOD_NDVI_dic/'
@@ -5932,7 +5933,7 @@ def main():
     # Main_flow_Early_Peak_Late_Dormant().annual_phelogy()
     # Main_flow_Early_Peak_Late_Dormant().trend()
     # Main_flow_Early_Peak_Late_Dormant().contribution()
-    Main_flow_Early_Peak_Late_Dormant().changes_NDVI_method1()
+    # Main_flow_Early_Peak_Late_Dormant().changes_NDVI_method1()
     # Main_flow_Early_Peak_Late_Dormant().anonmaly_variables()
     # Main_flow_Early_Peak_Late_Dormant().anonmaly_winter()
 

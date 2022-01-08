@@ -2,8 +2,9 @@
 
 from __init__ import *
 from osgeo import gdal
-from LY_Tools import *
-import h5py
+from lytools import *
+
+# import h5py
 import scipy.io
 project_root='/Volumes/SSD_sumsang/project_greening/'
 data_root=project_root+'Data/'
@@ -19,7 +20,10 @@ class process_data:
     def run(self):
         # self.resample()
         # self.resample_NIRv()
-        self.resample_VOD()
+        # self.resample_VOD()
+        # self.sum_PET()
+        self.aridity()
+        # self.mean_aridity()
         # self.Mean_LST()
         # self.conversion()
         # self.read_mat()
@@ -243,7 +247,7 @@ class process_data:
                     # band1_array[r][c] = band1_array[r][c] * 0.1  # Terraclimate par
             newRasterfn=outdir+'scale_{}.tif'.format(date)
 
-            raster2array.array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeight,band1_array,ndv = -999999)
+            ToRaster.array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeight,band1_array,ndv = -999999)
             # plt.imshow(band1_array)
             # plt.show()
 
@@ -362,6 +366,158 @@ class process_data:
                     raster2array.array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeight,mean_array,ndv = -999999)
             # plt.imshow(band1_array)
             # plt.show()
+
+    def sum_PET(self):
+        fdir = data_root + 'Terraclimate/test/'
+        outdir = data_root + 'Terraclimate/test/'
+
+        T.mk_dir(outdir)
+        arr_sum=0
+
+        for f in tqdm(os.listdir(fdir), ):
+            if not f.endswith('.tif'):
+                continue
+            if f.startswith('._'):
+                continue
+            print(f)
+            date = f.split('.')[0]
+            print(date)
+
+            # dataset = gdal.Open(fdir+f)
+            # band1 = dataset.GetRasterBand(1)
+            # band1_array = band1.ReadAsArray()
+            #
+            # # 配置文件
+            # geotransform = dataset.GetGeoTransform()
+            # longitude_start = geotransform[0]
+            # latitude_start = geotransform[3]
+            # pixelWidth = geotransform[1]
+            # pixelHeight = geotransform[5]
+
+            arr = to_raster.raster2array(fdir + f)[0]
+            arr[arr < 0] = np.nan
+            arr_sum+=arr
+
+
+        plt.figure()
+        plt.imshow(arr_sum)
+        plt.show()
+        # plt.imshow(arr)
+        # plt.colorbar()
+        # plt.show()
+        # newRasterfn = outdir + '{}'.format(date) + '.tif'
+        DIC_and_TIF().arr_to_tif(arr_sum, outdir + 'NIRv_resample_' + '{}'.format(date) + '.tif')
+
+    def mean_aridity(self):
+        fdir = data_root + 'Terraclimate/test/'
+        outdir = data_root + 'Terraclimate/test/'
+
+        T.mk_dir(outdir)
+
+        arr_list=[]
+        for f in tqdm(os.listdir(fdir), ):
+            if not f.endswith('.tif'):
+                continue
+            if f.startswith('._'):
+                continue
+            print(f)
+            date = f.split('.')[0]
+            print(date)
+
+            # dataset = gdal.Open(fdir+f)
+            # band1 = dataset.GetRasterBand(1)
+            # band1_array = band1.ReadAsArray()
+            #
+            # # 配置文件
+            # geotransform = dataset.GetGeoTransform()
+            # longitude_start = geotransform[0]
+            # latitude_start = geotransform[3]
+            # pixelWidth = geotransform[1]
+            # pixelHeight = geotransform[5]
+
+            arr = to_raster.raster2array(fdir + f)[0]
+            arr[arr < 0] = np.nan
+            arr_list.append(arr)
+
+        aridity_array_mean = [[0 for col in range(len(arr[0]))] for row in range(len(arr))]
+
+        for r in tqdm(range(len(arr))):
+            for c in range(len(arr[0])):
+                aridity_array_list = []
+                for arr in arr_list:
+                    aridity_array_list.append(arr[r][c])
+                val=np.nanmean(aridity_array_list)
+                aridity_array_mean[r][c] = np.array(val)
+
+
+        plt.figure()
+        plt.imshow(aridity_array_mean)
+        plt.show()
+        # plt.imshow(arr)
+        # plt.colorbar()
+        # plt.show()
+        # newRasterfn = outdir + '{}'.format(date) + '.tif'
+        # DIC_and_TIF().arr_to_tif(arr_sum, outdir + 'NIRv_resample_' + '{}'.format(date) + '.tif')
+
+
+    def aridity(self): # 实现P:PET
+        fdir2 = data_root + 'Terraclimate/PET/'
+        fdir1 = data_root + 'Terraclimate/Precip/precip_resample/'
+
+        outdir = data_root + 'Terraclimate/aridity_P_PET/'
+
+        T.mk_dir(outdir)
+
+        for f1 in tqdm(sorted(os.listdir(fdir1))):
+            for f2 in tqdm(sorted(os.listdir(fdir2))):
+                if not f1.endswith('.tif'):
+                    continue
+                if not f2.endswith('.tif'):
+                    continue
+                print(f1.split('.')[0].split('_')[-1].split('-')[0])
+                f1_name=f1.split('.')[0].split('_')[-1].split('-')[0]
+                f2_name=f2.split('_')[0][0:4]
+                print(f2.split('_')[0][0:4])
+
+                if f1_name == f2_name:
+                    dataset1 = gdal.Open(fdir1 + f1)
+                    dataset2 = gdal.Open(fdir2 + f2)
+                    bandf1 = dataset1.GetRasterBand(1)
+                    bandf1_array = bandf1.ReadAsArray()
+                    bandf1_array = bandf1_array[:-1]
+
+                    bandf2 = dataset2.GetRasterBand(1)
+                    bandf2_array = bandf2.ReadAsArray()
+                    # mean_array = np.zeros(range(len(band2_array)), range(len(band2_array)[0]))
+                    # mean_array = [[0] * len(band2_array[0]) for row in range(len(band2_array))]
+                    aridity_array = np.ones_like(bandf2_array)*(-999999)
+                    for r in range(len(bandf1_array)):
+                        for c in range(len(bandf1_array[0])):
+                            if bandf2_array[r][c]<= 0:
+                                continue
+                            val1=bandf1_array[r][c]
+                            val2 = bandf2_array[r][c]
+                            if val1<-9999:
+                                continue
+                            if val2<-9999:
+                                continue
+                            # print(r,c)
+                            aridity_array[r][c] = (bandf1_array[r][c] / bandf2_array[r][c])
+                    aridity_array = np.array(aridity_array)
+                    # plt.imshow(aridity_array)
+                    # plt.show()
+                    # 配置文件
+                    geotransform = dataset1.GetGeoTransform()
+                    longitude_start = geotransform[0]
+                    latitude_start = geotransform[3]
+                    pixelWidth = geotransform[1]
+                    pixelHeight = geotransform[5]
+                    date = f1.split('_')[2]
+                    print(date)
+
+                    newRasterfn = outdir + 'aridity_{}'.format(date)
+
+                    ToRaster().array2raster(newRasterfn, longitude_start, latitude_start, pixelWidth, pixelHeight, aridity_array, ndv=-999999)
 
     def alignment(self): # 对于行列缺失的（例如缺失南极，补齐功能）
 

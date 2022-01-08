@@ -23,7 +23,8 @@ class Plot_dataframe:
         df = self.__gen_df_init()
 
         # self.call_greening_trend_bar(df)
-        self.call_correlation_bar(df)
+        # self.call_correlation_bar(df)
+        self.call_multi_correlation_bar(df)
 
 
 
@@ -564,7 +565,56 @@ class Plot_dataframe:
         # plt.xlabel("landcover")
         plt.ylabel("Percentage")
 
-    def call_correlation_bar(self, df):  # 实现的功能是
+    def call_multi_correlation_bar(self, df):  # 一次实现多个变量个偏相关画图
+
+        outdir = results_root + 'Figure/correlation_bar_2002-2015_greening/'
+        T.mk_dir(outdir)
+
+        df = df[df['row'] < 120]
+
+        variable_list =['CCI_SM','CO2','PAR','VPD','temperature']
+
+        period = 'late'
+        time = '2002-2015'
+
+        df = df[df['{}_during_{}_CSIF_trend'.format(time,period)] > 0]
+        # df = df[df['{}_during_{}_temperature_trend'.format(time, period)] > 0]
+
+        outf = outdir + 'partial_correlation_' + period + '_' + time + '_landuse'+'_CSIF'
+
+        # outf = outdir + 'greening_trend_' + period + '_'+time+ '_koppen'+'_'+variable
+        print(outf)
+        # exit()
+
+        # y = df['anomaly_{}_during_{}_MODIS_NDVI'.format(time,period)]
+        # # df = df[df['GIMMS_NDVI_{}_original'.format(period)] < 1]
+        # # df = df[df['GIMMS_NDVI_{}_original'.format(period)] > 0.2]
+        # plt.hist(df['anomaly_{}_during_{}_MODIS_NDVI'.format(time,period)], bins=80)
+        # plt.show()
+        # koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
+        landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
+        plt.figure(figsize=(18, 8))
+        flag=1
+        for variable in variable_list:
+            plt.subplot(2,3,flag)
+
+        # for koppen in koppen_list:
+            for landcover in landcover_list:
+                # df_pick = df[df['koppen'] == koppen]  # 修改
+                df_pick = df[df['landcover'] == landcover]
+                # self.plot_greening_trend_bar(df_pick, koppen,period,time)
+                self.plot_bar_correlation(df_pick, landcover, time, period,variable)
+            self.plot_bar_correlation(df, 'all', time, period,variable)
+            # plt.legend()
+            plt.legend(["Negative_0.05", "Negative_0.1", "no trend", "Positive_0.1", "Positive_0.05"])
+            plt.title('partial_correlation_' + period + '_landcover_' + time + '_' + variable,fontsize=8)
+        # plt.title('greening_trend_' + period + '_koppen_'+time+'_'+variable)
+            flag+=1
+        # plt.show()
+        plt.savefig(outf + '.pdf', dpi=300, )
+        plt.close()
+
+    def call_correlation_bar(self, df):  # 实现的功能是单个偏相关画图
 
         outdir = results_root + 'Figure/correlation_bar_2002-2015_browning/'
         T.mk_dir(outdir)
@@ -618,8 +668,8 @@ class Plot_dataframe:
 
         for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
 
-            correlation = row['MODIS_NDVI_{}_{}_{}'.format(time, period,variable)]
-            p_val=row['MODIS_NDVI_{}_{}_{}_p_value'.format(time,period,variable)]
+            correlation = row['CSIF_{}_{}_{}'.format(time, period,variable)]
+            p_val=row['CSIF_{}_{}_{}_p_value'.format(time,period,variable)]
 
             if p_val>0.1:
                 count_no_relationship=count_no_relationship+1
@@ -655,14 +705,14 @@ class Plot_dataframe:
 
 
 
-        plt.text(koppen, y1 / 2., round(negative_0_05), fontsize=12, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 / 2., round(negative_0_1), fontsize=12, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 + y3 / 2., round(no_trend), fontsize=12, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 + y3 + y4 / 2., round(positive_0_1), fontsize=12, color='w', ha='center',
+        plt.text(koppen, y1 / 2., round(negative_0_05), fontsize=8, color='w', ha='center', va='center')
+        plt.text(koppen, y1 + y2 / 2., round(negative_0_1), fontsize=8, color='w', ha='center', va='center')
+        plt.text(koppen, y1 + y2 + y3 / 2., round(no_trend), fontsize=8, color='w', ha='center', va='center')
+        plt.text(koppen, y1 + y2 + y3 + y4 / 2., round(positive_0_1), fontsize=8, color='w', ha='center',
                  va='center')
-        plt.text(koppen, y1 + y2 + y3 + y4 + y5 / 2, round(positive_0_05), fontsize=12, color='w', ha='center',
+        plt.text(koppen, y1 + y2 + y3 + y4 + y5 / 2, round(positive_0_05), fontsize=8, color='w', ha='center',
                  va='center')
-        plt.text(koppen, 102, len(df_pick), fontsize=12, color='k', ha='center', va='center')
+        plt.text(koppen, 102, len(df_pick), fontsize=8, color='k', ha='center', va='center')
         # plt.xlabel("landcover")
         plt.ylabel("Percentage")
         # plt.show()
