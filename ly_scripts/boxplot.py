@@ -305,32 +305,58 @@ def plot_vectors():
         plt.show()
 
 def plot_pie_chart():
-    fdir = '/Volumes/NVME2T/wen_proj/20220107/OneDrive_1_2022-1-9/1982-2015_first_last_five_years'
+
+    ################## change area ##################
+    # fdir = '/Volumes/NVME2T/wen_proj/20220107/OneDrive_1_2022-1-9/1982-2015_first_last_five_years'
+    fdir = '/Volumes/NVME2T/wen_proj/20220107/2002-2015_first_last_five_years'
     water_balance_tif = '/Volumes/NVME2T/wen_proj/20220107/HI_difference.tif'
+    year_range = '2002-2015'
+    # x_variable = 'Aridity'
+    x_variable = 'VPD'
+    # y_variable = 'MODIS_NDVI'
+    y_variable = 'GIMMS_NDVI'
+
+    # labels = [
+    #     'wetter greening',
+    #     'dryer greening',
+    #     'wetter browning',
+    #     'dryer browning',
+    # ]
+
+    labels = [
+        'dryer greening',
+        'wetter greening',
+        'dryer browning',
+        'wetter browning',
+    ]
+    ################## change area ##################
+    suptitle = f'{year_range} {x_variable} {y_variable}'
     limited_area = ['energy_limited', 'water_limited', ]
     period_list = ['early', 'peak', 'late', ]
     order_list = ['first', 'last']
     water_balance_dic = DIC_and_TIF().spatial_tif_to_dic(water_balance_tif)
+    flag = 0
+    plt.figure()
     for period in period_list:
-        data_dic = {'HI': [], 'NDVI': []}
+        data_dic = {'x': [], 'y': []}
         for order in order_list:
-            folder = f'during_{period}_1982-2015_{order}_five'
-            HI_f = f'during_{period}_Aridity_mean.npy'
-            NDVI_f = f'during_{period}_GIMMS_NDVI_mean.npy'
-            fpath_HI = join(fdir, folder, HI_f)
-            fpath_NDVI = join(fdir, folder, NDVI_f)
-            HI_arr = np.load(fpath_HI)
-            NDVI_arr = np.load(fpath_NDVI)
-            HI_arr[HI_arr < -9999] = np.nan
-            NDVI_arr[NDVI_arr < -9999] = np.nan
-            HI_dic = DIC_and_TIF().spatial_arr_to_dic(HI_arr)
-            NDVI_dic = DIC_and_TIF().spatial_arr_to_dic(NDVI_arr)
-            data_dic['HI'].append(HI_dic)
-            data_dic['NDVI'].append(NDVI_dic)
-        x1_dic = data_dic['HI'][0]
-        x2_dic = data_dic['HI'][1]
-        y1_dic = data_dic['NDVI'][0]
-        y2_dic = data_dic['NDVI'][1]
+            folder = f'during_{period}_{year_range}_{order}_five'
+            x_f = f'during_{period}_{x_variable}_mean.npy'
+            y_f = f'during_{period}_{y_variable}_mean.npy'
+            fpath_x = join(fdir, folder, x_f)
+            fpath_y = join(fdir, folder, y_f)
+            x_arr = np.load(fpath_x)
+            y_arr = np.load(fpath_y)
+            x_arr[x_arr < -9999] = np.nan
+            y_arr[y_arr < -9999] = np.nan
+            x_dic = DIC_and_TIF().spatial_arr_to_dic(x_arr)
+            y_dic = DIC_and_TIF().spatial_arr_to_dic(y_arr)
+            data_dic['x'].append(x_dic)
+            data_dic['y'].append(y_dic)
+        x1_dic = data_dic['x'][0]
+        x2_dic = data_dic['x'][1]
+        y1_dic = data_dic['y'][0]
+        y2_dic = data_dic['y'][1]
 
         key_list = []
         r_list = []
@@ -367,6 +393,8 @@ def plot_pie_chart():
         df = df.dropna()
         df_copy = copy.copy(df)
         for limited in limited_area:
+            flag += 1
+            plt.subplot(3,2,flag)
             if limited == 'energy_limited':
                 df_ltd = df_copy[df_copy['wb'] > 0]
             else:
@@ -379,7 +407,6 @@ def plot_pie_chart():
             df = df[df['x2'] != 0]
             # df = df.sample(n=1000)
 
-            plt.figure()
             part1 = 0
             part2 = 0
             part3 = 0
@@ -412,14 +439,10 @@ def plot_pie_chart():
             ratio3 = part3 / total
             ratio4 = part4 / total
             parts = [ratio1,ratio2,ratio3,ratio4]
-            labels = [
-                'wetter greening',
-                'dryer greening',
-                'wetter browning',
-                'dryer browning',
-                      ]
             plt.pie(parts,labels=labels)
             plt.title(f'{limited} {period}')
+    plt.suptitle(suptitle)
+    # plt.suptitle('1982-2015')
     plt.show()
     pass
 
