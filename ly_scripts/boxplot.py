@@ -304,14 +304,132 @@ def plot_vectors():
             plt.title(limited)
         plt.show()
 
+def plot_pie_chart():
+    fdir = '/Volumes/NVME2T/wen_proj/20220107/OneDrive_1_2022-1-9/1982-2015_first_last_five_years'
+    water_balance_tif = '/Volumes/NVME2T/wen_proj/20220107/HI_difference.tif'
+    limited_area = ['energy_limited', 'water_limited', ]
+    period_list = ['early', 'peak', 'late', ]
+    order_list = ['first', 'last']
+    water_balance_dic = DIC_and_TIF().spatial_tif_to_dic(water_balance_tif)
+    for period in period_list:
+        data_dic = {'HI': [], 'NDVI': []}
+        for order in order_list:
+            folder = f'during_{period}_1982-2015_{order}_five'
+            HI_f = f'during_{period}_Aridity_mean.npy'
+            NDVI_f = f'during_{period}_GIMMS_NDVI_mean.npy'
+            fpath_HI = join(fdir, folder, HI_f)
+            fpath_NDVI = join(fdir, folder, NDVI_f)
+            HI_arr = np.load(fpath_HI)
+            NDVI_arr = np.load(fpath_NDVI)
+            HI_arr[HI_arr < -9999] = np.nan
+            NDVI_arr[NDVI_arr < -9999] = np.nan
+            HI_dic = DIC_and_TIF().spatial_arr_to_dic(HI_arr)
+            NDVI_dic = DIC_and_TIF().spatial_arr_to_dic(NDVI_arr)
+            data_dic['HI'].append(HI_dic)
+            data_dic['NDVI'].append(NDVI_dic)
+        x1_dic = data_dic['HI'][0]
+        x2_dic = data_dic['HI'][1]
+        y1_dic = data_dic['NDVI'][0]
+        y2_dic = data_dic['NDVI'][1]
 
+        key_list = []
+        r_list = []
+        x1_list = []
+        x2_list = []
+        y1_list = []
+        y2_list = []
+        wb_list = []
+        for key in x1_dic:
+            r, c = key
+            key_list.append(key)
+            x1 = x1_dic[key]
+            x2 = x2_dic[key]
+            y1 = y1_dic[key]
+            y2 = y2_dic[key]
+            wb = water_balance_dic[key]
+
+            x1_list.append(x1)
+            x2_list.append(x2)
+            y1_list.append(y1)
+            y2_list.append(y2)
+            r_list.append(r)
+            wb_list.append(wb)
+
+        df = pd.DataFrame()
+        df['pix'] = key_list
+        df['r'] = r_list
+        df['x1'] = x1_list
+        df['x2'] = x2_list
+        df['y1'] = y1_list
+        df['y2'] = y2_list
+        df['wb'] = wb_list
+
+        df = df.dropna()
+        df_copy = copy.copy(df)
+        for limited in limited_area:
+            if limited == 'energy_limited':
+                df_ltd = df_copy[df_copy['wb'] > 0]
+            else:
+                df_ltd = df_copy[df_copy['wb'] < 0]
+            df = df_ltd
+            df = df[df['r'] < 120]
+            df = df[df['x1'] < 3]
+            df = df[df['x1'] < 3]
+            df = df[df['x1'] != 0]
+            df = df[df['x2'] != 0]
+            # df = df.sample(n=1000)
+
+            plt.figure()
+            part1 = 0
+            part2 = 0
+            part3 = 0
+            part4 = 0
+            total = 0
+            for i, row in df.iterrows():
+                total += 1
+                x = row.x1
+                x2 = row.x2
+                y = row.y1
+                y2 = row.y2
+                dx = x2 - x
+                dy = y2 - y
+                if dy > 0 and dx > 0:
+                    # plt.arrow(x, y, dx, dy, ec='g', fc='g', alpha=0.8, head_width=0)
+                    part1 += 1
+                elif dy > 0 and dx < 0:
+                    # plt.arrow(x, y, dx, dy, ec='cyan', fc='cyan', alpha=0.8, head_width=0)
+                    part2 += 1
+
+                elif dy < 0 and dx > 0:
+                    # plt.arrow(x, y, dx, dy, ec='purple', fc='purple', alpha=0.8, head_width=0)
+                    part3 += 1
+
+                elif dy < 0 and dx < 0:
+                    # plt.arrow(x, y, dx, dy, ec='r', fc='r', alpha=0.8, head_width=0)
+                    part4 += 1
+            ratio1 = part1 / total
+            ratio2 = part2 / total
+            ratio3 = part3 / total
+            ratio4 = part4 / total
+            parts = [ratio1,ratio2,ratio3,ratio4]
+            labels = [
+                'wetter greening',
+                'dryer greening',
+                'wetter browning',
+                'dryer browning',
+                      ]
+            plt.pie(parts,labels=labels)
+            plt.title(f'{limited} {period}')
+    plt.show()
+    pass
 
 
 def main():
     # plot_box()
     # plot_scatter()
     # plot_scatter1()
-    plot_vectors()
+    # plot_vectors()
+    plot_pie_chart()
     pass
 
 
