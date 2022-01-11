@@ -760,8 +760,9 @@ def drop_n_std(vals,n=1):
     vals[vals<down] = np.nan
     return vals
 
-def P_PET_ratio():
-    fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+def P_PET_ratio(P_PET_fdir):
+    # fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+    fdir = P_PET_fdir
     dic = T.load_npy_dir(fdir)
     dic_long_term = {}
     for pix in dic:
@@ -775,6 +776,120 @@ def P_PET_ratio():
         long_term_vals = np.nanmean(vals)
         dic_long_term[pix] = long_term_vals
     return dic_long_term
+def plot_bar_trend_ratio():
+
+    ################## change area ##################
+    # fdir = '/Volumes/NVME2T/wen_proj/20220107/OneDrive_1_2022-1-9/1982-2015_first_last_five_years'
+    fdir = '/Volumes/NVME2T/wen_proj/20220111/trend_calculation_anomaly'
+    P_PET_fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+
+    year_range = '2002-2015'
+    # year_range = '1982-2015'
+
+    x_variable = 'Aridity'
+    # x_variable = 'VPD'
+    # y_variable = 'MODIS_NDVI'
+
+    y_variable = 'CSIF_fpar'
+    # y_variable = 'NIRv'
+    # y_variable = 'GIMMS_NDVI'
+    x_variable = x_variable + '_trend'
+    y_variable = y_variable + '_trend'
+    greening_trend_list = ['greening','browning']
+    x_trend_list = ['> 0','< 0',]
+    ################## change area ##################
+    # suptitle = f'{year_range} {x_variable} {y_variable}'
+    limited_area = ['energy_limited', 'water_limited', ]
+    period_list = ['early', 'peak', 'late', ]
+    P_PET_long_term_dic = P_PET_ratio(P_PET_fdir)
+
+    HI_zone_class_dic = P_PET_reclass(P_PET_long_term_dic)
+    # HI_zone_class_arr = DIC_and_TIF().pix_dic_to_spatial_arr(HI_zone_class_dic)
+    # plt.imshow(HI_zone_class_arr)
+    # plt.colorbar()
+    # plt.show()
+    # year_range_list = ['1982-2015', '2002-2015']
+    # flag = 0
+    # plt.figure()
+    for period in period_list:
+        folder = f'during_{period}_{year_range}'
+        # dic_all = DIC_and_TIF().void_spatial_dic_dic()
+        dic_all = {}
+        for f in T.listdir(join(fdir,folder)):
+            if not f.endswith('.npy'):
+                continue
+            fpath = join(fdir,folder,f)
+            arr = np.load(fpath)
+            T.mask_999999_arr(arr)
+            var_name = f.replace('.npy','')
+            var_name = var_name.replace(f'{year_range}_during_','')
+            var_name = var_name.replace(f'{period}_','')
+            dic = DIC_and_TIF().spatial_arr_to_dic(arr)
+            dic_all[var_name] = dic
+        df = T.spatial_dics_to_df(dic_all)
+
+        r_list = []
+        for i,row in df.iterrows():
+            r,c = row.pix
+            r_list.append(r)
+        df['r'] = r_list
+        df = df[df['r']<120]
+        T.add_dic_to_df(df,HI_zone_class_dic,'HI_class')
+        x_variable_p_value = f'{x_variable.replace("_trend","_p_value")}'
+        y_variable_p_value = f'{y_variable.replace("_trend","_p_value")}'
+        df_new = df[[x_variable,y_variable,
+                     x_variable_p_value,
+                     y_variable_p_value,
+                     'HI_class']]
+        df_new = df_new.dropna()
+        T.print_head_n(df_new)
+        zones_list = T.get_df_unique_val_list(df,'HI_class')
+
+        # df_greening_non_sig = df_new[df_new[y_variable_p_value]>0.1]
+        df_greening_sig = df_new[df_new[y_variable_p_value]<0.1]
+        # df_greening_sig = df_new
+
+        # print(len(df_new))
+        # print('non-sig',len(df_greening_non_sig)/len(df_new))
+        # print('sig greening',len(df_greening_sig_greening)/len(df_new))
+        # print('sig browning',len(df_greening_sig_browning)/len(df_new))
+        flag = 0
+        for zone in zones_list:
+            df_zone = df_greening_sig[df_greening_sig['HI_class']==zone]
+            parts = []
+            bottom = 0
+            color_list = ['g', 'cyan', 'yellow', 'r', ]
+            flag1 = 0
+            for y_trend in greening_trend_list:
+                if y_trend == 'greening':
+                    df_select_y = df_zone[df_zone[y_variable] > 0]
+                elif y_trend == 'browning':
+                    df_select_y = df_zone[df_zone[y_variable] < 0]
+                else:
+                    raise UserWarning
+                for x_trend in x_trend_list:
+                    if x_trend == '> 0':
+                        df_select_x = df_select_y[df_select_y[x_variable] >= 0]
+                    elif x_trend == '< 0':
+                        df_select_x = df_select_y[df_select_y[x_variable] < 0]
+                    else:
+                        raise UserWarning
+                    sum_ = 0
+                    ratio = len(df_select_x)/len(df_zone)
+                    plt.bar(zones_list[flag],ratio,bottom=bottom,color=color_list[flag1])
+                    text = f'{y_trend}\n{x_variable}{x_trend}'
+                    plt.text(zones_list[flag],bottom+ratio/2,text)
+                    flag1 += 1
+                    bottom += ratio
+                    parts.append(ratio)
+                    label_i = f'{zone}\n{y_trend}-{x_variable}{x_trend}'
+                    # labels.append(label_i+'\n'+str(round(ratio*100))+'%')
+                    # print(zone,'\n',y_trend,x_variable,x_trend,'\n',ratio,ratio_total)
+                    sum_+=ratio
+                    # color_list_all.append(colors_xtrend)
+            flag += 1
+        plt.show()
+
 
 def main():
     # plot_box()
@@ -783,7 +898,8 @@ def main():
     # plot_vectors()
     # plot_pie_chart()
     # plot_pie_chart_trend()
-    plot_pie_chart_trend_1()
+    # plot_pie_chart_trend_1()
+    plot_bar_trend_ratio()
     # P_PET_ratio()
     pass
 
