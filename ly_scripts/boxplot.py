@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from __init__ import *
 
@@ -890,6 +892,144 @@ def plot_bar_trend_ratio():
             flag += 1
         plt.show()
 
+def mask_NDVI(ndvi_mask_tif,df):
+    # tif = '/Volumes/NVME2T/wen_proj/20220111/NDVI_mask.tif'
+    tif = ndvi_mask_tif
+    arr = ToRaster().raster2array(tif)[0]
+    # plt.imshow(arr)
+    # plt.show()
+    dic = DIC_and_TIF().spatial_arr_to_dic(arr)
+    index_drop = []
+    spatial_dic = DIC_and_TIF().void_spatial_dic_nan()
+    for i,row in df.iterrows():
+        pix = row.pix
+        val = dic[pix]
+        spatial_dic[pix]=1
+        if val < -999:
+            index_drop.append(i)
+    arr_1 = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+    plt.imshow(arr_1)
+    plt.show()
+    print(index_drop)
+    exit()
+
+    return dic
+
+
+def plot_ratio_trend():
+    fdir = '/Volumes/NVME2T/wen_proj/20220111/1982-2015_during_early'
+    P_PET_fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+
+    x_variable = 'Aridity'
+    y_variable = 'GIMMS_NDVI'
+    n = 15  # every n year trend
+
+    P_PET_long_term_dic = P_PET_ratio(P_PET_fdir)
+    HI_zone_class_dic = P_PET_reclass(P_PET_long_term_dic)
+
+    greening_trend_list = ['greening', 'browning']
+    x_trend_list = ['> 0', '< 0', ]
+    x_fname = f'1982-2015_during_early_{x_variable}.npy'
+    y_fname = f'1982-2015_during_early_{y_variable}.npy'
+    x_fpath = join(fdir,x_fname)
+    y_fpath = join(fdir,y_fname)
+    dicx = T.load_npy(x_fpath)
+    dicy = T.load_npy(y_fpath)
+    vals_len = 9999
+    for pix in dicy:
+        vals = dicy[pix]
+        if len(vals) != 0:
+            vals_len = len(vals)
+        break
+
+    dic_all = {}
+    for pix in dicy:
+        dic_all[pix] = {}
+    for i in tqdm(range(vals_len)):
+        for pix in dicy:
+            if not pix in dicx:
+                continue
+            x_vals = dicx[pix]
+            if i + n >= vals_len:
+                continue
+            y_vals = dicy[pix]
+            indexs = list(range(i,i+n))
+            x_vals_pick = T.pick_vals_from_1darray(x_vals,indexs)
+            y_vals_pick = T.pick_vals_from_1darray(y_vals,indexs)
+            try:
+                x_trend,_,_ = KDE_plot().linefit(range(len(x_vals_pick)),x_vals_pick)
+                y_trend,_,_ = KDE_plot().linefit(range(len(y_vals_pick)),y_vals_pick)
+            except:
+                x_trend = np.nan
+                y_trend = np.nan
+            dic_i = {
+                f'{i}_{x_variable}_trend':x_trend,
+                f'{i}_{y_variable}_trend':y_trend
+                     }
+            dic_all[pix].update(dic_i)
+    df = T.dic_to_df(dic_all,'pix')
+    r_list = []
+    for i, row in df.iterrows():
+        r, c = row.pix
+        r_list.append(r)
+    df['r'] = r_list
+    df = df[df['r'] < 120]
+    # df = df.dropna(how='any')
+    T.add_dic_to_df(df, HI_zone_class_dic, 'HI_class')
+    zones_list = T.get_df_unique_val_list(df, 'HI_class')
+    for zone in zones_list:
+        df_zone = df[df['HI_class']==zone]
+        y_dic = {}
+        plt.figure()
+        for i in tqdm(range(vals_len-n),desc=zone):
+            x_col_name = f'{i}_{x_variable}_trend'
+            y_col_name = f'{i}_{y_variable}_trend'
+            y_dic_i = {}
+            for y_trend in greening_trend_list:
+                if y_trend == 'greening':
+                    df_select_y = df_zone[df_zone[y_col_name] > 0]
+                elif y_trend == 'browning':
+                    df_select_y = df_zone[df_zone[y_col_name] < 0]
+                else:
+                    raise UserWarning
+
+                for x_trend in x_trend_list:
+                    if x_trend == '> 0':
+                        df_select_x = df_select_y[df_select_y[x_col_name] >= 0]
+                    elif x_trend == '< 0':
+                        df_select_x = df_select_y[df_select_y[x_col_name] < 0]
+                    else:
+                        raise UserWarning
+                    ratio = len(df_select_x) / len(df_zone)
+                    # y_list.append(ratio)
+                    # plt.scatter(i, ratio,color=color_list[flag1])
+                    text = f'{y_trend}\n{x_variable}{x_trend}'
+                    y_dic_i[text] = ratio
+
+            y_dic[i] = y_dic_i
+        keys_list = []
+        for i in y_dic:
+            y_dic_i = y_dic[i]
+            for key in y_dic_i:
+                keys_list.append(key)
+            break
+        flag1 = 0
+        color_list = ['g', 'cyan', 'purple', 'r', ]
+        for key in keys_list:
+            y_list = []
+            x_list = []
+            for i in range(len(y_dic)):
+                y_dic_i = y_dic[i]
+                val = y_dic_i[key]
+                x_list.append(i)
+                y_list.append(val)
+            plt.plot(x_list,y_list,color=color_list[flag1],label=key)
+            flag1 += 1
+
+        plt.legend()
+        plt.title(zone)
+    plt.show()
+    T.print_head_n(df)
 
 def main():
     # plot_box()
@@ -899,8 +1039,10 @@ def main():
     # plot_pie_chart()
     # plot_pie_chart_trend()
     # plot_pie_chart_trend_1()
-    plot_bar_trend_ratio()
+    # plot_bar_trend_ratio()
     # P_PET_ratio()
+    plot_ratio_trend()
+    # mask_NDVI()
     pass
 
 
