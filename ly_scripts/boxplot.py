@@ -1031,6 +1031,223 @@ def plot_ratio_trend():
     plt.show()
     T.print_head_n(df)
 
+
+def plot_vectors1():
+    fdir = '/Volumes/NVME2T/wen_proj/20220107/OneDrive_1_2022-1-9/1982-2015_first_last_five_years'
+    water_balance_tif = '/Volumes/NVME2T/wen_proj/20220107/HI_difference.tif'
+    P_PET_fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+
+    P_PET_long_term_dic = P_PET_ratio(P_PET_fdir)
+    HI_zone_class_dic = P_PET_reclass(P_PET_long_term_dic)
+    period_list = ['early', 'peak', 'late', ]
+    order_list = ['first', 'last']
+    water_balance_dic = DIC_and_TIF().spatial_tif_to_dic(water_balance_tif)
+    for period in period_list:
+        data_dic = {'HI':[],'NDVI':[]}
+        for order in order_list:
+            folder = f'during_{period}_1982-2015_{order}_five'
+            HI_f = f'during_{period}_VPD_mean.npy'
+            NDVI_f = f'during_{period}_GIMMS_NDVI_mean.npy'
+            fpath_HI = join(fdir,folder,HI_f)
+            fpath_NDVI = join(fdir,folder,NDVI_f)
+            HI_arr = np.load(fpath_HI)
+            NDVI_arr = np.load(fpath_NDVI)
+            HI_arr[HI_arr<-9999] = np.nan
+            NDVI_arr[NDVI_arr<-9999] = np.nan
+            HI_dic = DIC_and_TIF().spatial_arr_to_dic(HI_arr)
+            NDVI_dic = DIC_and_TIF().spatial_arr_to_dic(NDVI_arr)
+            data_dic['HI'].append(HI_dic)
+            data_dic['NDVI'].append(NDVI_dic)
+        x1_dic = data_dic['HI'][0]
+        x2_dic = data_dic['HI'][1]
+        y1_dic = data_dic['NDVI'][0]
+        y2_dic = data_dic['NDVI'][1]
+
+        key_list = []
+        r_list = []
+        x1_list = []
+        x2_list = []
+        y1_list = []
+        y2_list = []
+        wb_list = []
+        for key in x1_dic:
+            r,c = key
+            key_list.append(key)
+            x1 = x1_dic[key]
+            x2 = x2_dic[key]
+            y1 = y1_dic[key]
+            y2 = y2_dic[key]
+            wb = water_balance_dic[key]
+
+            x1_list.append(x1)
+            x2_list.append(x2)
+            y1_list.append(y1)
+            y2_list.append(y2)
+            r_list.append(r)
+            wb_list.append(wb)
+
+        df = pd.DataFrame()
+        df['pix'] = key_list
+        df['r'] = r_list
+        df['x1'] = x1_list
+        df['x2'] = x2_list
+        df['y1'] = y1_list
+        df['y2'] = y2_list
+        df['wb'] = wb_list
+        df = T.add_dic_to_df(df,HI_zone_class_dic,'HI_class')
+
+        limited_area = T.get_df_unique_val_list(df,'HI_class')
+        limited_area = list(limited_area)
+        # print(limited_area)
+        # limited_area.remove('Humid')
+        df = df.dropna()
+        df_copy = copy.copy(df)
+        # for limited in limited_area:
+        df_ltd = df_copy[df_copy['HI_class'] != 'Humid']
+        # df_ltd = df_copy[df_copy['HI_class'] == 'Humid']
+        df = df_ltd
+        df = df[df['r']<120]
+        df = df[df['x1']<3]
+        df = df[df['x1']<3]
+        df = df[df['x1']!=0]
+        df = df[df['x2']!=0]
+        # if len(df) > 1000:
+        #     df = df.sample(n=1000)
+
+        plt.figure()
+        for i,row in df.iterrows():
+            x = row.x1
+            x2 = row.x2
+            y = row.y1
+            y2= row.y2
+            dx = x2 - x
+            dy = y2 - y
+            if dy > 0 and dx > 0:
+                plt.arrow(x,y,dx,dy,ec='g',fc='g',alpha=0.3,head_width=0)
+            elif dy > 0 and dx < 0:
+                plt.arrow(x,y,dx,dy,ec='cyan',fc='cyan',alpha=0.3,head_width=0)
+            elif dy < 0 and dx > 0:
+                plt.arrow(x,y,dx,dy,ec='purple',fc='purple',alpha=0.3,head_width=0)
+            elif dy < 0 and dx < 0:
+                plt.arrow(x, y, dx, dy, ec='r', fc='r',alpha=0.3,head_width=0)
+        # plt.title(limited)
+        plt.show()
+
+
+def NDVI_seasonal_compose():
+    NDVI_dir = '/Volumes/SSD/drought_response_Wen/data/GIMMS_NDVI/'
+    outdir = '/Volumes/SSD/drought_response_Wen/data/GIMMS_NDVI/seasonal'
+    T.mk_dir(outdir)
+    year_range = list(range(1982,2016))
+    tif_dir = join(NDVI_dir,'tif')
+    season_dic = {
+        'spring':(3,4,5),
+        'summer':(6,7,8),
+        'autumn':(9,10,11),
+        'winter':(12,1,2),
+    }
+
+    season_fpath_dic = {}
+
+    for season in season_dic:
+        season_fpath_dic[season] = {}
+        for y in year_range:
+            season_fpath_dic[season][y]=[]
+    for season in season_dic:
+        months_list = season_dic[season]
+        for f in T.listdir(tif_dir):
+            if not f.endswith('.tif'):
+                continue
+            date = f.split('.')[0]
+            year = date[:4]
+            month = date[4:]
+            month = int(month)
+            year = int(year)
+            if month in months_list:
+                season_fpath_dic[season][year].append(join(tif_dir,f))
+    for season in season_fpath_dic:
+        outdir_i = join(outdir,season)
+        T.mk_dir(outdir_i)
+        for year in year_range:
+            print(season,year)
+            outf = join(outdir_i,str(year)+'.tif')
+            flist = season_fpath_dic[season][year]
+            Pre_Process().compose_tif_list(flist,outf)
+
+def NDVI_seasonal_transform():
+    fdir = '/Volumes/SSD/drought_response_Wen/data/GIMMS_NDVI/seasonal'
+    outdir = '/Volumes/SSD/drought_response_Wen/data/GIMMS_NDVI/seasonal_perpix'
+    T.mk_dir(outdir)
+    for season in T.listdir(fdir):
+        print(season)
+        fdir_i = join(fdir,season)
+        outdir_i = join(outdir,season)
+        Pre_Process().data_transform(fdir_i,outdir_i)
+
+
+def NDVI_trend_line():
+    fdir = '/Volumes/SSD/drought_response_Wen/data/GIMMS_NDVI/seasonal_perpix'
+    NDVI_mask_tif = '/Volumes/NVME2T/wen_proj/20220111/NDVI_mask.tif'
+    NDVI_mask_dic = DIC_and_TIF().spatial_tif_to_dic(NDVI_mask_tif)
+    all_dic = {}
+    season_list = []
+    for season in T.listdir(fdir):
+        # if not season == 'spring':
+        #     continue
+        season_list.append(season)
+        fdir_i = join(fdir,season)
+        dic = T.load_npy_dir(fdir_i)
+        # vals_dic = {}
+        # for pix in dic:
+        #     vals = dic[pix]
+        #     T.mask_999999_arr(vals)
+        #     try:
+        #         k,_,_ = KDE_plot().linefit(range(len(vals)),vals)
+        #         trend_dic[pix] = k
+        #     except:
+        #         pass
+        all_dic[season] = dic
+    df = T.spatial_dics_to_df(all_dic)
+    r_list = []
+    for i,row in df.iterrows():
+        pix = row.pix
+        r,c = pix
+        r_list.append(r)
+    df['r'] = r_list
+    df = df[df['r']<120]
+    T.add_dic_to_df(df,NDVI_mask_dic,'NDVI_mask')
+    df = df.dropna()
+    for season in season_list:
+        vals_all = []
+        for i,row in df.iterrows():
+            vals = row[season]
+            vals_all.append(vals)
+        #     x = list(range(len(vals)))
+        #     y = vals
+        #     try:
+        #         k,_,_ = K.linefit(x,y)
+        #     except:
+        #         k = np.nan
+        #     k_list.append(k)
+        # df[f'{season}_trend'] = k_list
+        vals_all = np.array(vals_all)
+        vals_all_T = vals_all.T
+        mean_list = []
+        std_list = []
+        for y in vals_all_T:
+            mean = np.nanmean(y)
+            std = np.nanstd(y)
+            mean_list.append(mean)
+            std_list.append(std)
+        std_list = np.array(std_list)/8
+        mean_list = np.array(mean_list)
+        plt.figure()
+        plt.plot(mean_list,label=season)
+        plt.fill_between(range(len(mean_list)),mean_list+std_list,mean_list-std_list,alpha=0.2)
+        plt.legend()
+    plt.show()
+
+
 def main():
     # plot_box()
     # plot_scatter()
@@ -1040,9 +1257,13 @@ def main():
     # plot_pie_chart_trend()
     # plot_pie_chart_trend_1()
     # plot_bar_trend_ratio()
+    # plot_pie_trend_ratio()
+    # plot_vectors1()
     # P_PET_ratio()
-    plot_ratio_trend()
+    # plot_ratio_trend()
     # mask_NDVI()
+    # NDVI_seasonal_transform()
+    NDVI_trend_line()
     pass
 
 
