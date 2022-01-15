@@ -471,6 +471,26 @@ def HI_reclass(water_balance_tif):
         dic_reclass[pix] = label
     return dic_reclass
 
+def P_PET_reclass_int(dic):
+    dic_reclass = {}
+    for pix in dic:
+        val = dic[pix]
+        # label = None
+        label = np.nan
+        if val > 0.65:
+            # label = 'Humid'
+            label = 3
+        elif val < 0.2:
+            # label = 'Arid'
+            label = 0
+        elif val > 0.2 and val < 0.5:
+            # label = 'Semi Arid'
+            label = 1
+        elif val > 0.5 and val < 0.65:
+            # label = 'Semi Humid'
+            label = 2
+        dic_reclass[pix] = label
+    return dic_reclass
 
 def P_PET_reclass(dic):
     dic_reclass = {}
@@ -791,7 +811,8 @@ def plot_bar_trend_ratio():
     # fdir = '/Volumes/NVME2T/wen_proj/20220107/OneDrive_1_2022-1-9/1982-2015_first_last_five_years'
     fdir = '/Volumes/NVME2T/wen_proj/20220111/trend_calculation_anomaly'
     P_PET_fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
-
+    P_PET_long_term_dic = P_PET_ratio(P_PET_fdir)
+    HI_zone_class_dic = P_PET_reclass(P_PET_long_term_dic)
     year_range = '2002-2015'
     # year_range = '1982-2015'
 
@@ -810,9 +831,7 @@ def plot_bar_trend_ratio():
     # suptitle = f'{year_range} {x_variable} {y_variable}'
     limited_area = ['energy_limited', 'water_limited', ]
     period_list = ['early', 'peak', 'late', ]
-    P_PET_long_term_dic = P_PET_ratio(P_PET_fdir)
 
-    HI_zone_class_dic = P_PET_reclass(P_PET_long_term_dic)
     # HI_zone_class_arr = DIC_and_TIF().pix_dic_to_spatial_arr(HI_zone_class_dic)
     # plt.imshow(HI_zone_class_arr)
     # plt.colorbar()
@@ -1566,8 +1585,169 @@ def plot_ratio_trend1():
         plt.title(zone)
     plt.show()
     # T.print_head_n(df)
+def ndvi_spatial_trend_check():
+    fdir = '/Volumes/NVME2T/wen_proj/20220111/Archive(2)'
+    period = 'early'
+    folder = f'during_{period}_1982-2015'
+    f = f'1982-2015_during_{period}_GIMMS_NDVI_trend.npy'
+    arr_wen = np.load(join(fdir,folder,f))
+    arr_wen[arr_wen<-9999]=np.nan
+    mean = np.nanmean(arr_wen)
+    std = np.nanstd(arr_wen)
+    up = mean + std
+    down = mean - std
+    plt.imshow(arr_wen,vmax=up,vmin=down)
+    plt.colorbar()
+    plt.show()
+
+    pass
+def check_HI_Class():
+    P_PET_fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+    P_PET_long_term_dic = P_PET_ratio(P_PET_fdir)
+    HI_zone_class_dic = P_PET_reclass_int(P_PET_long_term_dic)
+    arr = DIC_and_TIF().pix_dic_to_spatial_arr(HI_zone_class_dic)
+    plt.imshow(arr,cmap='jet_r')
+    plt.colorbar()
+    plt.show()
 
 
+def co2_ndvi_limited_by_vpd():
+    # 横轴 vpd 纵轴 ndvi 和 co2
+    # co2_f = '/Volumes/NVME2T/wen_proj/20220111/1982-2015_during_early/1982-2015_during_early_CO2.npy'
+    # vpd_f = '/Volumes/NVME2T/wen_proj/20220111/1982-2015_during_early/1982-2015_during_early_VPD.npy'
+    # vpd_f = '/Volumes/NVME2T/wen_proj/20220111/origional/during_early_VPD.npy'
+    fdir = '/Volumes/NVME2T/wen_proj/20220111/origional/1982-2015_original_extraction_all_seasons'
+    multi_reg_f = '/Volumes/NVME2T/wen_proj/20220111/1982-2015_multi_linearearly_anomaly.npy'
+    NDVI_trenf_dir = '/Volumes/SSD/drought_response_Wen/data/GIMMS_NDVI/seasonal_perpix_trend_p'
+    seasons_list = ['early','peak','late',]
+    greening_trend_list = ['greening', 'browning']
+    x_trend_list = ['> 0', '< 0', ]
+    seasons_dic = {
+        'early':'spring',
+        'peak':'summer',
+        'late':'autumn',
+    }
+    K = KDE_plot()
+    multi_reg_dic = T.load_npy(multi_reg_f)
+    co2_multi_reg_dic = {}
+    for pix in multi_reg_dic:
+        dic_i = multi_reg_dic[pix]
+        # early_CO2_multi_reg = dic_i['early_CO2']
+        if not 'early_temperature' in dic_i:
+            continue
+        early_CO2_multi_reg = dic_i['early_temperature']
+        co2_multi_reg_dic[pix] = early_CO2_multi_reg
+    plt.figure(figsize=(20,24))
+    flag = 0
+    for season in seasons_list:
+        folder = f'1982-2015_extraction_during_{season}_growing_season_static'
+        ndvi_dir = f'/Volumes/SSD/drought_response_Wen/data/GIMMS_NDVI/seasonal_perpix/{seasons_dic[season]}'
+        HI_trend_df = get_variables_trend_df(season)
+        # zones_list = T.get_df_unique_val_list(HI_trend_df, 'HI_class')
+        NDVI_trend_f = join(NDVI_trenf_dir,f'{seasons_dic[season]}.npy')
+        NDVI_trend_dic = T.load_npy(NDVI_trend_f)
+        NDVI_trend_dic_k = {}
+        NDVI_trend_dic_p = {}
+        for pix in NDVI_trend_dic:
+            k,p = NDVI_trend_dic[pix]
+            NDVI_trend_dic_k[pix] = k
+            NDVI_trend_dic_p[pix] = p
+        co2_f = join(fdir,folder,f'during_{season}_CO2.npy')
+        vpd_f = join(fdir,folder,f'during_{season}_VPD.npy')
+        co2_dic = T.load_npy(co2_f)
+        vpd_dic = T.load_npy(vpd_f)
+        ndvi_dic = T.load_npy_dir(ndvi_dir)
+
+        vpd_trend_dic = {}
+        for pix in vpd_dic:
+            vals = vpd_dic[pix]
+            k,_,_ = K.linefit(range(len(vals)),vals)
+            vpd_trend_dic[pix] = k
+
+        df = HI_trend_df
+        df = T.add_spatial_dic_to_df(df,co2_dic,'co2')
+        df = T.add_spatial_dic_to_df(df,vpd_dic,'vpd')
+        df = T.add_spatial_dic_to_df(df,ndvi_dic,'ndvi')
+        df = T.add_spatial_dic_to_df(df,NDVI_trend_dic_k,'NDVI_trend_dic_k')
+        df = T.add_spatial_dic_to_df(df,NDVI_trend_dic_p,'NDVI_trend_dic_p')
+        df = T.add_spatial_dic_to_df(df,vpd_trend_dic,'vpd_trend')
+        df = T.add_spatial_dic_to_df(df,co2_multi_reg_dic,'co2_multi_reg')
+        HI_class_dic_new = {}
+        for i,row in df.iterrows():
+            pix = row.pix
+            HI_class = row['HI_class']
+            if HI_class == None:
+                HI_class_new = None
+            elif HI_class == 'Humid':
+                HI_class_new = 'Humid'
+            else:
+                HI_class_new = 'Non-Humid'
+            HI_class_dic_new[pix] = HI_class_new
+        df = T.add_spatial_dic_to_df(df,HI_class_dic_new,'HI_class_new')
+
+        # df = df[df['NDVI_trend_dic_p']<0.05]
+        df = df[df['r']<120]
+        zones_list = T.get_df_unique_val_list(HI_trend_df, 'HI_class_new')
+
+        T.print_head_n(df)
+        for zone in zones_list:
+            df_zone = df[df['HI_class_new']==zone]
+            # for greening in greening_trend_list:
+            #     if greening == 'greening':
+            #         df_greening = df_zone[df_zone['NDVI_trend_dic_k']>0]
+            #     else:
+            #         df_greening = df_zone[df_zone['NDVI_trend_dic_k']>0]
+                # for x_trend in x_trend_list:
+                #     if x_trend == '> 0':
+                #         df_x_trend = df_greening[df_greening['vpd_trend']>0]
+                #     else:
+                #         df_x_trend = df_greening[df_greening['vpd_trend']<0]
+            df_greening = df_zone
+            df_x_trend = df_greening
+            x_list = []
+            y_list = []
+            for i,row in df_x_trend.iterrows():
+                co2 = row['co2']
+                ndvi = row['ndvi']
+                vpd = row['vpd']
+                co2_multi_reg = row['co2_multi_reg']
+                co2 = np.array(co2)
+                ndvi = np.array(ndvi)
+                vpd = np.array(vpd)
+                co2[co2<-999] = np.nan
+                ndvi[ndvi<-999] = np.nan
+                vpd[vpd<-999] = np.nan
+
+                vpd_mean = np.nanmean(vpd)
+                # if vpd_mean > 1:
+                #     continue
+                try:
+                    vpd_trend,vpd_p,_ = K.linefit(list(range(len(vpd))),vpd)
+                    # if vpd_p > 0.05:
+                    #     continue
+                except:
+                    # print(vpd)
+                    vpd_trend = np.nan
+                # r,p = T.nan_correlation(ndvi,co2)
+                # x = vpd_mean
+                x = vpd_trend
+                y = co2_multi_reg
+                x_list.append(x)
+                y_list.append(y)
+            flag += 1
+            ax = plt.subplot(8,6,flag)
+            # plt.scatter(x_list,y_list)
+            cmap_ = K.cmap_with_transparency('Reds')
+            K.plot_scatter(x_list,y_list,cmap=cmap_,s=3,ax=ax,plot_fit_line=True)
+            # title = f'{season}-{zone}\n{greening}-vpd_etrend{x_trend}'
+            # title = f'{season}-{zone}\n{greening}'
+            title = f'{season}-{zone}'
+            print(title)
+            plt.title(title)
+            plt.xlabel('Annual VPD mean')
+            plt.ylabel('CO2 vs NDVI correlation')
+    plt.tight_layout()
+    plt.savefig('corr4.pdf')
 
 def main():
     # plot_box()
@@ -1588,7 +1768,10 @@ def main():
     # plot_ratio_trend1()
     # NDVI_trend_spatial()
     # get_variables_trend_df()
-    plot_ratio()
+    # plot_ratio()
+    # check_HI_Class()
+    # ndvi_spatial_trend_check()
+    co2_ndvi_limited_by_vpd()
     pass
 
 
