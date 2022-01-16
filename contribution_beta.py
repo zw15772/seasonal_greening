@@ -1340,16 +1340,18 @@ class Multi_liner_regression:  # 实现求beta 功能
     def __init__(self):
 
         self.period='late'
-        self.variable='MODIS_NDVI'
-        self.time_range='2002-2015'
-        # self.result_dir=results_root+'multiregression_anomaly/MODIS_NDVI/0104/'
-        self.result_dir = results_root + 'partial_correlation_anomaly/MODIS_NDVI/0105/'
-        # self.result_f = self.result_dir+'/{}_multi_linear{}_anomaly_{}.npy'.format(self.time_range,self.period,self.variable)
-        self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_anomaly_{}.npy'.format(self.time_range,self.period,self.variable)
-        self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_anomaly_{}.npy'.format(
-            self.time_range, self.period,self.variable)
-        self.x_dir = results_root+'partial_correlation_X_variables_2/{}_during_{}/'.format(self.time_range,self.period,)
-        self.y_f = results_root+'partial_correlation_X_variables_2/{}_during_{}/{}_during_{}_{}.npy'.format(self.time_range,self.period,self.time_range,self.period,self.variable)
+        self.variable='GIMMS_NDVI'
+        self.time_range='1982-2015'
+        self.result_dir=results_root+'multiregression_anomaly/GIMMS_NDVI/'
+        # self.result_dir = results_root + 'partial_correlation_anomaly/MODIS_NDVI/0105/'
+        self.result_f = self.result_dir+'/{}_multi_linear{}_anomaly_{}.npy'.format(self.time_range,self.period,self.variable)
+        # self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_anomaly_{}.npy'.format(self.time_range,self.period,self.variable)
+        # self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_anomaly_{}.npy'.format(
+        #     self.time_range, self.period,self.variable)
+        self.x_dir=results_root+'anomaly_variables_independently/{}_during_{}/'.format(self.time_range,self.period)
+        # self.x_dir = results_root+'partial_correlation_X_variables_2/{}_during_{}/'.format(self.time_range,self.period,)
+        # self.y_f = results_root+'partial_correlation_X_variables_2/{}_during_{}/{}_during_{}_{}.npy'.format(self.time_range,self.period,self.time_range,self.period,self.variable)
+        self.y_f=results_root+'anomaly_variables_independently/{}_during_{}/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period,self.time_range,self.period)
         self.y_mean = results_root + 'mean_calculation_original/during_{}_{}/during_{}_{}_mean.npy'.format(self.period,self.time_range,self.period,self.variable)
         T.mk_dir(self.result_dir,force=True)
         pass
@@ -1358,10 +1360,10 @@ class Multi_liner_regression:  # 实现求beta 功能
     def run(self):
 
         # step 1 build dataframe
-        # df = self.build_df(self.x_dir,self.y_f,self.period,self.time_range,)
-        # x_var_list = self.__get_x_var_list(self.x_dir,self.period, self.time_range)
+        df = self.build_df(self.x_dir,self.y_f,self.period,self.time_range,)
+        x_var_list = self.__get_x_var_list(self.x_dir,self.period, self.time_range)
         # # # step 2 cal correlation
-        # self.cal_multi_regression_beta(df, x_var_list,14)  #修改参数
+        self.cal_multi_regression_beta(df, x_var_list,34)  #修改参数
         # self.cal_partial_correlation(df, x_var_list,14)  #修改参数
         self.max_contribution()
         # self.variables_contribution()
@@ -1374,16 +1376,20 @@ class Multi_liner_regression:  # 实现求beta 功能
         for x_f in T.listdir(x_dir):
 
 
-            if x_f == '{}_during_{}_CSIF.npy'.format(time_range, period, ):
-                continue
-            if x_f == '{}_during_{}_CSIF_fpar.npy'.format(time_range, period, ):
-                continue
             if x_f == '{}_during_{}_GIMMS_NDVI.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_MODIS_NDVI.npy'.format(time_range, period, ):
-                continue
+            if x_f == '{}_during_{}_VPD.npy'.format(time_range, period, ):
+                x_f_list.append(x_dir + x_f)
+            if x_f == '{}_during_{}_CO2.npy'.format(time_range, period, ):
+                x_f_list.append(x_dir + x_f)
+            if x_f == '{}_during_{}_temperature.npy'.format(time_range, period, ):
+                x_f_list.append(x_dir + x_f)
+            if x_f == '{}_during_{}_PAR.npy'.format(time_range, period, ):
+                x_f_list.append(x_dir + x_f)
+            if x_f == '{}_during_{}_CCI_SM.npy'.format(time_range, period, ):
+                x_f_list.append(x_dir + x_f)
 
-            x_f_list.append(x_dir + x_f)
+
         print(x_f_list)
         x_var_list = []
         for x_f in x_f_list:
@@ -1419,17 +1425,20 @@ class Multi_liner_regression:  # 实现求beta 功能
         x_f_list = []
         for x_f in T.listdir(x_dir):
 
-
-            if x_f == '{}_during_{}_CSIF.npy'.format(time_range, period, ):
-                continue
-            if x_f == '{}_during_{}_CSIF_fpar.npy'.format(time_range, period, ):
-                continue
             if x_f == '{}_during_{}_GIMMS_NDVI.npy'.format(time_range, period, ):
                 continue
-            if x_f == '{}_during_{}_MODIS_NDVI.npy'.format(time_range, period, ):
-                continue
+            if x_f == '{}_during_{}_VPD.npy'.format(time_range, period, ):
+                x_f_list.append(x_dir + x_f)
+            if x_f == '{}_during_{}_CO2.npy'.format(time_range, period, ):
+                x_f_list.append(x_dir + x_f)
+            if x_f == '{}_during_{}_temperature.npy'.format(time_range, period, ):
+                x_f_list.append(x_dir + x_f)
+            if x_f == '{}_during_{}_PAR.npy'.format(time_range, period, ):
+                x_f_list.append(x_dir + x_f)
+            if x_f == '{}_during_{}_CCI_SM.npy'.format(time_range, period, ):
+                x_f_list.append(x_dir + x_f)
 
-            x_f_list.append(x_dir + x_f)
+
         print(x_f_list)
         df = pd.DataFrame()
         y_arr = T.load_npy(y_f)

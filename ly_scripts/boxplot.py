@@ -308,21 +308,23 @@ def plot_pie_chart():
 
     ################## change area ##################
     # fdir = '/Volumes/NVME2T/wen_proj/20220107/OneDrive_1_2022-1-9/1982-2015_first_last_five_years'
-    fdir = '/Volumes/NVME2T/wen_proj/20220107/2002-2015_first_last_five_years'
-    water_balance_tif = '/Volumes/NVME2T/wen_proj/20220107/HI_difference.tif'
+    fdir = results_root+'mean_calculation_original/2002-2015_first_last_five_years'
+    water_balance_tif = results_root+'mean_calculation_original/HI_difference.tif'
     year_range = '2002-2015'
     # x_variable = 'Aridity'
     x_variable = 'VPD'
     # y_variable = 'MODIS_NDVI'
-    y_variable = 'GIMMS_NDVI'
-
+    # y_variable = 'CSIF_fpar'
+    y_variable = 'CSIF'
+    # y_variable = 'GIMMS_NDVI'
+######### water supply p:pet  the less x, the drier
     # labels = [
     #     'wetter greening',
     #     'dryer greening',
     #     'wetter browning',
     #     'dryer browning',
     # ]
-
+######### VPD label   the more x, the drier
     labels = [
         'dryer greening',
         'wetter greening',
@@ -780,8 +782,8 @@ def plot_bar_trend_ratio():
 
     ################## change area ##################
     # fdir = '/Volumes/NVME2T/wen_proj/20220107/OneDrive_1_2022-1-9/1982-2015_first_last_five_years'
-    fdir = '/Volumes/NVME2T/wen_proj/20220111/trend_calculation_anomaly'
-    P_PET_fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+    fdir = results_root+'trend_calculation_anomaly'
+    P_PET_fdir = data_root+'/original_dataset/aridity_P_PET_dic'
 
     year_range = '2002-2015'
     # year_range = '1982-2015'
@@ -789,8 +791,10 @@ def plot_bar_trend_ratio():
     x_variable = 'Aridity'
     # x_variable = 'VPD'
     # y_variable = 'MODIS_NDVI'
+    # y_variable = 'GIMMS_NDVI'
+    y_variable = 'CSIF'
 
-    y_variable = 'CSIF_fpar'
+    # y_variable = 'CSIF_fpar'
     # y_variable = 'NIRv'
     # y_variable = 'GIMMS_NDVI'
     x_variable = x_variable + '_trend'
@@ -879,6 +883,7 @@ def plot_bar_trend_ratio():
                     plt.bar(zones_list[flag],ratio,bottom=bottom,color=color_list[flag1])
                     text = f'{y_trend}\n{x_variable}{x_trend}'
                     plt.text(zones_list[flag],bottom+ratio/2,text)
+                    plt.title(y_variable+'_'+year_range+'_'+period)
                     flag1 += 1
                     bottom += ratio
                     parts.append(ratio)

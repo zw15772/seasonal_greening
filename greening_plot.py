@@ -11,10 +11,10 @@ def mk_dir(outdir):
 
 class Plot_dataframe:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2002-2015/'
+        self.this_class_arr = results_root + 'Data_frame_1982-2015/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_2002-2015_df.df'
+        self.dff = self.this_class_arr + 'Data_frame_1982-2015_df.df'
 
 
 
@@ -24,7 +24,10 @@ class Plot_dataframe:
 
         # self.call_greening_trend_bar(df)
         # self.call_correlation_bar(df)
-        self.call_multi_correlation_bar(df)
+        # self.call_multi_correlation_bar(df)
+        # self.call_plot_line_for_three_seasons(df)
+        # self.call_plot_line_NDVI_three_seasons(df)
+        self.call_plot_LST_for_three_seasons(df)
 
 
 
@@ -73,37 +76,33 @@ class Plot_dataframe:
             return df
             # raise Warning('{} is already existed'.format(self.dff))
 
-    def call_plot_line_for_three_seasons(self):
+    def call_plot_line_for_three_seasons(self,df):
         period_name=['early','peak','late']
         for period in period_name:
-            f=self.this_class_arr+'{}_df.df'.format(period)
-            df = self.__gen_df_init_wen(f)
-            column_name='during_{}_CSIF_par'.format(period)
+
+            column_name='1982-2015_GIMMS_NDVI_{}_anomaly'.format(period)
             # column_name='%CSIF_par_{}'.format(period)
             print(column_name)
             self.plot_line_for_three_seasons(df,column_name)
         plt.legend()
         plt.show()
 
-            # df1 = df1['%CSIF_par_early']
-            # df1 = df1[df1['%CSIF_par_peak'] > -1]
-            # df1 = df1[df1['%CSIF_par_peak'] < 1]
-            # df2 = self.__gen_df_init()
-            # df2 = df2['%CSIF_par_peak']
-            # df2 = df2[df2['%CSIF_par_peak'] > -1]
-            # df2 = df2[df2['%CSIF_par_peak'] < 1]
-            # df3 = self.__gen_df_init()
-            # df3 = df3['%CSIF_par_late']
-            # df3 = df3[df3['%CSIF_par_late'] > -1]
-            # df3 = df3[df3['%CSIF_par_late'] < 1]
-            # list = [df1, df2, df3]
+    def call_plot_line_NDVI_three_seasons(self,df):
+        period_name=['early','peak','late']
+        for period in period_name:
 
+            column_name='1982-2015_GIMMS_NDVI_{}_change%'.format(period)
+            # column_name='%CSIF_par_{}'.format(period)
+            print(column_name)
+            self.plot_line_NDVI(df,column_name)
+        plt.legend()
+        plt.show()
 
 
     def plot_line_for_three_seasons(self,df,y_name):  # 画anomaly
         df = df[df['row'] < 120]
-        df = df[df[y_name] > -2]
-        df = df[df[y_name] < 2]
+        df = df[df['NDVI_MASK'] ==1]
+
         # plt.hist(df[y_name], bins=80)
         # plt.show()
 
@@ -148,7 +147,10 @@ class Plot_dataframe:
         plt.plot(mean_value_yearly, label=y_name)
         plt.fill_between(range(len(mean_value_yearly)), up_list, bottom_list, alpha=0.3, zorder=-1)
         plt.xticks(range(len(mean_value_yearly)), year_list)
-        # plt.show()
+        plt.show()
+
+
+
 
     def call_plot_variables_for_greening_and_browning(self):
         period_name=['early','peak','late']
@@ -288,14 +290,23 @@ class Plot_dataframe:
 
 
 
-    def call_plot_LST_for_three_seasons(self):
+    def call_plot_LST_for_three_seasons(self,df):
+        df = df[df['row'] < 120]
+        df = df[df['NDVI_MASK'] ==1]
+        df=df[df['HI_class']!='Humid']
+
+
         period_name=['early','peak','late']
         color_list=['r','g','b']
         flag=0
         for period in period_name:
-            f=self.this_class_arr+'{}_df.df'.format(period)
-            df = self.__gen_df_init_wen(f)
-            column_name='{}_pre_30_LST'.format(period)
+            df = df[df['during_{}_VPD_trend_1982-2015'.format(period)]> 0]
+            # df = df[df['original_during_{}_GIMMS_NDVI_trend_1982-2015'.format(period)] > 0]
+
+            # column_name='1982-2015_GIMMS_NDVI_{}_anomaly'.format(period)
+            # column_name = '2002-2015_{}_MODIS_NDVI_anomaly'.format(period)
+            column_name='1982-2015_GIMMS_NDVI_{}_anomaly'.format(period)
+            # column_name='anomaly_1982-2015_during_{}_Aridity'.format(period)
             # column_name='{}_pre_15_LST'.format(period)
             # column_name='%CSIF_par_{}'.format(period)
             print(column_name)
@@ -321,12 +332,6 @@ class Plot_dataframe:
 
     def plot_LST_for_three_seasons(self,df,column_name,color):
 
-        df = df[df['r_list'] < 120]
-        df = df[df[column_name] > -2]
-        df = df[df[column_name] < 2]
-        # plt.hist(df[column_name], bins=80)
-        # plt.show()
-
         dic = {}
         mean_val = {}
         confidence_value = {}
@@ -343,6 +348,7 @@ class Plot_dataframe:
         for year in tqdm(year_list):  # 构造字典的键值，并且字典的键：值初始化
             dic[year] = []
             mean_val[year] = []
+            std_val[year]=[]
             confidence_value[year] = []
             # p_value[year] = []
             # k_value[year] = []
@@ -355,12 +361,15 @@ class Plot_dataframe:
                 val = row[column_name]
                 dic[year].append(val)
             val_list = np.array(dic[year])
+            val_list=T.remove_np_nan(val_list)
             n = len(val_list)
             mean_val_i = np.nanmean(val_list)
+            std_val_i= np.nanstd(val_list)
             se = stats.sem(val_list)
             h = se * stats.t.ppf((1 + 0.95) / 2., n - 1)
             confidence_value[year] = h
             mean_val[year] = mean_val_i
+            std_val[year]=std_val_i
 
 
 
@@ -380,11 +389,18 @@ class Plot_dataframe:
         fit_value_yearly=[]
         p_value_yearly=[]
 
+
+
+
         for year in year_list:
             mean_value_yearly.append(mean_val[year])
-            up_list.append(mean_val[year] + confidence_value[year])
-            bottom_list.append(mean_val[year] - confidence_value[year])
-            fit_value_yearly.append(k_value*(year-2002)+b_value)
+            # up_list.append(mean_val[year] + confidence_value[year])
+            # bottom_list.append(mean_val[year] - confidence_value[year])
+            up_list.append(mean_val[year] + 0.125 * std_val[year])
+            bottom_list.append(mean_val[year] - 0.125 * std_val[year])
+            fit_value_yearly.append(k_value*(year-1982)+b_value)
+        print(up_list)
+        print(bottom_list)
 
 
         plt.plot(mean_value_yearly, label=column_name,c=color)
@@ -429,7 +445,7 @@ class Plot_dataframe:
         # plt.show()
 
 
-    def plot_line_CSIF_par(self,df,koppen):
+    def plot_line_NDVI(self,df,column_name):
 
         dic={}
         mean_val={}
@@ -448,7 +464,7 @@ class Plot_dataframe:
             df_pick = df[df['year']==year]
             for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
                 pix = row.pix
-                val = row['%CSIF_par_late']
+                val = row[column_name]
                 dic[year].append(val)
             val_list = np.array(dic[year])
             mean_val[year]=np.nanmean(val_list)
@@ -460,7 +476,7 @@ class Plot_dataframe:
             mean_value_yearly.append(mean_val[year])
             up_list.append(mean_val[year]+0.25*std_val[year])
             bottom_list.append(mean_val[year]-0.25*std_val[year])
-        plt.plot(mean_value_yearly,label=koppen)
+        plt.plot(mean_value_yearly)
         plt.fill_between(range(len(mean_value_yearly)),up_list,bottom_list,alpha=0.3,zorder=-1)
         plt.xticks(range(len(mean_value_yearly)),year_list)
         plt.show()

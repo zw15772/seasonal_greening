@@ -22,9 +22,9 @@ class process_data:
         # self.resample_NIRv()
         # self.resample_VOD()
         # self.sum_PET()
-        self.aridity()
+        # self.aridity()
         # self.mean_aridity()
-        # self.Mean_LST()
+        self.Mean_LST()
         # self.conversion()
         # self.read_mat()
         # self.MVC()
@@ -322,9 +322,9 @@ class process_data:
 
     # function 求LST 平均温度
     def Mean_LST(self):
-        fdir1 = data_root + 'Terraclimate/tmmn_resample/'
-        fdir2 = data_root + 'Terraclimate/tmmx_resample/'
-        outdir = data_root + 'Terraclimate/mean_temperature/'
+        fdir1 = data_root + 'Terraclimate/Temp/tmmn_resample/'
+        fdir2 = data_root + 'Terraclimate/Temp/tmmx_resample/'
+        outdir = data_root + 'Terraclimate/Temp/mean_temperature/'
 
         T.mk_dir(outdir)
 
@@ -334,9 +334,9 @@ class process_data:
                     continue
                 if not f2.endswith('.tif'):
                     continue
-                # print(f1.split('_')[2])
-                # print(f2.split('_')[2])
-                # exit()
+                print(f1.split('_')[2])
+                print(f2.split('_')[2])
+                exit()
                 if f1.split('_')[2]==f2.split('_')[2]:
                     dataset1 = gdal.Open(fdir1 + f1)
                     dataset2 = gdal.Open(fdir2 + f2)
@@ -460,64 +460,92 @@ class process_data:
         # DIC_and_TIF().arr_to_tif(arr_sum, outdir + 'NIRv_resample_' + '{}'.format(date) + '.tif')
 
 
-    def aridity(self): # 实现P:PET
-        fdir2 = data_root + 'Terraclimate/PET/'
+    def aridity(self): # 实现P:PET  #### 今后遍历
+
         fdir1 = data_root + 'Terraclimate/Precip/precip_resample/'
+        fdir2 = data_root + 'Terraclimate/PET/'
 
         outdir = data_root + 'Terraclimate/aridity_P_PET/'
-
         T.mk_dir(outdir)
+        date_dic={}
+        date_dic_2={}
+        for year in range(1982,2016):
+            for month in range(1,13):
+                date_dic[(year,month)]=[]
+                date_dic_2[(year,month)]=[]
 
         for f1 in tqdm(sorted(os.listdir(fdir1))):
-            for f2 in tqdm(sorted(os.listdir(fdir2))):
-                if not f1.endswith('.tif'):
-                    continue
-                if not f2.endswith('.tif'):
-                    continue
-                print(f1.split('.')[0].split('_')[-1].split('-')[0])
-                f1_name=f1.split('.')[0].split('_')[-1].split('-')[0]
-                f2_name=f2.split('_')[0][0:4]
-                print(f2.split('_')[0][0:4])
+            if not f1.endswith('.tif'):
+                continue
+            if f1.startswith('.'):
+                continue
+            f1_re=f1.replace('precip_resample_','')
+            f1_slpit=f1_re.split('.')[0].split('-')
+            year,month,day=f1_slpit
+            year=int(year)
+            month=int(month)
+            if (year,month) not in date_dic:
+                continue
+            date_dic[(year,month)].append(fdir1+f1)
+        # print(date_dic)
 
-                if f1_name == f2_name:
-                    dataset1 = gdal.Open(fdir1 + f1)
-                    dataset2 = gdal.Open(fdir2 + f2)
-                    bandf1 = dataset1.GetRasterBand(1)
-                    bandf1_array = bandf1.ReadAsArray()
-                    bandf1_array = bandf1_array[:-1]
+        for f2 in tqdm(sorted(os.listdir(fdir2))):
+            if not f2.endswith('.tif'):
+                continue
+            if f2.startswith('.'):
+                continue
 
-                    bandf2 = dataset2.GetRasterBand(1)
-                    bandf2_array = bandf2.ReadAsArray()
-                    # mean_array = np.zeros(range(len(band2_array)), range(len(band2_array)[0]))
-                    # mean_array = [[0] * len(band2_array[0]) for row in range(len(band2_array))]
-                    aridity_array = np.ones_like(bandf2_array)*(-999999)
-                    for r in range(len(bandf1_array)):
-                        for c in range(len(bandf1_array[0])):
-                            if bandf2_array[r][c]<= 0:
-                                continue
-                            val1=bandf1_array[r][c]
-                            val2 = bandf2_array[r][c]
-                            if val1<-9999:
-                                continue
-                            if val2<-9999:
-                                continue
-                            # print(r,c)
-                            aridity_array[r][c] = (bandf1_array[r][c] / bandf2_array[r][c])
-                    aridity_array = np.array(aridity_array)
-                    # plt.imshow(aridity_array)
-                    # plt.show()
-                    # 配置文件
-                    geotransform = dataset1.GetGeoTransform()
-                    longitude_start = geotransform[0]
-                    latitude_start = geotransform[3]
-                    pixelWidth = geotransform[1]
-                    pixelHeight = geotransform[5]
-                    date = f1.split('_')[2]
-                    print(date)
+            f2_slpit=f2.split('.')[0]
+            year=f2_slpit[0:4]
+            month=f2_slpit[4:7]
+            year=int(year)
+            month=int(month)
 
-                    newRasterfn = outdir + 'aridity_{}'.format(date)
+            if (year,month) not in date_dic_2:
+                continue
+            date_dic_2[(year,month)].append(fdir2+f2)
+        # print(date_dic_2)
 
-                    ToRaster().array2raster(newRasterfn, longitude_start, latitude_start, pixelWidth, pixelHeight, aridity_array, ndv=-999999)
+        for date in tqdm(date_dic):
+            fpath1=date_dic[date][0]
+            fpath2=date_dic_2[date][0]
+            dataset1 = gdal.Open(fpath1)
+            dataset2 = gdal.Open(fpath2)
+            bandf1 = dataset1.GetRasterBand(1)
+            bandf1_array = bandf1.ReadAsArray()
+            bandf1_array = bandf1_array[:-1]
+
+            bandf2 = dataset2.GetRasterBand(1)
+            bandf2_array = bandf2.ReadAsArray()
+            # mean_array = np.zeros(range(len(band2_array)), range(len(band2_array)[0]))
+            # mean_array = [[0] * len(band2_array[0]) for row in range(len(band2_array))]
+            aridity_array = np.ones_like(bandf2_array)*(-999999)
+            for r in range(len(bandf1_array)):
+                for c in range(len(bandf1_array[0])):
+                    if bandf2_array[r][c]<= 0:
+                        continue
+                    val1=bandf1_array[r][c]
+                    val2 = bandf2_array[r][c]
+                    if val1<-9999:
+                        continue
+                    if val2<-9999:
+                        continue
+                    # print(r,c)
+                    aridity_array[r][c] = (bandf1_array[r][c] / bandf2_array[r][c])
+            aridity_array = np.array(aridity_array)
+            # plt.imshow(aridity_array)
+            # plt.show()
+            # 配置文件
+            geotransform = dataset1.GetGeoTransform()
+            longitude_start = geotransform[0]
+            latitude_start = geotransform[3]
+            pixelWidth = geotransform[1]
+            pixelHeight = geotransform[5]
+            year,month=date
+
+            newRasterfn = outdir + 'aridity_{}{:02d}.tif'.format(year,month)
+
+            ToRaster().array2raster(newRasterfn, longitude_start, latitude_start, pixelWidth, pixelHeight, aridity_array, ndv=-999999)
 
     def alignment(self): # 对于行列缺失的（例如缺失南极，补齐功能）
 

@@ -7,10 +7,11 @@ from pingouin import partial_corr
 class Build_dataframe:
 
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2002-2015/'
+        self.this_class_arr = results_root + 'Data_frame_1982-2015/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Data_frame_2002-2015_df.df'
+        self.dff = self.this_class_arr + 'Data_frame_1982-2015_df.df'
+        self.P_PET_dir=data_root+'original_dataset/aridity_P_PET_dic/'
         pass
 
 
@@ -30,20 +31,25 @@ class Build_dataframe:
         # df = self.add_Pierre_GIMMIS_NDVI_to_df(df)
         # df=self.add_row(df)
         # df = self.add_anomaly_to_df(df)
-        # df=self.add_trend_to_df(df)
+        df=self.add_trend_to_df(df)
         # df=self.add_p_val_trend_to_df(df)
         # df=self.add_mean_to_df(df)
         # df=self.add_CV_to_df(df)
         # df=self.add_soil_data_to_df(df)
         # df=self.add_MAP_MAT_to_df(df)
+        # df = self.add_NDVI_mask(df)
         # df=self.add_winter_to_df(df)
         # df=self.add_Koppen_data_to_df(df)
         # df=self.add_landcover_data_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_partial_correlation_to_df(df)
+        # P_PET_dic=self.P_PET_ratio(self.P_PET_dir)
+        # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
+        # df=T.add_dic_to_df(df,P_PET_reclass_dic,'HI_class')
 
         # df=self.show_field(df)
-        # df=self.drop_field_df(df)
+        df=self.drop_field_df(df)
+
         # df=self.__rename_dataframe_columns(df)
 
 
@@ -79,7 +85,7 @@ class Build_dataframe:
         return df
         # return df_early,dff
 
-    def __df_to_excel(self,df,dff,n=1000,random=False):
+    def __df_to_excel(self,df,dff,n=1000,random=True):
         dff=dff.split('.')[0]
         if n == None:
             df.to_excel('{}.xlsx'.format(dff))
@@ -149,11 +155,11 @@ class Build_dataframe:
 
     def add_anomaly_GIMMIS_NDVI_to_df(self, df):
         period = 'late'
-        time='2002-2015'
-        f = results_root + 'anomaly_variables_independently/{}_during_{}/{}_during_{}_MODIS_NDVI.npy'.format(time,period,time,period)
+        time='1982-1998'
+        f = results_root + 'anomaly_variables_independently/{}_during_{}/{}_during_{}_GIMMS_NDVI.npy'.format(time,period,time,period)
 
         NDVI_dic = T.load_npy(f)
-        f_name = '{}_{}_MODIS_NDVI_anomaly'.format(time,period)
+        f_name = 'anomaly_{}_during_{}_GIMMS_NDVI'.format(time,period)
         print(f_name)
         # exit()
         NDVI_list = []
@@ -165,10 +171,10 @@ class Build_dataframe:
                 NDVI_list.append(np.nan)
                 continue
             vals = NDVI_dic[pix]
-            if len(vals) != 14:
+            if len(vals) != 17:
                 NDVI_list.append(np.nan)
                 continue
-            v1 = vals[year - 2002]
+            v1 = vals[year - 1982]
             NDVI_list.append(v1)
         df[f_name] = NDVI_list
         return df
@@ -231,22 +237,24 @@ class Build_dataframe:
     def add_trend_to_df(self, df):
         period_list=['early', 'peak', 'late']
         # period_list = ['early']
-        time='2002-2015'
+        time='1982-2015'
         for period in period_list:
-            fdir = results_root + 'trend_calculation_anomaly/during_{}_{}/'.format(period, time)
+            fdir = results_root + 'trend_calculation_original/during_{}_{}/'.format(period, time)
             for f in (os.listdir(fdir)):
                 # print()
                 if not f.endswith('.npy'):
                     continue
                 if 'p_value' in f:
                     continue
-                if f == '{}_during_{}_root_soil_moisture_trend.npy'.format(time, period):
-                    continue
-                if f == '{}_during_{}_surf_soil_moisture_trend.npy'.format(time, period):
-                    continue
-                if f == '{}_during_{}_VOD_trend.npy'.format(time, period):
-                    continue
-                if f == '{}_during_{}_NIRv_trend.npy'.format(time, period):
+                # if f == '{}_during_{}_root_soil_moisture_trend.npy'.format(time, period):
+                #     continue
+                # if f == '{}_during_{}_surf_soil_moisture_trend.npy'.format(time, period):
+                #     continue
+                # if f == '{}_during_{}_VOD_trend.npy'.format(time, period):
+                #     continue
+                # if f == '{}_during_{}_NIRv_trend.npy'.format(time, period):
+                #     continue
+                if f !='{}_during_{}_GIMMS_NDVI_trend.npy'.format(time, period):
                     continue
 
                 val_array = np.load(fdir + f)
@@ -812,31 +820,100 @@ class Build_dataframe:
         df['row'] = r_list
         return df
 
+    def add_NDVI_mask(self,df):
+        f = '/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
+
+        array, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(f)
+        array = np.array(array, dtype=np.float)
+        val_dic = DIC_and_TIF().spatial_arr_to_dic(array)
+        f_name = 'NDVI_MASK'
+        print(f_name)
+        # exit()
+        val_list = []
+        for i, row in tqdm(df.iterrows(), total=len(df)):
+
+            pix = row['pix']
+            if not pix in val_dic:
+                val_list.append(np.nan)
+                continue
+            vals = val_dic[pix]
+            if vals < -99:
+                val_list.append(np.nan)
+                continue
+            val_list.append(vals)
+        df[f_name] = val_list
+        return df
+
+    def P_PET_ratio(self, P_PET_fdir):
+        # fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+        fdir = P_PET_fdir
+        dic = T.load_npy_dir(fdir)
+        dic_long_term = {}
+        for pix in dic:
+            vals = dic[pix]
+            vals = np.array(vals)
+            T.mask_999999_arr(vals)
+            vals[vals == 0] = np.nan
+            if np.isnan(np.nanmean(vals)):
+                continue
+            vals = self.drop_n_std(vals)
+            long_term_vals = np.nanmean(vals)
+            dic_long_term[pix] = long_term_vals
+        return dic_long_term
+
+    def P_PET_reclass(self,dic):
+        dic_reclass = {}
+        for pix in dic:
+            val = dic[pix]
+            label = None
+            # label = np.nan
+            if val > 0.65:
+                label = 'Humid'
+                # label = 3
+            elif val < 0.2:
+                label = 'Arid'
+                # label = 0
+            elif val > 0.2 and val < 0.5:
+                label = 'Semi Arid'
+                # label = 1
+            elif val > 0.5 and val < 0.65:
+                label = 'Semi Humid'
+                # label = 2
+            dic_reclass[pix] = label
+        return dic_reclass
+
+    def drop_n_std(self,vals, n=1):
+        vals = np.array(vals)
+        mean = np.nanmean(vals)
+        std = np.nanstd(vals)
+        up = mean + n * std
+        down = mean - n * std
+        vals[vals > up] = np.nan
+        vals[vals < down] = np.nan
+        return vals
+
     def __rename_dataframe_columns(self, df):
 
-        new_name_dic = {
+            new_name_dic = {
 
-            '2002-2015_during_late_MODIS_NDVI_trend_2002-2015': '2002-2015_during_late_MODIS_NDVI_trend',
-            '2002-2015_during_early_MODIS_NDVI_trend_2002-2015': '2002-2015_during_early_MODIS_NDVI_trend',
-            '2002-2015_during_peak_MODIS_NDVI_trend_2002-2015': '2002-2015_during_peak_MODIS_NDVI_trend',
-            '2002-2015_during_late_PAR_trend_2002-2015': '2002-2015_during_late_PAR_trend',
-            '2002-2015_during_early_PAR_trend_2002-2015': '2002-2015_during_early_PAR_trend',
-            '2002-2015_during_peak_PAR_trend_2002-2015': '2002-2015_during_peak_PAR_trend',
+                '2002-2015_during_late_MODIS_NDVI_trend_2002-2015': '2002-2015_during_late_MODIS_NDVI_trend',
+                '2002-2015_during_early_MODIS_NDVI_trend_2002-2015': '2002-2015_during_early_MODIS_NDVI_trend',
+                '2002-2015_during_peak_MODIS_NDVI_trend_2002-2015': '2002-2015_during_peak_MODIS_NDVI_trend',
+                '2002-2015_during_late_PAR_trend_2002-2015': '2002-2015_during_late_PAR_trend',
+                '2002-2015_during_early_PAR_trend_2002-2015': '2002-2015_during_early_PAR_trend',
+                '2002-2015_during_peak_PAR_trend_2002-2015': '2002-2015_during_peak_PAR_trend',
 
+            }
 
-
-        }
-
-        df = pd.DataFrame(df)
-        df = df.rename(columns=new_name_dic)
-        return df
+            df = pd.DataFrame(df)
+            df = df.rename(columns=new_name_dic)
+            return df
 
     def show_field(self,df):
 
        for i in df:
            print(i)
        # T.print_head_n(df)
-
        return df
 
     def drop_field_df(self, df):
@@ -848,7 +925,7 @@ class Build_dataframe:
         #         print(i)
         #         df=df.drop(columns=[i])
 
-        # df = df.drop(columns=['CV_during_peak_VOD_CV_1982-2015','during_peak_root_soil_moisture_trend_1982-2015','mean_during_peak_VOD_mean_1982-2015'])
+        # df = df.drop(columns=['1982-2015_early_GIMMS_NDVI_anomaly'])
         for i in df:
             print(i)
 
@@ -991,29 +1068,6 @@ class Build_partial_correlation_dataframe:
         df[f_name] = NDVI_list
         return df
 
-    def add_anomaly_GIMMIS_NDVI_to_df(self, df):
-        period = 'late'
-        f = results_root + 'extraction_anomaly_val/1982-2015_anomaly_extraction_all_seasons/1982-2015_extraction_during_{}_growing_season_static/during_{}_GIMMS_NDVI.npy'.format(
-            period, period)
-
-        NDVI_dic = T.load_npy(f)
-        f_name = 'GIMMS_NDVI_{}_anomaly'.format(period)
-        NDVI_list = []
-        for i, row in tqdm(df.iterrows(), total=len(df)):
-            year = row['year']
-            # pix = row.pix
-            pix = row['pix']
-            if not pix in NDVI_dic:
-                NDVI_list.append(np.nan)
-                continue
-            vals = NDVI_dic[pix]
-            if len(vals) != 34:
-                NDVI_list.append(np.nan)
-                continue
-            v1 = vals[year - 1982]
-            NDVI_list.append(v1)
-        df[f_name] = NDVI_list
-        return df
 
     def add_anomaly_GIMMIS_NDVI_to_df(self, df):
         period = 'late'
@@ -1553,8 +1607,8 @@ class Build_partial_correlation_dataframe:
 
 
 def main():
-    # Build_dataframe().run()
-    Build_partial_correlation_dataframe().run()
+    Build_dataframe().run()
+    # Build_partial_correlation_dataframe().run()
     pass
 
 

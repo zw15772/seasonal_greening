@@ -774,7 +774,8 @@ def foo():
 
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Data/original_dataset/PEI_dic/per_pix_dic_010.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/15_year_window/during_early_CO2.npy'
+    # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/during_early_CO2.npy'
     result_dic = {}
     spatial_dic={}
     # array = np.load(f)
@@ -799,7 +800,7 @@ def foo():
         # exit()
         if len(dic[pix])==0:
             continue
-        time_series = dic[pix]
+        time_series = dic[pix][2]
         print(time_series)
         if len(time_series)==0:
             continue
@@ -905,7 +906,7 @@ def foo3(): #做平均
 def spatial_plot():
     spatial_dic_value={}
     # fdir1= data_root + 'CSIF/CSIF_dic/'
-    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_anomaly/MODIS_NDVI/0104/2002-2015_multi_linearearly_anomaly_MODIS_NDVI.npy'
+    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_beta_window/1982-2015_during_early_window15/multiregression_early_1982-2015_window09_Beta.npy'
     dic=T.load_npy(f)
     spatial_dic={}
 
@@ -970,7 +971,7 @@ def beta_plot():  # 该功能实现所有因素的beta
     period='early'
     # f = '/Volumes/sult/multi_linear_anomaly_NDVI/{}_multi_linear{}_anomaly.npy'.format(time_range,period)
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly_NDVI/1982-1998_partial_correlationpeak_anomaly.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly/MODIS_NDVI/0105/2002-2015_partial_correlation_late_anomaly_MODIS_NDVI.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_beta_window/1982-2015_during_early_window15/multiregression_early_1982-2015_window01_Beta.npy'
     # outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_anomaly/MODIS_NDVI_{}/'.format(period)
     # T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)

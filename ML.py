@@ -22,7 +22,8 @@ class RF:
         f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_2002-2015/Data_frame_2002-2015_df.df'
         df, _ = self.__load_df(f)
         df=df[df['row']<120]
-        # df=df[df['landcover']=='Grassland']
+        df = df[df['NDVI_MASK'] == 1]
+        df = df[df['HI_class'] != 'Humid']
         df=df.drop_duplicates(subset=('pix'))
 
         x_variable_dic=self.x_variable()
@@ -59,11 +60,11 @@ class RF:
         pass
 
     def run1(self):
-        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_2002-2015/Data_frame_2002-2015_df.df'
+        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
         df, _ = self.__load_df(f)
 
         df = df[df['row'] < 120]
-        # df=df[df['landcover']=='BF']
+        df=df[df['HI_class']!='Humid']
 
 
         x_variable_dic = self.x_variable_greeness()
@@ -99,8 +100,8 @@ class RF:
             # print(selected_labels)
             # exit()
 
-            # Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,x_list_new)
-            self.train_classfication_permutation_importance(X, Y, x_list_new)
+            Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,x_list_new)
+            # self.train_classfication_permutation_importance(X, Y, selected_labels)
 
             # self.train_classfication(X,Y,selected_labels=selected_labels)
         pass
@@ -577,15 +578,15 @@ class RF:
 
     def x_variable_greeness(self,):
 
-        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_2002-2015/Data_frame_2002-2015_df.df'
+        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
         df,_=self.__load_df(f)
 
         # for i in df:
         #     print(i)
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-        period_list = ['early','late']
+        period_list = ['early','peak','late']
         x_variable_dic={}
-        time_range='2002-2015'
+        time_range='1982-2015'
         # x_list=[]
         for period in period_list:
             # df = df[df['{}_during_{}_CSIF_fpar_trend'.format(time_range,period)] >= 0]
@@ -622,8 +623,10 @@ class RF:
                         continue
                     if 'MODIS_NDVI' in i:
                         continue
-                    # if 'SPEI3' in i:
-                    #     continue
+                    if 'SPEI3' in i:
+                        continue
+                    if 'Precip' in i:
+                        continue
                     if 'trend' in i:
                         x_list.append(i)
                     # if 'Precip' in i:
@@ -641,8 +644,7 @@ class RF:
                         x_list.append(i)
                     if 'original' in i:
                         continue
-                    if 'winter' in i:
-                        x_list.append(i)
+
                 for i in ['BDOD', 'CEC', 'clay', 'Nitrogen', 'OCD', 'PH', 'sand','MAT','MAP',]:
                     x_list.append(i)
 
@@ -753,8 +755,8 @@ class RF:
                     #     x_list.append(i)
                     # if 'anomaly_{}_during_peak_CCI_SM'.format(time_range) in i:
                     #     x_list.append(i)
-                    if 'anomaly_{}_during_peak_Precip'.format(time_range) in i:
-                        x_list.append(i)
+                    # if 'anomaly_{}_during_peak_Precip'.format(time_range) in i:
+                    #     x_list.append(i)
                     # if 'anomaly_{}_during_peak_VPD'.format(time_range) in i:
                     #     x_list.append(i)
                     # if 'anomaly_{}_during_early_Precip'.format(time_range) in i:
@@ -779,23 +781,23 @@ class RF:
 
     def y_variable_greeness(self):
 
-        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_2002-2015/Data_frame_2002-2015_df.df'
+        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
 
         df,_=self.__load_df(f)
 
         # for i in df:
         #     print(i)
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-        time_range='2002-2015'
+        time_range='1982-2015'
 
-        period_list=['early','late']
+        period_list=['early','peak','late']
 
         y_variable_dic={}
         for period in period_list:
             # df = df[df['{}_during_{}_CSIF_fpar_trend'.format(time_range, period)] >= 0]
             y_list=[]
             for i in df:
-                if 'anomaly_{}_during_{}_MODIS_NDVI'.format(time_range,period) in i:
+                if '{}_GIMMS_NDVI_{}_anomaly'.format(time_range,period) in i:
                     y_list.append(i)
             y_variable_dic[period]=y_list
         # for period in y_variable_dic:
@@ -817,7 +819,8 @@ class RF:
             valid=len(val_valid)
             ratio=valid/total
             # print(i,ratio)
-            if ratio<0.8:
+
+            if ratio<0.6:
                 invalid_variables.append(i)
 
         return invalid_variables
