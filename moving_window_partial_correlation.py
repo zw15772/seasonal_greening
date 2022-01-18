@@ -79,13 +79,13 @@ class Partial_corr:
 
 
     def cal_p_correlation(self):
-        outdir = self.this_class_arr
+        outdir = join(self.this_class_arr,self.season)
 
         T.mk_dir(outdir)
         fdir = join(result_root,'extraction_original_val','1982-2015_original_extraction_all_seasons',f'1982-2015_extraction_during_{self.season}_growing_season_static')
         dic_all_var = {}
         for var_i in self.vars_list:
-            fname = f'during_early_{var_i}.npy'
+            fname = f'during_{self.season}_{var_i}.npy'
             fpath = join(fdir,fname)
             dic = T.load_npy(fpath)
             dic_all_var[var_i] = dic
@@ -185,7 +185,6 @@ class Multi_reg:
         self.__config__()
         self.this_class_arr = join(results_root,'Multi_reg')
         T.mk_dir(self.this_class_arr)
-        self.dff = join(self.this_class_arr,f'Dataframe_{season}.df')
         self.season = season
 
     def __config__(self):
@@ -207,8 +206,8 @@ class Multi_reg:
         self.y_var = 'GIMMS_NDVI'
 
     def run(self):
-        # self.cal_multi_reg()
-        self.dic_to_df()
+        self.cal_multi_reg()
+        # self.dic_to_df()
         pass
 
     def __cal_anomaly(self,vals):
@@ -230,12 +229,12 @@ class Multi_reg:
         return dic
 
     def cal_multi_reg(self):
-        outdir = self.this_class_arr
+        outdir = join(self.this_class_arr,self.season)
         T.mk_dir(outdir)
         fdir = join(data_root,f'1982-2015_extraction_during_{self.season}_growing_season_static')
         dic_all_var = {}
         for var_i in self.vars_list:
-            fname = f'during_early_{var_i}.npy'
+            fname = f'during_{self.season}_{var_i}.npy'
             fpath = join(fdir,fname)
             dic = T.load_npy(fpath)
             dic_all_var[var_i] = dic
@@ -335,11 +334,105 @@ class Multi_reg:
         plt.show()
 
 
+class Moving_greening_area_ratio:
+
+    def __init__(self,season):
+        self.season = season
+        self.datadir = '/Volumes/NVME2T/wen_proj/20220111/origional/1982-2015_original_extraction_all_seasons'
+        self.y_var = 'GIMMS_NDVI'
+        self.n = 15
+        pass
+
+    def run(self):
+        self.foo()
+        pass
+
+    def foo(self):
+        cls_list = [
+            'greening p<0.05',
+            'greening p<0.1',
+            'non sig',
+            'browning p<0.1',
+            'browning p<0.05',
+                    ]
+        color_list = [
+            'forestgreen',
+            'limegreen',
+            'gray',
+            'peru',
+            'sienna',
+        ]
+        K = KDE_plot()
+        f = f'1982-2015_extraction_during_{self.season}_growing_season_static/during_{self.season}_{self.y_var}.npy'
+        dic = T.load_npy(join(self.datadir,f))
+        dics = {self.y_var:dic}
+        df = T.spatial_dics_to_df(dics)
+        df = df.dropna()
+        val_length = 0
+        for i, row in df.iterrows():
+            y_vals = row[self.y_var]
+            val_length = len(y_vals)
+            break
+        for w in range(val_length):
+            if w + self.n >= val_length:
+                continue
+            pick_index = list(range(w, w + self.n))
+            spatial_dic = {}
+            for i, row in tqdm(df.iterrows(), total=len(df), desc=str(w)):
+                pix = row.pix
+                r, c = pix
+                if r > 120:
+                    continue
+                y_vals = row[self.y_var]
+                y_vals_pick = T.pick_vals_from_1darray(y_vals, pick_index)
+                x = list(range(len(y_vals_pick)))
+                try:
+                    k,_,_ = K.linefit(x,y_vals_pick)
+                    _,p = stats.pearsonr(x,y_vals_pick)
+                    spatial_dic[pix] = {'slope':k,'p':p}
+                except:
+                    continue
+            df_i = T.dic_to_df(spatial_dic,'pix')
+            df_i = df_i.dropna()
+            ratio_list = []
+            for cls in cls_list:
+                if cls == 'greening p<0.05':
+                    df_select = df_i[df_i['slope']>=0]
+                    df_select = df_select[df_select['p']<0.05]
+                elif cls == 'greening p<0.1':
+                    df_select = df_i[df_i['slope'] >= 0]
+                    df_select = df_select[df_select['p'] < 0.1]
+                    df_select = df_select[df_select['p'] >= 0.05]
+                elif cls == 'non sig':
+                    df_select = df_i[df_i['p'] > 0.1]
+                elif cls == 'browning p<0.1':
+                    df_select = df_i[df_i['slope'] < 0]
+                    df_select = df_select[df_select['p'] <= 0.1]
+                    df_select = df_select[df_select['p'] >= 0.05]
+                elif cls == 'browning p<0.05':
+                    df_select = df_i[df_i['slope'] < 0]
+                    df_select = df_select[df_select['p'] < 0.05]
+                else:
+                    raise UserWarning
+                ratio = len(df_select) / len(df_i)
+                ratio_list.append(ratio)
+            bottom = 0
+            for i in range(len(ratio_list)):
+                ratio = ratio_list[i]
+                plt.bar(w,ratio,bottom=bottom,color=color_list[i])
+                bottom += ratio
+        plt.legend(["Browning p<0.05", "Browning p<0.1", "no trend", "Greening p<0.1", "Greening p<0.05"][::-1])
+        plt.title(self.season)
+        plt.show()
+
 
 def main():
     season = 'early'
-    Partial_corr(season).run()
+    # season = 'peak'
+    # season = 'late'
+    # Partial_corr(season).run()
     # Multi_reg(season).run()
+    Moving_greening_area_ratio(season).run()
     pass
 
 
