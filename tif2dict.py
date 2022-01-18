@@ -1709,7 +1709,7 @@ class statistic_anaysis:
     def extraction_during_window(self):
 
         window_list=[15]
-        period='early'
+        period='late'
         time_range='1982-2015'
         for i in window_list:
 
@@ -1733,10 +1733,7 @@ class statistic_anaysis:
                     continue
                 if f =='during_{}_Aridity.npy'.format(period):
                     continue
-                if f =='during_{}_CO2.npy'.format(period):
-                    continue
-                if f =='during_{}_CCI_SM.npy'.format(period):
-                    continue
+
                 if f.endswith('.npy'):
                     dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
                     dic.update(dic_i)
@@ -3732,7 +3729,7 @@ class statistic_anaysis:
                     continue
 
                 x_mean=np.nanmean(x_vals)
-                x_vals = T.interp_nan(x_vals)
+
 
                 for i in range(len(x_vals)):
                     if x_vals[0]==None:
@@ -3935,7 +3932,7 @@ class statistic_anaysis:
                     np.save(outf + '_p_value', p_value_arr)
 
     def multiregression_beta_window(self):  # 实现滑动相关
-        period = 'early'
+        period = 'late'
         window = 15
         slices=34-window
         time_range = '1982-2015'
@@ -4053,8 +4050,8 @@ class statistic_anaysis:
                     if r > 120:
                         continue
 
-                    val_climate_T[val_climate_T < -99] = np.nan
-                    val_y_variables[val_y_variables < -99] = np.nan
+                    val_climate_T[val_climate_T < -9999] = np.nan
+                    val_y_variables[val_y_variables < -9999] = np.nan
                     if np.isnan(np.nanmean(val_climate_T)):
                         continue
                     if np.isnan(np.nanmean(val_y_variables)):
@@ -4111,7 +4108,7 @@ class statistic_anaysis:
 
         for Y_variables in tqdm(sorted(os.listdir(fdir_all))):
 
-            if Y_variables != '{}_during_{}_GIMMS_NDVI.npy'.format(time_range, period):
+            if Y_variables != 'during_{}_GIMMS_NDVI.npy'.format(period):
                 continue
 
             dic_y = dict(np.load(fdir_all + '/' + Y_variables, allow_pickle=True, ).item())
@@ -4122,23 +4119,23 @@ class statistic_anaysis:
                 print(X_variable)
                 # exit()
 
-                if X_variable == '{}_during_{}_root_soil_moisture.npy'.format(time_range, period, ):
+                if X_variable == 'during_{}_root_soil_moisture.npy'.format(period, ):
                     continue
-                if X_variable == '{}_during_{}_surf_soil_moisture.npy'.format(time_range, period, ):
+                if X_variable == 'during_{}_surf_soil_moisture.npy'.format(period, ):
                     continue
-                if X_variable == '{}_during_{}_GIMMS_NDVI.npy'.format(time_range, period):
+                if X_variable == 'during_{}_GIMMS_NDVI.npy'.format(period):
                     continue
-                if X_variable == '{}_during_{}_CSIF_fpar.npy'.format(time_range, period):
+                if X_variable == 'during_{}_CSIF_fpar.npy'.format( period):
                     continue
-                if X_variable == '{}_during_{}_NIRv.npy'.format(time_range, period):
+                if X_variable == 'during_{}_NIRv.npy'.format(period):
                     continue
-                if X_variable == '{}_during_{}_VOD.npy'.format(time_range, period):
+                if X_variable == 'during_{}_VOD.npy'.format(period):
                     continue
-                if X_variable == '{}_during_{}_SPEI3.npy'.format(time_range, period):
+                if X_variable == 'during_{}_SPEI3.npy'.format(period):
                     continue
-                if X_variable == '{}_during_{}_Aridity.npy'.format(time_range, period):
+                if X_variable == 'during_{}_Aridity.npy'.format(period):
                     continue
-                if X_variable == '{}_during_{}_Precip.npy'.format(time_range, period):
+                if X_variable == 'during_{}_Precip.npy'.format(period):
                     continue
 
                 if X_variable.startswith('.'):
@@ -4152,87 +4149,87 @@ class statistic_anaysis:
                 climate_name_list.append(X_variable)
 
         for w in range(slices):
-                outf = outdir + 'partial_correlation_{}_{}'.format(period, time_range)+'_window'+ '{:02d}'.format(w)
-                print(outf)
+            outf = outdir + 'partial_correlation_{}_{}'.format(period, time_range)+'_window'+ '{:02d}'.format(w)
+            print(outf)
 
-                partial_correlation_dic={}
-                partial_p_value_dic={}
+            partial_correlation_dic={}
+            partial_p_value_dic={}
 
-                for pix in tqdm(dic_y):
-                    x_val_list=[]
-                    x_y_list=[]
-                    for v_ in climate_all_variables_dic:
-                        if pix not in climate_all_variables_dic[v_]:  ##
-                            continue
-
-                        x_val=climate_all_variables_dic[v_][pix][w]
-
-                        if not len(x_val) == window:  ##
-                            continue
-                        if len(x_val) == 0:
-                            continue
-                        if np.isnan(np.nanmean(x_val)):
-                            continue
-                        x_vals = T.interp_nan(x_val)
-
-                        if x_vals[0] == None:
-                            continue
-                        x_val_list.append(x_val)
-
-                        # 对y的处理
-                    if len(dic_y[pix]) != slices:
-                        continue
-                    val_y_variable = dic_y[pix][w]
-                    if len(val_y_variable) == 0:
+            for pix in tqdm(dic_y):
+                x_val_list=[]
+                x_y_list=[]
+                for v_ in climate_all_variables_dic:
+                    if pix not in climate_all_variables_dic[v_]:  ##
                         continue
 
-                    val_y_variable = T.interp_nan(val_y_variable)
-                    if val_y_variable[0]== None:
+                    x_val=climate_all_variables_dic[v_][pix][w]
+
+                    if not len(x_val) == window:  ##
                         continue
-                    if np.isnan(np.nanmean(val_y_variable)):
+                    if len(x_val) == 0:
                         continue
-
-
-                    val_climate = np.array(x_val_list)
-                    val_climate_T = val_climate.T
-
-
-                    val_y_variables = np.array(val_y_variable)
-
-                    x_val_list.append(val_y_variables)
-                    # print(x_y_list)
-                    # exit()
-
-                    r, c = pix
-                    if r > 120:
+                    if np.isnan(np.nanmean(x_val)):
                         continue
+                    x_vals = T.interp_nan(x_val)
 
-                    val_climate_T[val_climate_T < -99] = np.nan
-                    val_y_variables[val_y_variables < -99] = np.nan
-                    if np.isnan(np.nanmean(val_climate_T)):
+                    if x_vals[0] == None:
                         continue
-                    if np.isnan(np.nanmean(val_y_variables)):
-                        continue
-                    try:
+                    x_val_list.append(x_val)
 
-                        partial_correlation = {}
-                        partial_correlation_p_value = {}
-                        for x in x_val_list:
-                            x_var_list_valid_new_cov = copy.copy(x_val_list)
-                            x_var_list_valid_new_cov.remove(x)
-                            r, p = self.partial_corr(x_val_list.append(val_y_variables), x_val_list, val_y_variables, x_var_list_valid_new_cov)
-                            partial_correlation[x] = r
-                            partial_correlation_p_value[x] = p
+                    # 对y的处理
+                if len(dic_y[pix]) != slices:
+                    continue
+                val_y_variable = dic_y[pix][w]
+                if len(val_y_variable) == 0:
+                    continue
+
+                val_y_variable = T.interp_nan(val_y_variable)
+                if val_y_variable[0]== None:
+                    continue
+                if np.isnan(np.nanmean(val_y_variable)):
+                    continue
 
 
-                    except Exception as e:
-                            print('error')
-                        # print(x_val_list, val_y_variable)
+                val_climate = np.array(x_val_list)
+                val_climate_T = val_climate.T
 
-                    partial_correlation_dic[pix] = partial_correlation
-                    partial_p_value_dic[pix] = partial_correlation_p_value
-                T.save_npy(partial_correlation_dic, outf + '_correlation')
-                T.save_npy(partial_p_value_dic, outf + '_p_value')
+
+                val_y_variables = np.array(val_y_variable)
+
+                x_val_list.append(val_y_variables)
+                # print(x_y_list)
+                # exit()
+
+                r, c = pix
+                if r > 120:
+                    continue
+
+                val_climate_T[val_climate_T < -99] = np.nan
+                val_y_variables[val_y_variables < -99] = np.nan
+                if np.isnan(np.nanmean(val_climate_T)):
+                    continue
+                if np.isnan(np.nanmean(val_y_variables)):
+                    continue
+                try:
+
+                    partial_correlation = {}
+                    partial_correlation_p_value = {}
+                    for x in x_val_list:
+                        x_var_list_valid_new_cov = copy.copy(x_val_list)
+                        x_var_list_valid_new_cov.remove(x)
+                        r, p = self.partial_corr(x_val_list.append(val_y_variables), x_val_list, val_y_variables, x_var_list_valid_new_cov)
+                        partial_correlation[x] = r
+                        partial_correlation_p_value[x] = p
+
+
+                except Exception as e:
+                        print('error')
+                    # print(x_val_list, val_y_variable)
+
+                partial_correlation_dic[pix] = partial_correlation
+                partial_p_value_dic[pix] = partial_correlation_p_value
+            T.save_npy(partial_correlation_dic, outf + '_correlation')
+            T.save_npy(partial_p_value_dic, outf + '_p_value')
 
 
 
@@ -4307,8 +4304,7 @@ class statistic_anaysis:
         np.save(outdir +'plot_moving_withdetrend',dic_mean)
 
     def save_moving_window_multi_regression(self):
-        period='early'
-
+        period='late'
 
         outdir = result_root + 'plot_moving_window_multiregression/all_results/'
         Tools().mk_dir(outdir, force=True)
@@ -4358,7 +4354,7 @@ class statistic_anaysis:
                     array_valid.append(j)
                 # print(array_valid)
 
-                mean_array_list.append(mean_array)
+                mean_array_list.append(np.nanmean(array_valid))
                 n = len(array_valid)
                 se = stats.sem(array_valid)
                 h = se * stats.t.ppf((1 + 0.95) / 2., n - 1)
@@ -4375,7 +4371,7 @@ class statistic_anaysis:
 
     def plot_moving_window_correlation(self):
 
-        dic=dict(np.load(result_root+'plot_moving_window_multiregression/all_results/moving_multi_regression_early.npy',allow_pickle=True,).item())
+        dic=dict(np.load(result_root+'plot_moving_window_multiregression/all_results/moving_multi_regression_late.npy',allow_pickle=True,).item())
         early_key_list=[]
         peak_key_list = []
         late_key_list = []
@@ -5970,11 +5966,11 @@ def main():
     # statistic_anaysis().extraction_during_window()
     # statistic_anaysis().extraction_pre_window()
     # statistic_anaysis().detrend_extraction_during_pre_variables()
-    statistic_anaysis().multiregression_beta_window()
+    # statistic_anaysis().multiregression_beta_window()
     # statistic_anaysis().save_moving_window_multi_regression()
     # statistic_anaysis().plot_moving_window_correlation()
 
-    # statistic_anaysis().partial_correlation_window()
+    statistic_anaysis().partial_correlation_window()
 
     # statistic_anaysis().extraction_variables_static_pre_month()
     # statistic_anaysis().extraction_variables_static_during()
@@ -6031,7 +6027,6 @@ def main():
     # rename()
     # plot_results().run()
     # normalization()
-
     pass
 
 if __name__ == '__main__':

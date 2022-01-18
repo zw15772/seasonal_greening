@@ -5,19 +5,23 @@ from sklearn.linear_model import LinearRegression
 
 T = Tools()
 
-results_root = '/Volumes/NVME2T/wen_proj/20220111/results/moving_window/'
-data_root = '/Volumes/NVME2T/wen_proj/20220111/origional/1982-2015_original_extraction_all_seasons'
+project_root='/Volumes/SSD_sumsang/project_greening/'
 
-T.mk_dir(results_root)
+result_root=project_root+'Result/new_result/'
+
+
+
+T.mk_dir(result_root)
 
 class Partial_corr:
 
     def __init__(self,season):
+        self.season = season
         self.__config__()
-        self.this_class_arr = join(results_root,'Partial_corr')
+        self.this_class_arr = join(result_root,'Partial_corr_{}'.format(self.season))
         T.mk_dir(self.this_class_arr)
         self.dff = join(self.this_class_arr,f'Dataframe_{season}.df')
-        self.season = season
+
 
     def __config__(self):
         self.n = 15
@@ -38,8 +42,8 @@ class Partial_corr:
         self.y_var = 'GIMMS_NDVI'
 
     def run(self):
-        # self.cal_p_correlation()
-        self.dic_to_df()
+        self.cal_p_correlation()
+        # self.dic_to_df()
         pass
 
     def __partial_corr(self, df, x, y, cov):
@@ -78,7 +82,7 @@ class Partial_corr:
         outdir = self.this_class_arr
 
         T.mk_dir(outdir)
-        fdir = join(data_root,f'1982-2015_extraction_during_{self.season}_growing_season_static')
+        fdir = join(result_root,'extraction_original_val','1982-2015_original_extraction_all_seasons',f'1982-2015_extraction_during_{self.season}_growing_season_static')
         dic_all_var = {}
         for var_i in self.vars_list:
             fname = f'during_early_{var_i}.npy'
@@ -129,7 +133,7 @@ class Partial_corr:
 
 
     def dic_to_df(self):
-        fpath = self.this_class_arr
+        fpath = result_root+'extraction_original_val/1982-2015_original_extraction_all_seasons/1982-2015_extraction_during_early_growing_season_static/'
         df_total = pd.DataFrame()
         for f in T.listdir(fpath):
             window = f.replace(f'-{self.n:02d}.npy','')
@@ -335,7 +339,7 @@ class Multi_reg:
 def main():
     season = 'early'
     Partial_corr(season).run()
-    Multi_reg(season).run()
+    # Multi_reg(season).run()
     pass
 
 

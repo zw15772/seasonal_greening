@@ -978,11 +978,21 @@ class Build_dataframe:
 class Build_partial_correlation_dataframe:
 
     def __init__(self):
+        self.__config__()
         self.this_class_arr = results_root + 'Data_frame_1982-2015/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Build_partial_correlation_dataframe_df.df'
+        self.dff = self.this_class_arr + 'Window_partial_correlation_dataframe_df.df'
+
         pass
+
+    def __config__(self):
+
+        self.x_var_list = ['CO2',
+                      'VPD',
+                      'PAR',
+                      'temperature',
+                      'CCI_SM', ]
 
     def run(self):
         # period = 'early'
@@ -997,7 +1007,8 @@ class Build_partial_correlation_dataframe:
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_landcover_data_to_df(df)
         # df=self.add_Koppen_data_to_df(df)
-        df=self.add_row(df)
+        # df=self.add_row(df)
+        df=self.add_correlation_window_to_df(df)
 
 
         # df=self.add_Koppen_data_to_df(df)
@@ -1020,7 +1031,7 @@ class Build_partial_correlation_dataframe:
         return df
         # return df_early,dff
 
-    def __df_to_excel(self, df, dff, n=1000, random=True):
+    def __df_to_excel(self, df, dff, n=1000, random=False):
         dff = dff.split('.')[0]
         if n == None:
             df.to_excel('{}.xlsx'.format(dff))
@@ -1033,6 +1044,9 @@ class Build_partial_correlation_dataframe:
                 df.to_excel('{}.xlsx'.format(dff))
 
         pass
+
+
+
 
     def foo(self, df):
         df_pix_list=[]
@@ -1123,6 +1137,35 @@ class Build_partial_correlation_dataframe:
                         continue
                     val_list.append(vals)
                 df[f_name] = val_list
+        return df
+
+    def add_correlation_window_to_df(self, df):
+        window_list = list(range(1,20))
+        print(window_list)
+
+        for col in self.x_var_list:
+
+            for slice in window_list:
+                period = 'early'
+                new_col_name = f'window_{slice:02d}_{col}_pcorr_{period}'
+                print(new_col_name)
+                f = results_root + f'Partial_corr_{period}/window_{slice:02d}-15.npy'
+                print(f)
+                val_dic =T.load_npy(f)
+                val_list = []
+                for i, row in tqdm(df.iterrows(), total=len(df)):
+
+                    pix = row['pix']
+                    if not pix in val_dic:
+                        val_list.append(np.nan)
+                        continue
+                    vals= val_dic[pix]['pcorr'][col]
+
+                    if vals < -9999:
+                        val_list.append(np.nan)
+                        continue
+                    val_list.append(vals)
+                df[new_col_name] = val_list
         return df
 
     def add_p_val_trend_to_df(self, df):
@@ -1607,8 +1650,8 @@ class Build_partial_correlation_dataframe:
 
 
 def main():
-    Build_dataframe().run()
-    # Build_partial_correlation_dataframe().run()
+    # Build_dataframe().run()
+    Build_partial_correlation_dataframe().run()
     pass
 
 
