@@ -52,7 +52,7 @@ import pickle
 from dateutil import relativedelta
 from sklearn.inspection import permutation_importance
 # from LY_Tools import *
-from LY_Tools_newest import *
+from lytools import *
 T=Tools()
 
 project_root='/Volumes/SSD_sumsang/project_greening/'
@@ -774,7 +774,7 @@ def foo():
 
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/15_year_window/during_early_CO2.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/1982-2015_original_extraction_all_seasons/1982-2015_extraction_during_early_growing_season_static/during_early_CO2.npy'
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/during_early_CO2.npy'
     result_dic = {}
     spatial_dic={}
@@ -800,7 +800,7 @@ def foo():
         # exit()
         if len(dic[pix])==0:
             continue
-        time_series = dic[pix][2]
+        time_series = dic[pix]
         print(time_series)
         if len(time_series)==0:
             continue
@@ -971,7 +971,7 @@ def beta_plot():  # 该功能实现所有因素的beta
     period='early'
     # f = '/Volumes/sult/multi_linear_anomaly_NDVI/{}_multi_linear{}_anomaly.npy'.format(time_range,period)
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly_NDVI/1982-1998_partial_correlationpeak_anomaly.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_beta_window/1982-2015_during_early_window15/multiregression_early_1982-2015_window01_Beta.npy'
+    f=''
     # outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_anomaly/MODIS_NDVI_{}/'.format(period)
     # T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
@@ -1006,7 +1006,7 @@ def beta_save_():  # 该功能实现所有因素的beta
     time_range='1982-2015'
     period='early'
     # f = '/Volumes/sult/multi_linear_anomaly_NDVI/{}_multi_linear{}_anomaly.npy'.format(time_range,period)
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_beta_window/1982-2015_during_early_window15/multiregression_early_1982-2015_window8_Beta.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_window/1982-2015_during_early_window15/partial_correlation_early_1982-2015_window08_correlation.npy'
     outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/multi_linear_anomaly_NDVI_window/TIFF_{}_{}_8/'.format(time_range,period)
     T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
@@ -1036,6 +1036,16 @@ def beta_save_():  # 该功能实现所有因素的beta
     #     plt.title(var_i)
     #     plt.colorbar()
     # plt.show()
+
+def check_pcorr():
+    f='/Users/wenzhang/Desktop/parial_corr_window_00-15.npy'
+    dic = T.load_npy(f)
+    dic_pcorr = {}
+    for pix in dic:
+        dic_i = dic[pix]['pcorr']
+        dic_pcorr[pix] = dic_i
+    df = T.dic_to_df(dic_pcorr, 'pix')
+    print(df)
 
 
 def spatial_check():  ## 空间上查看有多少个月
@@ -1145,10 +1155,11 @@ def main():
     # per_pixel_all_year_PAR()
     # spatial_check()
     # CSIF_par_annually_transform()
-    foo()
+    # foo()
     # spatial_plot_Yang()
     # spatial_plot()
     # beta_plot()
+    check_pcorr()
     # foo4()
     #  foo3()
     # interpolate().run()
