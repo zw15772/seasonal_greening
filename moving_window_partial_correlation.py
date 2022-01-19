@@ -42,8 +42,8 @@ class Partial_corr:
         self.y_var = 'GIMMS_NDVI'
 
     def run(self):
-        self.cal_p_correlation()
-        # self.dic_to_df()
+        # self.cal_p_correlation()
+        self.dic_to_df()
         pass
 
     def __partial_corr(self, df, x, y, cov):
@@ -133,11 +133,12 @@ class Partial_corr:
 
 
     def dic_to_df(self):
-        fpath = result_root+'extraction_original_val/1982-2015_original_extraction_all_seasons/1982-2015_extraction_during_early_growing_season_static/'
+        fpath = result_root+'Partial_corr_early'
         df_total = pd.DataFrame()
         for f in T.listdir(fpath):
             window = f.replace(f'-{self.n:02d}.npy','')
             window = window.replace('window_','')
+            print(window)
             window = int(window)
             dic = T.load_npy(join(fpath,f))
             dic_new = {}

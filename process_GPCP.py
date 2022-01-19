@@ -971,7 +971,7 @@ def beta_plot():  # 该功能实现所有因素的beta
     period='early'
     # f = '/Volumes/sult/multi_linear_anomaly_NDVI/{}_multi_linear{}_anomaly.npy'.format(time_range,period)
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly_NDVI/1982-1998_partial_correlationpeak_anomaly.npy'
-    f=''
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_window/1982-2015_during_early_window15/partial_correlation_early_1982-2015_window00_correlation.npy'
     # outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_anomaly/MODIS_NDVI_{}/'.format(period)
     # T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
@@ -1158,8 +1158,8 @@ def main():
     # foo()
     # spatial_plot_Yang()
     # spatial_plot()
-    # beta_plot()
-    check_pcorr()
+    beta_plot()
+    # check_pcorr()
     # foo4()
     #  foo3()
     # interpolate().run()

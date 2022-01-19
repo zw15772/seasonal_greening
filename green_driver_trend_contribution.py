@@ -37,13 +37,13 @@ class Build_dataframe:
         # df=self.add_CV_to_df(df)
         # df=self.add_soil_data_to_df(df)
         # df=self.add_MAP_MAT_to_df(df)
-        # df = self.add_NDVI_mask(df)
+        df = self.add_NDVI_mask(df)
         # df=self.add_winter_to_df(df)
         # df=self.add_Koppen_data_to_df(df)
         # df=self.add_landcover_data_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_partial_correlation_to_df(df)
-        # P_PET_dic=self.P_PET_ratio(self.P_PET_dir)
+        P_PET_dic=self.P_PET_ratio(self.P_PET_dir)
         # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
         # df=T.add_dic_to_df(df,P_PET_reclass_dic,'HI_class')
 
@@ -983,6 +983,7 @@ class Build_partial_correlation_dataframe:
 
         Tools().mk_dir(self.this_class_arr, force=True)
         self.dff = self.this_class_arr + 'Window_partial_correlation_dataframe_df.df'
+        self.P_PET_dir = data_root + 'original_dataset/aridity_P_PET_dic/'
 
         pass
 
@@ -1008,7 +1009,11 @@ class Build_partial_correlation_dataframe:
         # df=self.add_landcover_data_to_df(df)
         # df=self.add_Koppen_data_to_df(df)
         # df=self.add_row(df)
-        df=self.add_correlation_window_to_df(df)
+        # df=self.add_correlation_window_to_df(df)
+        # P_PET_dic=self.P_PET_ratio(self.P_PET_dir)
+        # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
+        # df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
+        df=self.add_NDVI_mask(df)
 
 
         # df=self.add_Koppen_data_to_df(df)
@@ -1428,6 +1433,30 @@ class Build_partial_correlation_dataframe:
         df['row'] = r_list
         return df
 
+    def add_NDVI_mask(self,df):
+        f = '/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
+
+        array, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(f)
+        array = np.array(array, dtype=np.float)
+        val_dic = DIC_and_TIF().spatial_arr_to_dic(array)
+        f_name = 'NDVI_MASK'
+        print(f_name)
+        # exit()
+        val_list = []
+        for i, row in tqdm(df.iterrows(), total=len(df)):
+
+            pix = row['pix']
+            if not pix in val_dic:
+                val_list.append(np.nan)
+                continue
+            vals = val_dic[pix]
+            if vals < -99:
+                val_list.append(np.nan)
+                continue
+            val_list.append(vals)
+        df[f_name] = val_list
+        return df
+
     def __rename_dataframe_columns(self, df):
 
         new_name_dic = {
@@ -1443,6 +1472,55 @@ class Build_partial_correlation_dataframe:
         df = pd.DataFrame(df)
         df = df.rename(columns=new_name_dic)
         return df
+
+
+    def P_PET_ratio(self, P_PET_fdir):
+        # fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+        fdir = P_PET_fdir
+        dic = T.load_npy_dir(fdir)
+        dic_long_term = {}
+        for pix in dic:
+            vals = dic[pix]
+            vals = np.array(vals)
+            T.mask_999999_arr(vals)
+            vals[vals == 0] = np.nan
+            if np.isnan(np.nanmean(vals)):
+                continue
+            vals = self.drop_n_std(vals)
+            long_term_vals = np.nanmean(vals)
+            dic_long_term[pix] = long_term_vals
+        return dic_long_term
+
+    def P_PET_reclass(self,dic):
+        dic_reclass = {}
+        for pix in dic:
+            val = dic[pix]
+            label = None
+            # label = np.nan
+            if val > 0.65:
+                label = 'Humid'
+                # label = 3
+            elif val < 0.2:
+                label = 'Arid'
+                # label = 0
+            elif val > 0.2 and val < 0.5:
+                label = 'Semi Arid'
+                # label = 1
+            elif val > 0.5 and val < 0.65:
+                label = 'Semi Humid'
+                # label = 2
+            dic_reclass[pix] = label
+        return dic_reclass
+
+    def drop_n_std(self,vals, n=1):
+        vals = np.array(vals)
+        mean = np.nanmean(vals)
+        std = np.nanstd(vals)
+        up = mean + n * std
+        down = mean - n * std
+        vals[vals > up] = np.nan
+        vals[vals < down] = np.nan
+        return vals
 
     def drop_field_df(self, df):
         df = df.drop(columns=['anomaly_during_early_GIMMS_NDVI_p_value_1982-2000',
