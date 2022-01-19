@@ -4156,8 +4156,9 @@ class statistic_anaysis:
             partial_p_value_dic={}
 
             for pix in tqdm(dic_y):
-                x_val_list=[]
-                x_y_list=[]
+                x_val_list_valid=[]
+
+                df_new = pd.DataFrame()
                 for v_ in climate_all_variables_dic:
                     if pix not in climate_all_variables_dic[v_]:  ##
                         continue
@@ -4174,12 +4175,14 @@ class statistic_anaysis:
 
                     if x_vals[0] == None:
                         continue
-                    x_val_list.append(x_val)
+                    df_new[v_] = x_vals
+                    x_val_list_valid.append(v_)
 
                     # 对y的处理
                 if len(dic_y[pix]) != slices:
                     continue
                 val_y_variable = dic_y[pix][w]
+
                 if len(val_y_variable) == 0:
                     continue
 
@@ -4189,42 +4192,38 @@ class statistic_anaysis:
                 if np.isnan(np.nanmean(val_y_variable)):
                     continue
 
-
-                val_climate = np.array(x_val_list)
-                val_climate_T = val_climate.T
-
-
                 val_y_variables = np.array(val_y_variable)
+                df_new['y']=val_y_variables
+                # T.print_head_n(df_new)
 
-                x_val_list.append(val_y_variables)
-                # print(x_y_list)
-                # exit()
+
+                df_new = df_new.dropna(axis=1, how='all')
+                x_var_list_valid_new = []
+ ############################
+                for v_ in x_val_list_valid:
+                    if not v_ in df_new:
+                        continue
+                    else:
+                        x_var_list_valid_new.append(v_)
 
                 r, c = pix
                 if r > 120:
                     continue
-
-                val_climate_T[val_climate_T < -99] = np.nan
-                val_y_variables[val_y_variables < -99] = np.nan
-                if np.isnan(np.nanmean(val_climate_T)):
-                    continue
-                if np.isnan(np.nanmean(val_y_variables)):
-                    continue
                 try:
-
                     partial_correlation = {}
                     partial_correlation_p_value = {}
-                    for x in x_val_list:
-                        x_var_list_valid_new_cov = copy.copy(x_val_list)
+                    for x in x_var_list_valid_new:
+
+                        x_var_list_valid_new_cov = copy.copy(x_var_list_valid_new)
                         x_var_list_valid_new_cov.remove(x)
-                        r, p = self.partial_corr(x_val_list.append(val_y_variables), x_val_list, val_y_variables, x_var_list_valid_new_cov)
-                        partial_correlation[x] = r
+                        corr, p = self.partial_corr(df_new, x, 'y', x_var_list_valid_new_cov)
+                        partial_correlation[x] = corr
                         partial_correlation_p_value[x] = p
 
 
                 except Exception as e:
                         print('error')
-                    # print(x_val_list, val_y_variable)
+                    # print(x_val_list, val_y_variable)val_y_variables
 
                 partial_correlation_dic[pix] = partial_correlation
                 partial_p_value_dic[pix] = partial_correlation_p_value
@@ -4239,8 +4238,8 @@ class statistic_anaysis:
         # print(df)
         df = df.dropna()
         # try:
-        # print(x)
-        # print(y)
+        print(x)
+        print(y)
         stats_result = pg.partial_corr(data=df, x=x, y=y, covar=cov, method='pearson').round(3)
         r = float(stats_result['r'])
         p = float(stats_result['p-val'])

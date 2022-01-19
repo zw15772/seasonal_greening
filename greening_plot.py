@@ -14,7 +14,7 @@ class Plot_dataframe:
         self.this_class_arr = results_root + 'Data_frame_1982-2015/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_1982-2015_df.df'
+        self.dff = self.this_class_arr + 'Window_partial_correlation_dataframe_df.df'
 
 
 
@@ -24,10 +24,11 @@ class Plot_dataframe:
 
         # self.call_greening_trend_bar(df)
         # self.call_correlation_bar(df)
+        self.plot_multi_window_correlation(df)
         # self.call_multi_correlation_bar(df)
         # self.call_plot_line_for_three_seasons(df)
         # self.call_plot_line_NDVI_three_seasons(df)
-        self.call_plot_LST_for_three_seasons(df)
+        # self.call_plot_LST_for_three_seasons(df)
 
 
 
@@ -581,6 +582,67 @@ class Plot_dataframe:
         # plt.xlabel("landcover")
         plt.ylabel("Percentage")
 
+
+
+    def plot_greening_trend_bar(self,df_pick,koppen,period,time): # greening and browning percentage
+
+        count_no_trend=0
+        count_greening_0_1=0
+        count_browning_0_1=0
+        count_greening_0_05 = 0
+        count_browning_0_05 = 0
+
+
+        for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
+            trend = row['{}_during_{}_CSIF_trend_{}'.format(time,period,time)]
+            p_val=row['{}_during_{}_CSIF_p_value_{}'.format(time,period,time)]
+
+
+            if p_val>0.1:
+                count_no_trend=count_no_trend+1
+            elif 0.05<p_val<0.1:
+                if trend>0:
+                    count_greening_0_1=count_greening_0_1+1
+                else:
+                    count_browning_0_1 = count_browning_0_1 + 1
+            else:
+                if trend>0:
+                    count_greening_0_05=count_greening_0_05+1
+                else:
+                    count_browning_0_05=count_browning_0_05+1
+        greening_0_1=count_greening_0_1/len(df_pick)*100
+        browning_0_1=count_browning_0_1 / len(df_pick)*100
+        greening_0_05 = count_greening_0_05 / len(df_pick)*100
+        browning_0_05 = count_browning_0_05 / len(df_pick)*100
+        no_trend=count_no_trend/len(df_pick)*100
+
+        y1 = np.array([browning_0_05])
+        y2=np.array([browning_0_1])
+        y3 = np.array([no_trend])
+        y4=np.array([greening_0_1])
+        y5=np.array([greening_0_05])
+
+        # plot bars in stack manner
+
+        plt.bar(koppen, y1, color='sienna')
+        plt.bar(koppen, y2, bottom=y1, color='peru')
+        plt.bar(koppen, y3, bottom=y1 + y2, color='gray')
+        plt.bar(koppen, y4, bottom=y1 + y2 + y3, color='limegreen')
+        plt.bar(koppen, y5, bottom=y1 + y2 + y3+y4, color='forestgreen')
+
+
+        plt.text(koppen, y1 / 2., round(browning_0_05), fontsize=10, color='w', ha='center', va='center')
+        plt.text(koppen, y1 + y2 / 2., round(browning_0_1), fontsize=10, color='w', ha='center', va='center')
+        plt.text(koppen, y1 + y2 + y3 / 2., round(no_trend), fontsize=10, color='w', ha='center', va='center')
+        plt.text(koppen, y1 + y2 + y3 + y4 / 2., round(greening_0_1), fontsize=10, color='w', ha='center',
+                 va='center')
+        plt.text(koppen, y1 + y2 + y3 + y4 + y5 / 2, round(greening_0_05), fontsize=10, color='w', ha='center',
+                 va='center')
+        plt.text(koppen, 102, len(df_pick), fontsize=10, color='k', ha='center', va='center')
+
+        # plt.xlabel("landcover")
+        plt.ylabel("Percentage")
+
     def call_multi_correlation_bar(self, df):  # 一次实现多个变量个偏相关画图
 
         outdir = results_root + 'Figure/correlation_bar_2002-2015_greening/'
@@ -630,6 +692,42 @@ class Plot_dataframe:
         plt.savefig(outf + '.pdf', dpi=300, )
         plt.close()
 
+    def call_multi_correlation_bar_window(self, df):  # 一次实现多个变量个偏相关画图
+
+        outdir = results_root + 'Partial_corr_early/Figure/'
+        T.mk_dir(outdir)
+
+        df = df[df['row'] < 120]
+
+        variable_list =['CCI_SM','CO2','PAR','VPD','temperature']
+
+        period = 'early'
+        time = '1982-2015'
+
+        outf = outdir + 'partial_correlation_' + period + '_' + time
+
+        print(outf)
+
+        window_list = list(range(1,20))
+
+        plt.figure(figsize=(18, 8))
+        flag=1
+        for variable in variable_list:
+
+            plt.subplot(2,3,flag)
+
+            for slice in window_list:
+                self.plot_bar_correlation(df, slice, time, period,variable)
+            # plt.legend()
+            plt.legend(["Negative_0.05", "Negative_0.1", "no trend", "Positive_0.1", "Positive_0.05"])
+            plt.title('partial_correlation_' + period + '_window_' + time + '_' + variable,fontsize=8)
+        # plt.title('greening_trend_' + period + '_koppen_'+time+'_'+variable)
+            flag+=1
+        plt.show()
+        plt.savefig(outf + '.pdf', dpi=300, )
+        plt.close()
+
+
     def call_correlation_bar(self, df):  # 实现的功能是单个偏相关画图
 
         outdir = results_root + 'Figure/correlation_bar_2002-2015_browning/'
@@ -673,7 +771,7 @@ class Plot_dataframe:
         plt.savefig(outf + '.pdf', dpi=300, )
         plt.close()
 
-    def plot_bar_correlation(self,df_pick,koppen,time, period,variable):  # 每个变量 例如CO2 的correlation percentage
+    def plot_bar_correlation(self,df_pick,slice,time, period,variable):  # 每个变量 例如CO2 的correlation percentage
 
         count_no_relationship=0
         positive_relationship_0_1=0
@@ -684,8 +782,8 @@ class Plot_dataframe:
 
         for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
 
-            correlation = row['CSIF_{}_{}_{}'.format(time, period,variable)]
-            p_val=row['CSIF_{}_{}_{}_p_value'.format(time,period,variable)]
+            correlation = row['window_{:02d}_{}_pcorr_{}'.format(slice,variable,period)]
+            p_val=row['window_{:02d}_{}_p_value_{}'.format(slice,variable,period)]
 
             if p_val>0.1:
                 count_no_relationship=count_no_relationship+1
@@ -713,26 +811,117 @@ class Plot_dataframe:
 
         # plot bars in stack manner
 
-        plt.bar(koppen, y1, color='sienna')
-        plt.bar(koppen, y2, bottom=y1, color='peru')
-        plt.bar(koppen, y3, bottom=y1 + y2, color='gray')
-        plt.bar(koppen, y4, bottom=y1 + y2 + y3, color='limegreen')
-        plt.bar(koppen, y5, bottom=y1 + y2 + y3+y4, color='forestgreen')
+        plt.bar(slice, y1, color='sienna')
+        plt.bar(slice, y2, bottom=y1, color='peru')
+        plt.bar(slice, y3, bottom=y1 + y2, color='gray')
+        plt.bar(slice, y4, bottom=y1 + y2 + y3, color='limegreen')
+        plt.bar(slice, y5, bottom=y1 + y2 + y3+y4, color='forestgreen')
 
 
 
-        plt.text(koppen, y1 / 2., round(negative_0_05), fontsize=8, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 / 2., round(negative_0_1), fontsize=8, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 + y3 / 2., round(no_trend), fontsize=8, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 + y3 + y4 / 2., round(positive_0_1), fontsize=8, color='w', ha='center',
+        plt.text(slice, y1 / 2., round(negative_0_05), fontsize=8, color='w', ha='center', va='center')
+        plt.text(slice, y1 + y2 / 2., round(negative_0_1), fontsize=8, color='w', ha='center', va='center')
+        plt.text(slice, y1 + y2 + y3 / 2., round(no_trend), fontsize=8, color='w', ha='center', va='center')
+        plt.text(slice, y1 + y2 + y3 + y4 / 2., round(positive_0_1), fontsize=8, color='w', ha='center',
                  va='center')
-        plt.text(koppen, y1 + y2 + y3 + y4 + y5 / 2, round(positive_0_05), fontsize=8, color='w', ha='center',
+        plt.text(slice, y1 + y2 + y3 + y4 + y5 / 2, round(positive_0_05), fontsize=8, color='w', ha='center',
                  va='center')
-        plt.text(koppen, 102, len(df_pick), fontsize=8, color='k', ha='center', va='center')
+        plt.text(slice, 102, len(df_pick), fontsize=8, color='k', ha='center', va='center')
         # plt.xlabel("landcover")
         plt.ylabel("Percentage")
         # plt.show()
 
+    def plot_multi_window_correlation(self,df):  # 每个变量 例如CO2 的correlation percentage
+
+        df = df[df['row'] < 120]
+        df = df[df['NDVI_MASK'] == 1]
+        df = df[df['HI_class'] != 'Humid']
+        variable_list = ['CCI_SM', 'CO2', 'PAR', 'VPD', 'temperature']
+        color_list=['forestgreen','limegreen','gray','peru','sienna']
+        correlation_label_list=['positive_p<0.05','positive_p<0.1','non_sig','negative_p<0.1', 'negative_p<0.05']
+        for variable in variable_list:
+            x_list=[]
+            y_list=[]
+            for window in range(1,20):
+                period='early'
+                col_pcorr_name='window_{:02d}_{}_pcorr_{}'.format(window,variable,period)
+                col_p_value_name='window_{:02d}_{}_p_value_{}'.format(window,variable,period)
+                df_new=pd.DataFrame()
+                df_new[col_p_value_name]=df[col_p_value_name]
+                df_new[col_pcorr_name] = df[col_pcorr_name]
+                df_new=df_new.dropna()
+
+                ratio_list=[]
+                for correlation_label in correlation_label_list:
+
+                    if correlation_label=='positive_p<0.05':
+                        df_selected=df_new[df_new[col_pcorr_name]>0]
+                        df_selected = df_selected[df_selected[col_p_value_name] < 0.05]
+
+                    elif correlation_label=='positive_p<0.1':
+                        df_selected = df_new[df_new[col_pcorr_name] > 0]
+                        df_selected = df_selected[df_selected[col_p_value_name] <= 0.1]
+                        df_selected = df_selected[df_selected[col_p_value_name] >= 0.05]
+
+                    elif correlation_label=='negative_p<0.05':
+                        df_selected = df_new[df_new[col_pcorr_name] < 0]
+                        df_selected = df_selected[df_selected[col_p_value_name] < 0.05]
+                    elif correlation_label=='negative_p<0.1':
+                        df_selected = df_new[df_new[col_pcorr_name] < 0]
+                        df_selected = df_selected[df_selected[col_p_value_name] <= 0.1]
+                        df_selected = df_selected[df_selected[col_p_value_name] >= 0.05]
+                    elif correlation_label=='non_sig':
+                        df_selected = df_new[df_new[col_p_value_name] > 0.1]
+                    else:
+                        raise UserWarning
+
+                    count_selected=len(df_selected)
+                    count_total=len(df_new)
+                    ratio=count_selected/count_total
+                    ratio_list.append(ratio)
+                x_list.append(window)
+                y_list.append(ratio_list)
+
+            for i in range(len(x_list)):
+                x=x_list[i]
+                ratio_list=y_list[i]
+                bottom=0
+                flag=0
+                for ratio in ratio_list:
+                    plt.bar(x,ratio,bottom=bottom,color=color_list[flag],label=correlation_label_list[flag])
+                    bottom+=ratio
+                    flag=flag+1
+            plt.legend()
+            plt.show()
+
+
+
+
+
+
+
+
+        # plot bars in stack manner
+
+        # plt.bar(slice, y1, color='sienna')
+        # plt.bar(slice, y2, bottom=y1, color='peru')
+        # plt.bar(slice, y3, bottom=y1 + y2, color='gray')
+        # plt.bar(slice, y4, bottom=y1 + y2 + y3, color='limegreen')
+        # plt.bar(slice, y5, bottom=y1 + y2 + y3+y4, color='forestgreen')
+        #
+        #
+        #
+        # plt.text(slice, y1 / 2., round(negative_0_05), fontsize=8, color='w', ha='center', va='center')
+        # plt.text(slice, y1 + y2 / 2., round(negative_0_1), fontsize=8, color='w', ha='center', va='center')
+        # plt.text(slice, y1 + y2 + y3 / 2., round(no_trend), fontsize=8, color='w', ha='center', va='center')
+        # plt.text(slice, y1 + y2 + y3 + y4 / 2., round(positive_0_1), fontsize=8, color='w', ha='center',
+        #          va='center')
+        # plt.text(slice, y1 + y2 + y3 + y4 + y5 / 2, round(positive_0_05), fontsize=8, color='w', ha='center',
+        #          va='center')
+        # plt.text(slice, 102, len(df_pick), fontsize=8, color='k', ha='center', va='center')
+        # # plt.xlabel("landcover")
+        # plt.ylabel("Percentage")
+        # # plt.show()
 
 class Plot_partial_correlation:
     def __init__(self):
