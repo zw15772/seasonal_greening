@@ -1,4 +1,5 @@
 # coding=utf-8
+import pandas as pd
 from lytools import *
 import pingouin as pg
 from sklearn.linear_model import LinearRegression
@@ -426,13 +427,161 @@ class Moving_greening_area_ratio:
         plt.show()
 
 
+class Moving_window_limitation:
+    # co2_ndvi_vpd
+    def __init__(self,season):
+        self.season = season
+        self.this_class_arr = '/Volumes/NVME2T/wen_proj/Moving_window_limitation'
+        T.mk_dir(self.this_class_arr)
+        self.n = 15
+
+        self.vars_list = [
+            'CO2',
+            'VPD',
+            'PAR',
+            'temperature',
+            'CCI_SM',
+            'GIMMS_NDVI',
+            'Aridity',
+        ]
+        self.y_var = 'GIMMS_NDVI'
+        self.x_var_list = ['CO2',
+            'VPD',
+            'PAR',
+            'temperature',
+            'CCI_SM',]
+        pass
+
+    def run(self):
+        # self.get_window_mean()
+        self.plot_limitation()
+        pass
+
+    def get_window_mean(self):
+        data_dir = '/Volumes/NVME2T/wen_proj/20220111/origional/1982-2015_original_extraction_all_seasons/' \
+                   f'1982-2015_extraction_during_{self.season}_growing_season_static'
+        outf = join(self.this_class_arr,'Dataframe.df')
+        # print(outf)
+        # exit()
+        dic_all_var = {}
+        for var_i in self.vars_list:
+            fname = f'during_{self.season}_{var_i}.npy'
+            fpath = join(data_dir, fname)
+            dic = T.load_npy(fpath)
+            dic_all_var[var_i] = dic
+        df = T.spatial_dics_to_df(dic_all_var)
+        df = df.dropna()
+        val_length = 0
+        for i, row in df.iterrows():
+            y_vals = row[self.y_var]
+            val_length = len(y_vals)
+            break
+        df_all = pd.DataFrame()
+        for w in range(val_length):
+            if w + self.n >= val_length:
+                continue
+            pick_index = list(range(w, w + self.n))
+            window_mean_val_dic = {}
+            for i, row in tqdm(df.iterrows(), total=len(df), desc=str(w)):
+                pix = row.pix
+                r, c = pix
+                if r > 120:
+                    continue
+                val_dic = {}
+                for x_var in self.vars_list:
+                    xvals = row[x_var]
+                    picked_vals = T.pick_vals_from_1darray(xvals, pick_index)
+                    picked_vals_mean = np.nanmean(picked_vals)
+                    val_dic[x_var] = picked_vals_mean
+                window_mean_val_dic[pix] = val_dic
+            df_j = T.dic_to_df(window_mean_val_dic,'pix')
+            colomns = df_j.columns
+            df_new = pd.DataFrame()
+            df_new['pix'] = df_j['pix']
+            for col in colomns:
+                if col == 'pix':
+                    continue
+                new_col = f'{w}_{col}'
+                df_new[new_col] = df_j[col]
+            df_all[df_new.columns] = df_new[df_new.columns]
+        # T.print_head_n(df_all)
+        T.save_df(df_all,outf)
+        pass
+
+
+    def plot_limitation(self):
+        f = join(self.this_class_arr,'dataframe.df')
+        # variabls_x2 = 'Aridity'
+        variabls_x2 = 'CO2'
+        variabls_x1 = 'VPD'
+        variabls_y = 'GIMMS_NDVI'
+        df = T.load_df(f)
+        col = df.columns
+        window_list = []
+        for c in col:
+            if not 'CO2' in c:
+                continue
+            w = c.split('_')[0]
+            window_list.append(int(w))
+        window_list = T.drop_repeat_val_from_list(window_list)
+        # co2_vals = []
+        variable_vals_dic = {
+            variabls_x2:[],
+            variabls_y:[],
+            variabls_x1:[],
+        }
+        for w in window_list:
+            for var_i in variable_vals_dic:
+                col_name = f'{w}_{var_i}'
+                vals = df[col_name]
+                for val in vals:
+                    variable_vals_dic[var_i].append(val)
+
+        df_new = pd.DataFrame()
+        for key in variable_vals_dic:
+            df_new[key] = variable_vals_dic[key]
+        co2 = df_new[variabls_x2]
+        VPD = df_new[variabls_x1]
+
+        co2_min = np.nanmin(co2)
+        co2_max = np.nanmax(co2)
+        VPD_min = np.nanmin(VPD)
+        VPD_max = np.nanmax(VPD)
+        co2_bins = np.linspace(330, 380, 50)
+        VPD_bins = np.linspace(0.2, 2, 20)
+        # VPD_bins = np.linspace(0.3, 3, 10)
+        cmap = KDE_plot().makeColours(VPD_bins, 'Reds')
+        df = df_new
+        df = df.dropna()
+        for i in tqdm(range(len(VPD_bins))):
+            if i + 1 >= len(VPD_bins):
+                continue
+            df_vpd = df[df[variabls_x1] > VPD_bins[i]]
+            df_vpd = df_vpd[df_vpd[variabls_x1] < VPD_bins[i + 1]]
+            x_list = []
+            y_list = []
+            for j in range(len(co2_bins)):
+                if j + 1 >= len(co2_bins):
+                    continue
+                df_co2 = df_vpd[df_vpd[variabls_x2] > co2_bins[j]]
+                df_co2 = df_co2[df_co2[variabls_x2] < co2_bins[j + 1]]
+                NDVI = df_co2[variabls_y]
+                x_list.append(co2_bins[j])
+                y_list.append(np.nanmean(NDVI))
+            plt.plot(x_list, y_list, label=f'{variabls_x1} at {round(VPD_bins[i], 2)}', color=cmap[i])
+        plt.xlabel(variabls_x2)
+        plt.ylabel(variabls_y)
+        plt.legend()
+        plt.show()
+
 def main():
     season = 'early'
     # season = 'peak'
     # season = 'late'
     # Partial_corr(season).run()
     # Multi_reg(season).run()
-    Moving_greening_area_ratio(season).run()
+    # Moving_greening_area_ratio(season).run()
+    Moving_window_limitation(season).run()
     pass
 
 
