@@ -455,7 +455,8 @@ class Moving_window_limitation:
 
     def run(self):
         # self.get_window_mean()
-        self.plot_limitation()
+        self.plot_limitation_annual_co2()
+        # self.plot_limitation_co2_ndvi_corr()
         pass
 
     def get_window_mean(self):
@@ -510,13 +511,16 @@ class Moving_window_limitation:
         pass
 
 
-    def plot_limitation(self):
+    def plot_limitation_annual_co2(self):
+        # todo:plot_limitation_annual_co2
         f = join(self.this_class_arr,'dataframe.df')
         # variabls_x2 = 'Aridity'
         variabls_x2 = 'CO2'
         variabls_x1 = 'VPD'
         variabls_y = 'GIMMS_NDVI'
         df = T.load_df(f)
+        T.print_head_n(df)
+        exit()
         col = df.columns
         window_list = []
         for c in col:
@@ -554,6 +558,7 @@ class Moving_window_limitation:
         cmap = KDE_plot().makeColours(VPD_bins, 'Reds')
         df = df_new
         df = df.dropna()
+        matrix = []
         for i in tqdm(range(len(VPD_bins))):
             if i + 1 >= len(VPD_bins):
                 continue
@@ -569,11 +574,97 @@ class Moving_window_limitation:
                 NDVI = df_co2[variabls_y]
                 x_list.append(co2_bins[j])
                 y_list.append(np.nanmean(NDVI))
-            plt.plot(x_list, y_list, label=f'{variabls_x1} at {round(VPD_bins[i], 2)}', color=cmap[i])
+            matrix.append(y_list)
+            # plt.plot(x_list, y_list, label=f'{variabls_x1} at {round(VPD_bins[i], 2)}', color=cmap[i])
+        plt.imshow(matrix)
+        plt.colorbar()
+        plt.show()
         plt.xlabel(variabls_x2)
         plt.ylabel(variabls_y)
         plt.legend()
         plt.show()
+
+    def plot_limitation_co2_ndvi_corr(self):
+        f = join(self.this_class_arr,'dataframe.df')
+        # variabls_x2 = 'Aridity'
+        variabls_x2 = 'CO2'
+        variabls_x1 = 'VPD'
+        variabls_y = 'GIMMS_NDVI'
+        df = T.load_df(f)
+        T.print_head_n(df)
+        col = df.columns
+        window_list = []
+        for c in col:
+            if not 'CO2' in c:
+                continue
+            w = c.split('_')[0]
+            window_list.append(int(w))
+        window_list = T.drop_repeat_val_from_list(window_list)
+        # co2_vals = []
+        variable_vals_dic = {
+            variabls_x2:[],
+            variabls_y:[],
+            variabls_x1:[],
+        }
+        for w in window_list:
+            for var_i in variable_vals_dic:
+                col_name = f'{w}_{var_i}'
+                vals = df[col_name]
+                for val in vals:
+                    variable_vals_dic[var_i].append(val)
+
+        df_new = pd.DataFrame()
+        for key in variable_vals_dic:
+            df_new[key] = variable_vals_dic[key]
+        co2 = df_new[variabls_x2]
+        VPD = df_new[variabls_x1]
+
+        co2_min = np.nanmin(co2)
+        co2_max = np.nanmax(co2)
+        VPD_min = np.nanmin(VPD)
+        VPD_max = np.nanmax(VPD)
+        # co2_bins = np.linspace(330, 380, 50)
+        VPD_bins = np.linspace(0.2, 2.2, 20)
+        # VPD_bins = np.linspace(0.3, 3, 10)
+        # cmap = KDE_plot().makeColours(VPD_bins, 'Reds')
+        df = df_new
+        df = df.dropna()
+        # matrix = []
+        x_list = []
+        y_list = []
+        for i in tqdm(range(len(VPD_bins))):
+            if i + 1 >= len(VPD_bins):
+                continue
+            df_vpd = df[df[variabls_x1] > VPD_bins[i]]
+            df_vpd = df_vpd[df_vpd[variabls_x1] < VPD_bins[i + 1]]
+
+            NDVI = df_vpd[variabls_y].tolist()
+            co2 = df_vpd[variabls_x2].tolist()
+            x_list.append(VPD_bins[i])
+            # r,p = stats.pearsonr(NDVI,co2)
+            # y_list.append(r)
+            try:
+                k,_,_ = KDE_plot().linefit(co2,NDVI)
+            except:
+                k = np.nan
+            y_list.append(k)
+        print(x_list,y_list)
+        plt.plot(x_list, y_list)
+        plt.xlabel(variabls_x1)
+        # plt.ylabel(f'correlation {variabls_y} vs {variabls_x2}')
+        plt.ylabel(f'slope of {variabls_y} vs {variabls_x2}')
+        plt.tight_layout()
+        plt.show()
+
+class NDVI_CO2_limitation:
+    def __init__(self):
+
+        pass
+
+    def run(self):
+
+        pass
+
 
 def main():
     season = 'early'
@@ -583,6 +674,7 @@ def main():
     # Multi_reg(season).run()
     # Moving_greening_area_ratio(season).run()
     Moving_window_limitation(season).run()
+    # NDVI_CO2().run()
     pass
 
 
