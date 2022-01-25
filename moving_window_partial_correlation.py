@@ -1,18 +1,75 @@
 # coding=utf-8
 import pandas as pd
 from lytools import *
-import pingouin as pg
 from sklearn.linear_model import LinearRegression
 
 T = Tools()
 
-project_root='/Volumes/SSD_sumsang/project_greening/'
+# project_root='/Volumes/SSD_sumsang/project_greening/'
 
-result_root=project_root+'Result/new_result/'
+# result_root=project_root+'Result/new_result/'
 
 
 
-T.mk_dir(result_root)
+# T.mk_dir(result_root)
+
+
+class Global_vars:
+
+    def __init__(self):
+        self.P_PET_fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+
+        pass
+
+    def drop_n_std(self,vals, n=1):
+        vals = np.array(vals)
+        mean = np.nanmean(vals)
+        std = np.nanstd(vals)
+        up = mean + n * std
+        down = mean - n * std
+        vals[vals > up] = np.nan
+        vals[vals < down] = np.nan
+        return vals
+
+    def P_PET_reclass(self,):
+        dic = self.P_PET_ratio(self.P_PET_fdir)
+        dic_reclass = {}
+        for pix in dic:
+            val = dic[pix]
+            label = None
+            # label = np.nan
+            if val > 0.65:
+                label = 'Humid'
+                # label = 3
+            elif val < 0.2:
+                label = 'Arid'
+                # label = 0
+            elif val > 0.2 and val < 0.5:
+                label = 'Semi Arid'
+                # label = 1
+            elif val > 0.5 and val < 0.65:
+                label = 'Semi Humid'
+                # label = 2
+            dic_reclass[pix] = label
+        return dic_reclass
+
+    def P_PET_ratio(self,P_PET_fdir):
+        # fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+        fdir = P_PET_fdir
+        dic = T.load_npy_dir(fdir)
+        dic_long_term = {}
+        for pix in dic:
+            vals = dic[pix]
+            vals = np.array(vals)
+            T.mask_999999_arr(vals)
+            vals[vals == 0] = np.nan
+            if np.isnan(np.nanmean(vals)):
+                continue
+            vals = self.drop_n_std(vals)
+            long_term_vals = np.nanmean(vals)
+            dic_long_term[pix] = long_term_vals
+        return dic_long_term
+
 
 class Partial_corr:
 
@@ -346,7 +403,8 @@ class Moving_greening_area_ratio:
         pass
 
     def run(self):
-        self.foo()
+        # self.foo()
+        self.ratio_with_limited_area()
         pass
 
     def foo(self):
@@ -427,6 +485,92 @@ class Moving_greening_area_ratio:
         plt.title(self.season)
         plt.show()
 
+    def ratio_with_limited_area(self):
+        P_PET_fdir = Global_vars().P_PET_fdir
+        P_PET_ratio = Global_vars().P_PET_ratio(P_PET_fdir)
+        P_PET_reclass_dic = Global_vars().P_PET_reclass(P_PET_ratio)
+        cls_list = [
+            'greening p<0.05',
+            'greening p<0.1',
+            'non sig',
+            'browning p<0.1',
+            'browning p<0.05',
+                    ]
+        color_list = [
+            'forestgreen',
+            'limegreen',
+            'gray',
+            'peru',
+            'sienna',
+        ]
+        K = KDE_plot()
+        f = f'1982-2015_extraction_during_{self.season}_growing_season_static/during_{self.season}_{self.y_var}.npy'
+        dic = T.load_npy(join(self.datadir,f))
+        dics = {self.y_var:dic}
+        df = T.spatial_dics_to_df(dics)
+        df = df.dropna()
+        df = T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_reclass')
+        HI_class_list = T.get_df_unique_val_list(df,'HI_reclass')
+        df = df[df['HI_reclass'] != 'Humid']
+        title = f'{self.season} non Humid'
+        # print(HI_class_list)
+        # exit()
+        val_length = 0
+        for i, row in df.iterrows():
+            y_vals = row[self.y_var]
+            val_length = len(y_vals)
+            break
+        for w in range(val_length):
+            if w + self.n >= val_length:
+                continue
+            pick_index = list(range(w, w + self.n))
+            spatial_dic = {}
+            for i, row in tqdm(df.iterrows(), total=len(df), desc=str(w)):
+                pix = row.pix
+                r, c = pix
+                if r > 120:
+                    continue
+                y_vals = row[self.y_var]
+                y_vals_pick = T.pick_vals_from_1darray(y_vals, pick_index)
+                x = list(range(len(y_vals_pick)))
+                try:
+                    k,_,_ = K.linefit(x,y_vals_pick)
+                    _,p = stats.pearsonr(x,y_vals_pick)
+                    spatial_dic[pix] = {'slope':k,'p':p}
+                except:
+                    continue
+            df_i = T.dic_to_df(spatial_dic,'pix')
+            df_i = df_i.dropna()
+            ratio_list = []
+            for cls in cls_list:
+                if cls == 'greening p<0.05':
+                    df_select = df_i[df_i['slope']>=0]
+                    df_select = df_select[df_select['p']<0.05]
+                elif cls == 'greening p<0.1':
+                    df_select = df_i[df_i['slope'] >= 0]
+                    df_select = df_select[df_select['p'] < 0.1]
+                    df_select = df_select[df_select['p'] >= 0.05]
+                elif cls == 'non sig':
+                    df_select = df_i[df_i['p'] > 0.1]
+                elif cls == 'browning p<0.1':
+                    df_select = df_i[df_i['slope'] < 0]
+                    df_select = df_select[df_select['p'] <= 0.1]
+                    df_select = df_select[df_select['p'] >= 0.05]
+                elif cls == 'browning p<0.05':
+                    df_select = df_i[df_i['slope'] < 0]
+                    df_select = df_select[df_select['p'] < 0.05]
+                else:
+                    raise UserWarning
+                ratio = len(df_select) / len(df_i)
+                ratio_list.append(ratio)
+            bottom = 0
+            for i in range(len(ratio_list)):
+                ratio = ratio_list[i]
+                plt.bar(w,ratio,bottom=bottom,color=color_list[i])
+                bottom += ratio
+        plt.legend(["Browning p<0.05", "Browning p<0.1", "no trend", "Greening p<0.1", "Greening p<0.05"][::-1])
+        plt.title(title)
+        plt.show()
 
 class Moving_window_limitation:
     # co2_ndvi_vpd
@@ -455,7 +599,8 @@ class Moving_window_limitation:
 
     def run(self):
         # self.get_window_mean()
-        self.plot_limitation_annual_co2()
+        # self.plot_limitation_annual_co2()
+        self.star_plot()
         # self.plot_limitation_co2_ndvi_corr()
         pass
 
@@ -510,17 +655,13 @@ class Moving_window_limitation:
         T.save_df(df_all,outf)
         pass
 
-
     def plot_limitation_annual_co2(self):
-        # todo:plot_limitation_annual_co2
         f = join(self.this_class_arr,'dataframe.df')
         # variabls_x2 = 'Aridity'
         variabls_x2 = 'CO2'
         variabls_x1 = 'VPD'
         variabls_y = 'GIMMS_NDVI'
         df = T.load_df(f)
-        T.print_head_n(df)
-        exit()
         col = df.columns
         window_list = []
         for c in col:
@@ -529,11 +670,16 @@ class Moving_window_limitation:
             w = c.split('_')[0]
             window_list.append(int(w))
         window_list = T.drop_repeat_val_from_list(window_list)
+        print(window_list)
+        # exit()
         # co2_vals = []
         variable_vals_dic = {
             variabls_x2:[],
             variabls_y:[],
             variabls_x1:[],
+        }
+        year_dic = {
+            'year':[]
         }
         for w in window_list:
             for var_i in variable_vals_dic:
@@ -541,45 +687,127 @@ class Moving_window_limitation:
                 vals = df[col_name]
                 for val in vals:
                     variable_vals_dic[var_i].append(val)
+        for w in window_list:
+            for var_i in variable_vals_dic:
+                col_name = f'{w}_{var_i}'
+                vals = df[col_name]
+                for val in vals:
+                    year_dic['year'].append(w)
+                break
 
         df_new = pd.DataFrame()
         for key in variable_vals_dic:
             df_new[key] = variable_vals_dic[key]
+        df_new['year'] = year_dic['year']
         co2 = df_new[variabls_x2]
         VPD = df_new[variabls_x1]
-
-        co2_min = np.nanmin(co2)
-        co2_max = np.nanmax(co2)
-        VPD_min = np.nanmin(VPD)
-        VPD_max = np.nanmax(VPD)
-        co2_bins = np.linspace(330, 380, 50)
         VPD_bins = np.linspace(0.2, 2, 20)
         # VPD_bins = np.linspace(0.3, 3, 10)
-        cmap = KDE_plot().makeColours(VPD_bins, 'Reds')
+        cmap = KDE_plot().makeColours(window_list, 'Reds')
         df = df_new
         df = df.dropna()
-        matrix = []
-        for i in tqdm(range(len(VPD_bins))):
-            if i + 1 >= len(VPD_bins):
-                continue
-            df_vpd = df[df[variabls_x1] > VPD_bins[i]]
-            df_vpd = df_vpd[df_vpd[variabls_x1] < VPD_bins[i + 1]]
+        # matrix = []
+        for j in window_list:
             x_list = []
             y_list = []
-            for j in range(len(co2_bins)):
-                if j + 1 >= len(co2_bins):
+            df_co2 = df[df['year'] == j]
+            # print(df_co2)
+            for i in tqdm(range(len(VPD_bins))):
+                if i + 1 >= len(VPD_bins):
                     continue
-                df_co2 = df_vpd[df_vpd[variabls_x2] > co2_bins[j]]
-                df_co2 = df_co2[df_co2[variabls_x2] < co2_bins[j + 1]]
-                NDVI = df_co2[variabls_y]
-                x_list.append(co2_bins[j])
+                df_vpd = df_co2[df_co2[variabls_x1] > VPD_bins[i]]
+                df_vpd = df_vpd[df_vpd[variabls_x1] < VPD_bins[i + 1]]
+                vpd = df_vpd[variabls_x1]
+                NDVI = df_vpd[variabls_y]
+                x_list.append(np.nanmean(vpd))
                 y_list.append(np.nanmean(NDVI))
-            matrix.append(y_list)
-            # plt.plot(x_list, y_list, label=f'{variabls_x1} at {round(VPD_bins[i], 2)}', color=cmap[i])
-        plt.imshow(matrix)
-        plt.colorbar()
+            # matrix.append(y_list)
+            y_list = SMOOTH().smooth_convolve(y_list,window_len=7)
+            plt.plot(x_list, y_list[1:],label=f'year of {j}', color=cmap[j],lw=4,alpha=0.8)
+        # plt.imshow(matrix)
+        # plt.colorbar()
+        plt.xlabel('VPD')
+        plt.ylabel(variabls_y)
+        plt.legend()
         plt.show()
-        plt.xlabel(variabls_x2)
+
+    def star_plot(self):
+        f = join(self.this_class_arr,'dataframe.df')
+        # variabls_x2 = 'Aridity'
+        variabls_x2 = 'CO2'
+        variabls_x1 = 'VPD'
+        variabls_y = 'GIMMS_NDVI'
+        df = T.load_df(f)
+        col = df.columns
+        window_list = []
+        for c in col:
+            if not 'CO2' in c:
+                continue
+            w = c.split('_')[0]
+            window_list.append(int(w))
+        window_list = T.drop_repeat_val_from_list(window_list)
+        print(window_list)
+        # exit()
+        # co2_vals = []
+        variable_vals_dic = {
+            variabls_x2:[],
+            variabls_y:[],
+            variabls_x1:[],
+        }
+        year_dic = {
+            'year':[]
+        }
+        for w in window_list:
+            for var_i in variable_vals_dic:
+                col_name = f'{w}_{var_i}'
+                vals = df[col_name]
+                for val in vals:
+                    variable_vals_dic[var_i].append(val)
+        for w in window_list:
+            for var_i in variable_vals_dic:
+                col_name = f'{w}_{var_i}'
+                vals = df[col_name]
+                for val in vals:
+                    year_dic['year'].append(w)
+                break
+
+        df_new = pd.DataFrame()
+        for key in variable_vals_dic:
+            df_new[key] = variable_vals_dic[key]
+        df_new['year'] = year_dic['year']
+        co2 = df_new[variabls_x2]
+        VPD = df_new[variabls_x1]
+        VPD_bins = np.linspace(0.2, 2, 20)
+        # VPD_bins = np.linspace(0.3, 3, 10)
+        cmap = KDE_plot().makeColours(window_list, 'Reds')
+        df = df_new
+        df = df.dropna()
+        # matrix = []
+        x_list = []
+        x_std_list = []
+        y_list = []
+        y_std_list = []
+        for j in window_list:
+            df_co2 = df[df['year'] == j]
+            # print(df_co2)
+            # for i in tqdm(range(len(VPD_bins))):
+            #     if i + 1 >= len(VPD_bins):
+            #         continue
+            #     df_vpd = df_co2[df_co2[variabls_x1] > VPD_bins[i]]
+            #     df_vpd = df_vpd[df_vpd[variabls_x1] < VPD_bins[i + 1]]
+            vpd = df_co2[variabls_x1]
+            NDVI = df_co2[variabls_y]
+            x_list.append(np.nanmean(vpd))
+            y_list.append(np.nanmean(NDVI))
+            x_std_list.append(np.nanstd(vpd))
+            y_std_list.append(np.nanstd(NDVI))
+            # matrix.append(y_list)
+            # y_list = SMOOTH().smooth_convolve(y_list,window_len=7)
+        plt.errorbar(x_list, y_list,xerr=x_std_list,yerr=y_std_list)
+            # plt.plot(x_list, y_list[1:],label=f'year of {j}', color=cmap[j],lw=4,alpha=0.8)
+        # plt.imshow(matrix)
+        # plt.colorbar()
+        plt.xlabel('VPD')
         plt.ylabel(variabls_y)
         plt.legend()
         plt.show()
@@ -588,10 +816,20 @@ class Moving_window_limitation:
         f = join(self.this_class_arr,'dataframe.df')
         # variabls_x2 = 'Aridity'
         variabls_x2 = 'CO2'
-        variabls_x1 = 'VPD'
+        # variabls_x1 = 'CCI_SM'
+        variabls_x1 = 'Aridity'
         variabls_y = 'GIMMS_NDVI'
         df = T.load_df(f)
+        HI_class_dic = Global_vars().P_PET_reclass()
+        df = T.add_spatial_dic_to_df(df,HI_class_dic,'HI_class')
+        # df = df[df['HI_class']=='Humid']
+        # title = 'Humid'
+
+        # df = df[df['HI_class']!='Humid']
+        # title = 'non Humid'
+        title = ' '
         T.print_head_n(df)
+        # exit()
         col = df.columns
         window_list = []
         for c in col:
@@ -623,8 +861,13 @@ class Moving_window_limitation:
         co2_max = np.nanmax(co2)
         VPD_min = np.nanmin(VPD)
         VPD_max = np.nanmax(VPD)
+        # plt.hist(VPD,bins=80)
+        # plt.show()
         # co2_bins = np.linspace(330, 380, 50)
-        VPD_bins = np.linspace(0.2, 2.2, 20)
+        # VPD_bins = np.linspace(0.2, 2.2, 20)  # vpd
+        VPD_bins = np.linspace(0., 0.6, 15)  # sm
+        VPD_bins = np.linspace(0.2, 2, 25)  # aridity
+        VPD_bins = np.linspace(0, 2, 25)  # aridity
         # VPD_bins = np.linspace(0.3, 3, 10)
         # cmap = KDE_plot().makeColours(VPD_bins, 'Reds')
         df = df_new
@@ -641,30 +884,158 @@ class Moving_window_limitation:
             NDVI = df_vpd[variabls_y].tolist()
             co2 = df_vpd[variabls_x2].tolist()
             x_list.append(VPD_bins[i])
-            # r,p = stats.pearsonr(NDVI,co2)
-            # y_list.append(r)
             try:
-                k,_,_ = KDE_plot().linefit(co2,NDVI)
+                # r,p = stats.pearsonr(NDVI,co2)
+                r,p = T.nan_correlation(NDVI,co2)
             except:
-                k = np.nan
-            y_list.append(k)
-        print(x_list,y_list)
-        plt.plot(x_list, y_list)
+                r = np.nan
+            y_list.append(r)
+            # try:
+            #     k,_,_ = KDE_plot().linefit(co2,NDVI)
+            # except:
+            #     k = np.nan
+            # y_list.append(k)
+        # print(x_list,y_list)
+        y_list = SMOOTH().smooth_convolve(y_list)
+        # plt.scatter(x_list, y_list)
+        plt.plot(x_list, y_list[1:])
         plt.xlabel(variabls_x1)
-        # plt.ylabel(f'correlation {variabls_y} vs {variabls_x2}')
-        plt.ylabel(f'slope of {variabls_y} vs {variabls_x2}')
+        plt.ylabel(f'correlation {variabls_y} vs {variabls_x2}')
+        # plt.ylabel(f'slope of {variabls_y} vs {variabls_x2}')
+        plt.title(title)
         plt.tight_layout()
         plt.show()
 
-class NDVI_CO2_limitation:
-    def __init__(self):
-
+class VPD_NDVI_CO2:
+    def __init__(self,season):
+        self.start_year = 1982
+        self.this_class_arr = '/Volumes/NVME2T/wen_proj/VPD_NDVI_CO2'
+        T.mk_dir(self.this_class_arr)
+        self.season = season
+        self.vars_list = [
+            'CO2',
+            'VPD',
+            'PAR',
+            'temperature',
+            'CCI_SM',
+            'GIMMS_NDVI',
+            'Aridity',
+        ]
+        self.y_var = 'GIMMS_NDVI'
+        self.x_var_list = ['CO2',
+                           'VPD',
+                           'PAR',
+                           'temperature',
+                           'CCI_SM', ]
         pass
 
     def run(self):
-
+        # self.get_origin_vals_df()
+        self.plot_star()
+        pass
+    def get_origin_vals_df(self):
+        data_dir = '/Volumes/NVME2T/wen_proj/20220111/origional/1982-2015_original_extraction_all_seasons/' \
+                   f'1982-2015_extraction_during_{self.season}_growing_season_static'
+        outf = join(self.this_class_arr,'Dataframe.df')
+        # print(outf)
+        # exit()
+        df = pd.DataFrame()
+        void_dic = DIC_and_TIF().void_spatial_dic()
+        for var_i in self.vars_list:
+            fname = f'during_{self.season}_{var_i}.npy'
+            fpath = join(data_dir, fname)
+            dic = T.load_npy(fpath)
+            year_list = []
+            vals_list = []
+            for pix in tqdm(void_dic,desc=var_i):
+                if not pix in dic:
+                    for i in range(34):
+                        year_list.append(np.nan)
+                        vals_list.append(np.nan)
+                    continue
+                vals = dic[pix]
+                for i,val in enumerate(vals):
+                    year_list.append(i+self.start_year)
+                    vals_list.append(val)
+            df['year'] = year_list
+            df[var_i] = vals_list
+            # dic_all_var[var_i] = dic
+        # df = T.spatial_dics_to_df(dic_all_var)
+        df = df.dropna(how='all')
+        T.print_head_n(df)
+        T.save_df(df,outf)
         pass
 
+    def plot_star(self):
+        f = join(self.this_class_arr, 'dataframe.df')
+        # variabls_x2 = 'Aridity'
+        variabls_x2 = 'CO2'
+        variabls_x1 = 'VPD'
+        variabls_y = 'GIMMS_NDVI'
+        df = T.load_df(f)
+        col = df.columns
+        variable_vals_dic = {
+            variabls_x2: [],
+            variabls_y: [],
+            variabls_x1: [],
+            'year': [],
+        }
+        for var_i in variable_vals_dic:
+            col_name = f'{var_i}'
+            vals = df[col_name]
+            for val in vals:
+                variable_vals_dic[var_i].append(val)
+
+        df_new = pd.DataFrame()
+        for key in variable_vals_dic:
+            df_new[key] = variable_vals_dic[key]
+        co2 = df_new[variabls_x2]
+        VPD = df_new[variabls_x1]
+        VPD_bins = np.linspace(0.2, 2, 20)
+        # VPD_bins = np.linspace(0.3, 3, 10)
+        # cmap = KDE_plot().makeColours(window_list, 'Reds')
+        df = df_new
+        df = df.dropna()
+        year_list = T.get_df_unique_val_list(df,'year')
+        cmap = KDE_plot().makeColours(year_list, 'Reds')
+        # matrix = []
+        x_list = []
+        x_std_list = []
+        y_list = []
+        y_std_list = []
+        z_list = []
+        for j in year_list:
+            df_co2 = df[df['year'] == j]
+            # print(df_co2)
+            # for i in tqdm(range(len(VPD_bins))):
+            #     if i + 1 >= len(VPD_bins):
+            #         continue
+            #     df_vpd = df_co2[df_co2[variabls_x1] > VPD_bins[i]]
+            #     df_vpd = df_vpd[df_vpd[variabls_x1] < VPD_bins[i + 1]]
+            vpd = df_co2[variabls_x1]
+            NDVI = df_co2[variabls_y]
+            co2 = df_co2[variabls_x2]
+            x_list.append(np.nanmean(vpd))
+            y_list.append(np.nanmean(NDVI))
+            x_std_list.append(np.nanstd(vpd))
+            y_std_list.append(np.nanstd(NDVI))
+            z_list.append(np.nanmean(co2))
+            # matrix.append(y_list)
+            # y_list = SMOOTH().smooth_convolve(y_list,window_len=7)
+            x = np.nanmean(vpd)
+            y = np.nanmean(NDVI)
+            xerr = np.nanstd(vpd)
+            yerr = np.nanstd(NDVI)
+            plt.errorbar(x, y, xerr=xerr, yerr=yerr,zorder=0,alpha=0.3,c='gray')
+        plt.scatter(x_list, y_list,c=z_list,cmap='Reds')
+        # plt.plot(x_list, y_list[1:],label=f'year of {j}', color=cmap[j],lw=4,alpha=0.8)
+        # plt.imshow(matrix)
+        plt.colorbar()
+        plt.xlabel('VPD')
+        plt.ylabel(variabls_y)
+        # plt.legend()
+        plt.show()
+        pass
 
 def main():
     season = 'early'
@@ -673,8 +1044,8 @@ def main():
     # Partial_corr(season).run()
     # Multi_reg(season).run()
     # Moving_greening_area_ratio(season).run()
-    Moving_window_limitation(season).run()
-    # NDVI_CO2().run()
+    # Moving_window_limitation(season).run()
+    VPD_NDVI_CO2(season).run()
     pass
 
 
