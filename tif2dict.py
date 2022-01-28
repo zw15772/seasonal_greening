@@ -1960,7 +1960,7 @@ class statistic_anaysis:
                 np.save(outdir + 'per_pix_dic_%03d' % (flag / 10000), temp_dic)
                 temp_dic = {}
         np.save(outdir + 'per_pix_dic_%03d' % 0, temp_dic)
-        
+
     def monthly_anomaly_ly(self): # 实现monthly anomaly
         fdir = data_root + 'NIRv_tif_05/NIRv_dic_Yang/'
         outdir = data_root + 'NIRv_tif_05/NIRv_dic_Yang_zscore_test/'
@@ -4497,14 +4497,14 @@ class statistic_anaysis:
         HI_reclass_dic=Build_trend_dataframe().P_PET_reclass(HI_ratio_dic)
         HI_reclass_dic={'HI_reclass':HI_reclass_dic}
         HI_reclass_df=T.spatial_dics_to_df(HI_reclass_dic)
-
+        HI_reclass_df.loc[HI_reclass_df['HI_reclass'] != 'Humid', ['HI_reclass']] = 'Non Humid'
         HI_reclass_list=T.get_df_unique_val_list(HI_reclass_df,'HI_reclass')
+        HI_reclass_dic_reverse = {}
         for reclass in HI_reclass_list:
-            df_selected=HI_reclass_df[HI_reclass_df==reclass]
+            df_selected=HI_reclass_df[HI_reclass_df['HI_reclass']==reclass]
             pix_list=df_selected['pix'].to_list()
-            print(pix_list)
-            exit()
-
+            pix_list = set(pix_list)
+            HI_reclass_dic_reverse[reclass] = pix_list
         outdir = result_root + 'partial_window/plot_moving_window_partial_correlation/'
         Tools().mk_dir(outdir, force=True)
         fdir_all_seasons=result_root+'partial_window/1982-2015_during_{}_window15/'.format(period)
@@ -4515,62 +4515,64 @@ class statistic_anaysis:
         #                  f'during_{period}_Precip',  f'during_{period}_SPEI3',
         #                  f'during_{period}_VPD', f'during_{period}_temperature']
 
-        average_contribution_dic ={}
+        for HI_reclass in HI_reclass_dic_reverse:
+            selected_pix = HI_reclass_dic_reverse[HI_reclass]
+            average_contribution_dic ={}
 
-        for x in var_name_list:
-            mean_array_list = []
-            CI_arry_list = []
+            for x in var_name_list:
+                mean_array_list = []
+                CI_arry_list = []
 
-            for f in tqdm(sorted(os.listdir(fdir_all_seasons))):
-                # print(fdir_1)
-                if 'p_value' in f:
-                    continue
-                variable_list = []
-
-                result_dic = T.load_npy(fdir_all_seasons + f)  # 只能用这个为什么
-
-                mean_array=0
-                for pix in result_dic:
-                    r, c = pix
-                    if r > 120:
+                for f in tqdm(sorted(os.listdir(fdir_all_seasons))):
+                    # print(fdir_1)
+                    if 'p_value' in f:
                         continue
-                    dic_i=result_dic[pix]
-                    if not x in dic_i:
-                        continue
-                    variable = result_dic[pix][x]
-                    variable_list.append(variable)
+                    vals_list = []
+                    result_dic = T.load_npy(fdir_all_seasons + f)  # 只能用这个为什么
+                    mean_array=0
+                    for pix in result_dic:
+                        if not pix in selected_pix:
+                            continue
+                        r, c = pix
+                        if r > 120:
+                            continue
+                        dic_i=result_dic[pix]
+                        if not x in dic_i:
+                            continue
+                        vals = result_dic[pix][x]
+                        vals_list.append(vals)
 
-                mean_array=np.nanmean(variable_list)
-                std_array = np.nanstd(variable_list)
-                array_variable=np.array(variable_list)
+                    mean_array=np.nanmean(vals_list)
+                    std_array = np.nanstd(vals_list)
+                    vals_list=np.array(vals_list)
 
-                up=mean_array+std_array
-                bottom=mean_array-std_array
-                array_valid = []
+                    up=mean_array+std_array
+                    bottom=mean_array-std_array
+                    array_valid = []
 
-                for j in array_variable:
-                    if np.isnan(j):
-                        continue
-                    if j>up:
-                        continue
-                    if j<bottom:
-                        continue
-                    array_valid.append(j)
-                # print(array_valid)
+                    for j in vals_list:
+                        if np.isnan(j):
+                            continue
+                        if j>up:
+                            continue
+                        if j<bottom:
+                            continue
+                        array_valid.append(j)
+                    # print(array_valid)
 
-                mean_array_list.append(np.nanmean(array_valid))
-                n = len(array_valid)
-                se = stats.sem(array_valid)
-                h = se * stats.t.ppf((1 + 0.95) / 2., n - 1)
-                CI_arry_list.append(h)
+                    mean_array_list.append(np.nanmean(array_valid))
+                    n = len(array_valid)
+                    se = stats.sem(array_valid)
+                    h = se * stats.t.ppf((1 + 0.95) / 2., n - 1)
+                    CI_arry_list.append(h)
 
-            mean_array_list=np.array(mean_array_list)
-            CI_arry_list=np.array(CI_arry_list)
-            print(len(mean_array_list))
-            print(x)
-            average_contribution_dic[x]=[mean_array_list,CI_arry_list]
+                mean_array_list=np.array(mean_array_list)
+                CI_arry_list=np.array(CI_arry_list)
+                print(len(mean_array_list))
+                print(x)
+                average_contribution_dic[x]=[mean_array_list,CI_arry_list]
 
-        np.save(outdir +'moving_partial_correlation_{}'.format(period),average_contribution_dic)
+            np.save(outdir +'moving_partial_correlation_{}_{}'.format(period,HI_reclass),average_contribution_dic)
 
 
     def plot_moving_window_correlation(self):
