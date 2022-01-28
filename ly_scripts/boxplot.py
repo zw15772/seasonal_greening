@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import statsmodels.multivariate.pca
-
+from sklearn import linear_model
+import sklearn
 from __init__ import *
 
 T = Tools()
@@ -1568,6 +1569,8 @@ def plot_ratio_trend1():
             for key in y_dic_i:
                 keys_list.append(key)
             break
+        print(y_dic)
+        exit()
         flag1 = 0
         color_list = ['g', 'cyan', 'purple', 'r', ]
         for key in keys_list:
@@ -1585,6 +1588,146 @@ def plot_ratio_trend1():
         plt.title(zone)
     plt.show()
     # T.print_head_n(df)
+
+def add_HI_class_new(df):
+    P_PET_fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+    P_PET_long_term_dic = P_PET_ratio(P_PET_fdir)
+    HI_zone_class_dic = P_PET_reclass(P_PET_long_term_dic)
+    HI_zone_class_dic_new = {}
+    for pix in HI_zone_class_dic:
+        val = HI_zone_class_dic[pix]
+        if val == None:
+            continue
+
+def plot_ratio_bar_trend():
+    fdir = '/Volumes/NVME2T/wen_proj/20220111/1982-2015_during_early'
+    NDVI_new_fdir = '/Volumes/SSD/drought_response_Wen/data/GIMMS_NDVI/seasonal_perpix/spring'
+    P_PET_fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+
+    x_variable = 'Aridity'
+    y_variable = 'GIMMS_NDVI'
+    n = 15  # every n year trend
+
+    P_PET_long_term_dic = P_PET_ratio(P_PET_fdir)
+    HI_zone_class_dic = P_PET_reclass(P_PET_long_term_dic)
+
+    greening_trend_list = ['greening', 'browning']
+    x_trend_list = ['> 0', '< 0', ]
+    x_fname = f'1982-2015_during_early_{x_variable}.npy'
+    x_fpath = join(fdir, x_fname)
+    dicx = T.load_npy(x_fpath)
+    dicy = T.load_npy_dir(NDVI_new_fdir)
+    vals_len = 9999
+    for pix in dicy:
+        vals = dicy[pix]
+        if len(vals) != 0:
+            vals_len = len(vals)
+        break
+
+    dic_all = {}
+    for pix in dicy:
+        dic_all[pix] = {}
+    for i in tqdm(range(vals_len)):
+        for pix in dicy:
+            if not pix in dicx:
+                continue
+            x_vals = dicx[pix]
+            if i + n >= vals_len:
+                continue
+            y_vals = dicy[pix]
+            indexs = list(range(i, i + n))
+            x_vals_pick = T.pick_vals_from_1darray(x_vals, indexs)
+            y_vals_pick = T.pick_vals_from_1darray(y_vals, indexs)
+            try:
+                x_trend, _, _ = KDE_plot().linefit(range(len(x_vals_pick)), x_vals_pick)
+                y_trend, _, _ = KDE_plot().linefit(range(len(y_vals_pick)), y_vals_pick)
+            except:
+                x_trend = np.nan
+                y_trend = np.nan
+            dic_i = {
+                f'{i}_{x_variable}_trend': x_trend,
+                f'{i}_{y_variable}_trend': y_trend
+            }
+            dic_all[pix].update(dic_i)
+    df = T.dic_to_df(dic_all, 'pix')
+    r_list = []
+    for i, row in df.iterrows():
+        r, c = row.pix
+        r_list.append(r)
+    df['r'] = r_list
+    df = df[df['r'] < 120]
+    # df = df.dropna(how='any')
+    T.add_spatial_dic_to_df(df, HI_zone_class_dic, 'HI_class')
+    zones_list = T.get_df_unique_val_list(df, 'HI_class')
+    T.print_head_n(df)
+
+    for zone in zones_list:
+        df_zone = df[df['HI_class'] == zone]
+        y_dic = {}
+        plt.figure()
+        for i in tqdm(range(vals_len - n), desc=zone):
+            x_col_name = f'{i}_{x_variable}_trend'
+            y_col_name = f'{i}_{y_variable}_trend'
+            df_zone = df_zone[df_zone[y_col_name] != 0]
+            df_zone = df_zone[df_zone[x_col_name] != 0]
+            y_dic_i = {}
+            for y_trend in greening_trend_list:
+                if y_trend == 'greening':
+                    df_select_y = df_zone[df_zone[y_col_name] > 0]
+                elif y_trend == 'browning':
+                    df_select_y = df_zone[df_zone[y_col_name] < 0]
+                else:
+                    raise UserWarning
+                df_select_y = df_select_y[df_select_y[y_col_name] != 0]
+                for x_trend in x_trend_list:
+                    if x_trend == '> 0':
+                        df_select_x = df_select_y[df_select_y[x_col_name] > 0]
+                    elif x_trend == '< 0':
+                        df_select_x = df_select_y[df_select_y[x_col_name] < 0]
+                    else:
+                        raise UserWarning
+                    ratio = len(df_select_x) / len(df_zone)
+                    # y_list.append(ratio)
+                    # plt.scatter(i, ratio,color=color_list[flag1])
+                    text = f'{y_trend}\n{x_variable}{x_trend}'
+                    y_dic_i[text] = ratio
+
+            y_dic[i] = y_dic_i
+        keys_list = []
+        for i in y_dic:
+            y_dic_i = y_dic[i]
+            for key in y_dic_i:
+                keys_list.append(key)
+            break
+        flag1 = 0
+        color_list = ['g', 'cyan', 'purple', 'r', ]
+        bottom = 0
+        for key in keys_list:
+            y_list = []
+            x_list = []
+            for i in range(len(y_dic)):
+                y_dic_i = y_dic[i]
+                val = y_dic_i[key]
+                x_list.append(i)
+                y_list.append(val)
+            x_list = np.array(x_list)
+            y_list = np.array(y_list)
+            # plt.plot(x_list, y_list, color=color_list[flag1], label=key)
+            if type(bottom) == int:
+                plt.bar(x_list,y_list,color=color_list[flag1], label=key)
+            else:
+                plt.bar(x_list,y_list,bottom=bottom,color=color_list[flag1], label=key)
+            bottom += y_list
+            flag1 += 1
+
+        plt.legend()
+        plt.title(zone)
+    plt.show()
+    # T.print_head_n(df)
+
+
+
+
 def ndvi_spatial_trend_check():
     fdir = '/Volumes/NVME2T/wen_proj/20220111/Archive(2)'
     period = 'early'
@@ -1749,6 +1892,201 @@ def co2_ndvi_limited_by_vpd():
     plt.tight_layout()
     plt.savefig('corr4.pdf')
 
+
+class PDP_co2_ndvi_vpd:
+
+    def __init__(self):
+        self.this_class_arr = '/Volumes/NVME2T/wen_proj/PDP_co2_ndvi_vpd'
+        T.mk_dir(self.this_class_arr)
+        pass
+
+    def run(self):
+        # self.gen_df()
+        # exit()
+        # dff = join(self.this_class_arr,'dataframe.df')
+        # df = T.load_df(dff)
+        # df = df[df['HI_class'] != 'Humid']
+        # T.print_head_n(df)
+        # pix_list = df['pix'].tolist()
+
+        # spatial_dic = {}
+        # for pix in pix_list:
+        #     spatial_dic[pix] = 1
+        # arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+        # land_tif = '/Volumes/SSD/drought_response/conf/land.tif'
+        # DIC_and_TIF().plot_back_ground_arr(land_tif)
+        # plt.imshow(arr)
+        # plt.show()
+
+        # Y = df['GIMMS_NDVI']
+        # X = df[['CO2','VPD']]
+        # selected_labels = ['CO2','VPD']
+        # self.partial_dependent_plot_regression(X,Y,selected_labels)
+        self.matix()
+
+    def gen_df(self):
+        fdir = '/Volumes/NVME2T/wen_proj/20220111/origional/1982-2015_original_extraction_all_seasons/1982-2015_extraction_during_early_growing_season_static'
+        # fdir = '/Volumes/NVME2T/wen_proj/20220111/1982-2015_during_early'
+        outf = join(self.this_class_arr,'dataframe_original.df')
+        start_year = 1982
+        y_variable = 'GIMMS_NDVI'
+        y_f = f'during_early_{y_variable}.npy'
+        y_f = join(fdir,y_f)
+        # y_f = '/Volumes/NVME2T/wen_proj/20220111/1982-2015_during_early_GIMMS_NDVI.npy'
+        x_variable_list = ['CO2','VPD']
+        x_f_dic = {}
+        for xvar in x_variable_list:
+            x_f = f'during_early_{xvar}.npy'
+            # x_f = f'1982-2015_during_early_{xvar}.npy'
+            x_f_dic[xvar]=join(fdir,x_f)
+        y_dic = T.load_npy(y_f)
+        x_dics = {}
+        for xvar in x_f_dic:
+            dic_i = T.load_npy(x_f_dic[xvar])
+            x_dics[xvar] = dic_i
+
+        pix_list = []
+        val_list = []
+        year_list = []
+        r_list = []
+        for pix in y_dic:
+            r,c = pix
+            vals = y_dic[pix]
+            i = 0
+            for val in vals:
+                year = i + start_year
+                val_list.append(val)
+                pix_list.append(pix)
+                year_list.append(year)
+                r_list.append(r)
+                i += 1
+
+        df = pd.DataFrame()
+        df['pix'] = pix_list
+        df['r'] = r_list
+        df['year'] = year_list
+        df[y_variable] = val_list
+
+        for x_var in x_dics:
+            dic_i = x_dics[x_var]
+            val_list = []
+            r_list = []
+            for i,row in tqdm(df.iterrows(),total=len(df),desc=x_var):
+                pix = row.pix
+                r,c = pix
+                year = row['year']
+                index = year - start_year
+                val = dic_i[pix][index]
+                val_list.append(val)
+                r_list.append(r)
+            df[x_var] = val_list
+        df = df[df['r']<120]
+
+        P_PET_fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+        P_PET_long_term_dic = P_PET_ratio(P_PET_fdir)
+        HI_zone_class_dic = P_PET_reclass(P_PET_long_term_dic)
+        df = T.add_spatial_dic_to_df(df,HI_zone_class_dic,'HI_class')
+        T.print_head_n(df)
+        T.save_df(df,outf)
+
+    def train_regression(self,X,Y,selected_labels):
+
+        # reg = RandomForestRegressor(n_jobs=6, n_estimators=100, )
+        reg = LinearRegression()
+        # reg = linear_model.BayesianRidge()
+        # reg = sklearn.svm.SVR()
+
+        X = X[selected_labels]
+        X = pd.DataFrame(X)
+        # reg.fit(X,Y)
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=1)
+        Y_train=np.array(Y_train)
+        reg.fit(X_train, Y_train)
+
+        return reg
+
+    def partial_dependent_plot_regression(self,X,Y,selected_labels):
+
+        flag = 0
+        xv = X[selected_labels]
+        print(selected_labels)
+        yv = Y
+        co2 = X['CO2']
+        VPD = X['VPD']
+
+        co2_min = np.nanmin(co2)
+        co2_max = np.nanmax(co2)
+        VPD_min = np.nanmin(VPD)
+        VPD_max = np.nanmax(VPD)
+
+        co2_bins = np.linspace(co2_min,co2_max,30)
+        # VPD_bins = np.linspace(VPD_min,VPD_max,10)
+        VPD_bins = np.linspace(0.4,3,10)
+
+        model = self.train_regression(xv, yv, selected_labels)
+        cmap = KDE_plot().makeColours(VPD_bins,'Reds')
+        # print(cmap)
+        # exit()
+        flag = 0
+        for vpd in VPD_bins:
+            x_list = []
+            y_list = []
+            for co2 in co2_bins:
+                X_i = [[co2,vpd]]
+                Y_i = model.predict(X_i)
+                y = Y_i[0]
+                x_list.append(co2)
+                y_list.append(y)
+            plt.plot(x_list,y_list,label='vpd at '+str(round(vpd,2)),color=cmap[flag])
+            flag += 1
+        plt.legend()
+        plt.show()
+
+    def matix(self):
+        dff = join(self.this_class_arr, 'dataframe_original.df')
+        df = T.load_df(dff)
+        T.print_head_n(df)
+        x_var1 = 'CO2'
+        x_var2 = 'VPD'
+        co2 = df[x_var2]
+        VPD = df[x_var1]
+
+        co2_min = np.nanmin(co2)
+        co2_max = np.nanmax(co2)
+        VPD_min = np.nanmin(VPD)
+        VPD_max = np.nanmax(VPD)
+        # df = df[df['HI_class'] != 'Humid']
+        # co2_bins = np.linspace(330, 420, 50)
+        VPD_bins = np.linspace(330, 420, 20)
+        # VPD_bins = np.linspace(0.2, 3, 20)
+        co2_bins = np.linspace(0.4, 2.5, 70)
+        cmap = KDE_plot().makeColours(VPD_bins,'Reds')
+
+        for i in tqdm(range(len(VPD_bins))):
+            if i + 1 >= len(VPD_bins):
+                continue
+            df_vpd = df[df[x_var1]>VPD_bins[i]]
+            df_vpd = df_vpd[df_vpd[x_var1]<VPD_bins[i+1]]
+            x_list = []
+            y_list = []
+            for j in range(len(co2_bins)):
+                if j + 1 >= len(co2_bins):
+                    continue
+                df_co2 = df_vpd[df_vpd[x_var2]>co2_bins[j]]
+                df_co2 = df_co2[df_co2[x_var2]<co2_bins[j+1]]
+                NDVI = df_co2['GIMMS_NDVI']
+                x_list.append(co2_bins[j])
+                y_list.append(np.nanmean(NDVI))
+            plt.plot(x_list,y_list,label=f'{x_var1} at {round(VPD_bins[i],2)}',color=cmap[i])
+        plt.xlabel(x_var2)
+        plt.ylabel('NDVI anomaly')
+        plt.legend()
+        plt.show()
+        pass
+
+
+
+
 def main():
     # plot_box()
     # plot_scatter()
@@ -1766,13 +2104,17 @@ def main():
     # NDVI_seasonal_transform()
     # NDVI_trend_line_and_spatial()
     # plot_ratio_trend1()
+    # plot_ratio_bar_trend()
     # NDVI_trend_spatial()
     # get_variables_trend_df()
     # plot_ratio()
     # check_HI_Class()
     # ndvi_spatial_trend_check()
-    co2_ndvi_limited_by_vpd()
-    pass
+    # co2_ndvi_limited_by_vpd()
+    PDP_co2_ndvi_vpd().run()
+    # pass
+
+
 
 
 if __name__ == '__main__':
