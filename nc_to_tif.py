@@ -452,8 +452,8 @@ def nc_to_tif_GLEAM():
 
 
 def montly_composite():
-    fdir = '/Users/admin/Downloads/CSIF-TIFF/'
-    outdir = '/Users/admin/Downloads/CSIF-TIFF_montly_composite/'
+    fdir = '/Volumes/SSD_sumsang/project_greening/Data/CCI_SM_2020/CCI_SM_2020_TIFF/'
+    outdir = '/Volumes/SSD_sumsang/project_greening/Data/CCI_SM_2020/CSIF-TIFF_montly_composite/'
     mk_dir(outdir)
     month=[]
     for i in range(1,13):
@@ -465,15 +465,22 @@ def montly_composite():
         n = 0
         average_sif = 0
         for file in os.listdir(fdir):
-            if file[4:6]==M:
-              array, originX, originY, pixelWidth, pixelHeight = raster2array.raster2array(fdir +file)
+
+            file_month_extraction=file.split('.')[0].split('_')[2][4:6]
+            file_year_extraction = file.split('.')[0].split('_')[2][0:4]
+
+            if file_month_extraction==M:
+              array, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(fdir +file)
               array = np.array(array, dtype=np.float)
               arr_sum=arr_sum+array
               n=n+1
         average_sif=arr_sum/n
-        newRasterfn = outdir + file[0:4]+M+'.tif'
-        raster2array.array2raster(newRasterfn, originX, originY, pixelWidth, pixelHeight, average_sif, ndv=-999999)
-        plt.imshow(average_sif,vmin=0,vmax=0.6)
+
+        newRasterfn = outdir + file_year_extraction[0:4]+M+'.tif'
+        print(file_year_extraction[0:4]+M+'.tif')
+
+        to_raster.array2raster(newRasterfn, -180, 90, 0.25, -0.25, average_sif, ndv=-999999)
+        plt.imshow(average_sif,vmin=0,vmax=1)
         plt.title(M)
         plt.colorbar()
         plt.show()
@@ -529,6 +536,83 @@ def nc_to_tif_precip():  #处理GPCP数据
             plt.colorbar()
             plt.show()
 
+def nc_to_tif_SM_CCI():  #Wen 处理1982-2020nc 数据
+
+    fdir_all = '/Users/wenzhang/Downloads/ESACCI-SOILMOISTURE-L3S-SSMV-COMBINED_1978-2020-v06.1/'
+    outdir = '/Users/wenzhang/Downloads/CCI_SM_TIFF/'
+    mk_dir(outdir)
+    for fdir in os.listdir(fdir_all):
+        if fdir.startswith('.'):
+            continue
+        for f in os.listdir(fdir_all+fdir):
+            if f.startswith('.'):
+                continue
+            fpath=fdir_all+fdir+'/'+f
+            nc = Dataset(fpath)
+            print(nc)
+            print(nc.variables.keys())
+            t = nc['time']
+            print(t)
+
+            basetime = datetime.datetime(1970, 1, 1)  # 告诉起始时间
+            lat_list = nc['lat']
+            lon_list = nc['lon']
+            # lat_list=lat_list[::-1]  #取反
+            # print(lat_list[:])
+            # print(lon_list[:])
+
+            origin_x = lon_list[0]  # 要为负数-180
+            origin_y = lat_list[0]  # 要为正数90
+            pix_width = lon_list[1] - lon_list[0]  # 经度0.5
+            pix_height = lat_list[1] - lat_list[0]  # 纬度-0.5
+            # print(origin_x)
+            # print(origin_y)
+            # print(pix_width)
+            # print(pix_height)
+            # SIF_arr_list = nc['SIF']
+            SPEI_arr_list = nc['sm']
+            # print(SPEI_arr_list.shape) # [1,720,1440]
+            # print(SPEI_arr_list[0])
+            # plt.imshow(SPEI_arr_list[0])  #
+            # plt.imshow(SPEI_arr_list[::])
+            # plt.show()
+
+            # date_list=list(range(1982,2021))
+            # print(date_list)
+            for i in range(len(SPEI_arr_list)):
+                date_delta_i = t[i]
+                print(date_delta_i)
+                date_delta_i = datetime.timedelta(int(date_delta_i))
+                # print(date_delta_i)
+                date_i = basetime + date_delta_i
+                print(date_i)
+                # if date_i.split('-')[0] not in date_list :
+                #     continue
+                # print(date_i)
+                year = date_i.year
+                month = date_i.month
+                day=date_i.day
+                fname=f'CCI_SM_{year}{month:02d}{day:02d}.tif'
+                # fname = 'CCI_SM_' + '{}{:02d}.tif'.format(year, month)
+                print(fname)
+                newRasterfn = outdir + fname
+                print(newRasterfn)
+                longitude_start = origin_x
+                latitude_start = origin_y
+                pixelWidth = pix_width
+                pixelHeight = pix_height
+                # array = val
+                array = SPEI_arr_list[i]
+                array = np.array(array)
+                # method 2
+                # array = array.T
+                array[array < 0] = np.nan
+                # plt.imshow(array)
+                # plt.colorbar()
+                # plt.show()
+                to_raster.array2raster(newRasterfn, longitude_start, latitude_start, pixelWidth, pixelHeight, array,
+                                       ndv=-999999)
+
 
 def transformation_array(array):
     newarray=[]
@@ -550,9 +634,10 @@ def main():
     # nc_to_tif_BESS()
     # nc_to_tif_SPEI3()
     # nc_to_tif_CO2()
-    nc_to_tif_PET()
+    # nc_to_tif_PET()
     # nc_to_tif_GLEAM()
-    # montly_composite()
+    montly_composite()
+    # nc_to_tif_SM_CCI()
 
 if __name__ == '__main__':
                 main()

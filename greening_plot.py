@@ -11,10 +11,11 @@ def mk_dir(outdir):
 
 class Plot_dataframe:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_1982-2015/'
+        self.this_class_arr = results_root + 'Data_frame_trend_relative_change/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Window_partial_correlation_dataframe_df.df'
+        self.dff = self.this_class_arr + 'Data_frame_trend_relative_change.df'
+
 
 
 
@@ -22,13 +23,17 @@ class Plot_dataframe:
     def run(self):
         df = self.__gen_df_init()
 
-        # self.call_greening_trend_bar(df)
+
+        self.call_greening_trend_bar(df)
+        # self.call_greening_area_statistic_bar_products(df)
         # self.call_correlation_bar(df)
-        self.plot_multi_window_correlation(df)
+        # self.plot_multi_window_correlation(df)
         # self.call_multi_correlation_bar(df)
         # self.call_plot_line_for_three_seasons(df)
         # self.call_plot_line_NDVI_three_seasons(df)
         # self.call_plot_LST_for_three_seasons(df)
+        # self.call_plot_GIMMS_NDVI_for_three_seasons_two_product(df)
+        # self.plot_product_bar(df)
 
 
 
@@ -78,31 +83,55 @@ class Plot_dataframe:
             # raise Warning('{} is already existed'.format(self.dff))
 
     def call_plot_line_for_three_seasons(self,df):
-        period_name=['early','peak','late']
-        for period in period_name:
+        # period_name=['early','peak','late']
+        # period_name = ['early','peak','late']
+        period_name = [ 'late']
+        variable_list=['1982-2020_LAI4g','1982-2018_LAI3g','2000-2019_MODIS_LAI','1988-2016_VOD']
+        # variable_list = ['1988-2016_VOD']
+        # variable_list = ['2000-2020_MODIS_LAI', ]
+        # variable_list = ['LAI4g', 'LAI3g', 'MODIS_LAI', 'VOD']
 
-            column_name='1982-2015_GIMMS_NDVI_{}_anomaly'.format(period)
-            # column_name='%CSIF_par_{}'.format(period)
-            print(column_name)
-            self.plot_line_for_three_seasons(df,column_name)
-        plt.legend()
+        # variable_list = [
+        #                   '2001-2016_CSIF', '1982-2018_NIRv']
+
+        # variable_list=['1982-2015_GIMMS_NDVI']
+        # variable_list=['1988-2016_VOD']
+
+        for period in period_name:
+            for variable in variable_list:
+
+                # column_name=f'{variable}_{period}_raw'
+                column_name=f'{variable}_{period}_raw'
+                print(column_name)
+                self.plot_line_for_three_seasons(df,column_name)
+        plt.legend(fontsize=15)
+        plt.title('Dryland')
         plt.show()
 
     def call_plot_line_NDVI_three_seasons(self,df):
         period_name=['early','peak','late']
         for period in period_name:
 
-            column_name='1982-2015_GIMMS_NDVI_{}_change%'.format(period)
+            column_name='2002-2018_'.format(period)
             # column_name='%CSIF_par_{}'.format(period)
             print(column_name)
             self.plot_line_NDVI(df,column_name)
         plt.legend()
+
         plt.show()
 
 
     def plot_line_for_three_seasons(self,df,y_name):  # 画anomaly
         df = df[df['row'] < 120]
         df = df[df['NDVI_MASK'] ==1]
+        df=df[df['HI_class']!='Humid']
+        # pix_list=T.get_df_unique_val_list(df,'pix')
+        # spatial_dic={}
+        # for pix in pix_list:
+        #     spatial_dic[pix]=1
+        # arr=DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+        # plt.imshow(arr)
+        # plt.show()
 
         # plt.hist(df[y_name], bins=80)
         # plt.show()
@@ -129,6 +158,8 @@ class Plot_dataframe:
                 val = row[y_name]
                 dic[year].append(val)
             val_list = np.array(dic[year])
+            # val_list[val_list>1000]=np.nan
+
             n=len(val_list)
             mean_val_i=np.nanmean(val_list)
             se=stats.sem(val_list)
@@ -145,15 +176,15 @@ class Plot_dataframe:
             mean_value_yearly.append(mean_val[year])
             up_list.append(mean_val[year] + confidence_value[year])
             bottom_list.append(mean_val[year]-confidence_value[year])
-        plt.plot(mean_value_yearly, label=y_name)
-        plt.fill_between(range(len(mean_value_yearly)), up_list, bottom_list, alpha=0.3, zorder=-1)
-        plt.xticks(range(len(mean_value_yearly)), year_list)
-        plt.show()
+        plt.plot(year_list,mean_value_yearly, label=y_name)
+        # plt.fill_between(range(len(mean_value_yearly)), up_list, bottom_list, alpha=0.3, zorder=-1)
+        # plt.xticks(range(len(mean_value_yearly)), year_list)
+        # plt.show()
 
 
 
 
-    def call_plot_variables_for_greening_and_browning(self):
+    def call_plot_variables_for_greening_and_browning(self):  ######### 6月
         period_name=['early','peak','late']
         # period_name = ['peak', 'late']
         variables=['CO2_anomaly','GPCP','LST','PAR','SPEI3']
@@ -289,49 +320,39 @@ class Plot_dataframe:
         # plt.savefig('%CSIF_par_late_koppen', dpi=300)
         plt.show()
 
+    def call_plot_GIMMS_NDVI_for_three_seasons_two_product(self,df):  # 实现GIMMS——NDVI 和MODIS_NDVI 画在一起
 
+        period_name = ['early', 'peak', 'late']
 
-    def call_plot_LST_for_three_seasons(self,df):
+        color_list = ['r', 'darkorange', 'g','lime','b','aqua']
+        flag = 0
         df = df[df['row'] < 120]
         df = df[df['NDVI_MASK'] ==1]
-        df=df[df['HI_class']!='Humid']
+        # df=df[df['HI_class']=='Humid']
 
 
-        period_name=['early','peak','late']
-        color_list=['r','g','b']
-        flag=0
         for period in period_name:
-            df = df[df['during_{}_VPD_trend_1982-2015'.format(period)]> 0]
-            # df = df[df['original_during_{}_GIMMS_NDVI_trend_1982-2015'.format(period)] > 0]
+            column_name_list = ['1982-2015_GIMMS_NDVI_{}_change%_keenan'.format(period),
+                '2002-2015_MODIS_NDVI_{}_change%_keenan'.format(period)
+                                ]
 
-            # column_name='1982-2015_GIMMS_NDVI_{}_anomaly'.format(period)
+            for column_name in column_name_list:
+
             # column_name = '2002-2015_{}_MODIS_NDVI_anomaly'.format(period)
-            column_name='1982-2015_GIMMS_NDVI_{}_anomaly'.format(period)
+            # column_name='mean_during_{}_GIMMS_NDVI_window'.format(period)
+            # column_name = 'during_{}_GIMMS_NDVI_trend_window'.format(period)
             # column_name='anomaly_1982-2015_during_{}_Aridity'.format(period)
             # column_name='{}_pre_15_LST'.format(period)
             # column_name='%CSIF_par_{}'.format(period)
-            print(column_name)
-            color=color_list[flag]
-            self.plot_LST_for_three_seasons(df,column_name,color)
-            flag+=1
+                print(column_name)
+                color=color_list[flag]
+                self.plot_GIMMS_MODIS_NDVI_for_three_seasons(df,column_name,color)
+                flag+=1
         plt.legend()
         plt.show()
 
-            # df1 = df1['%CSIF_par_early']
-            # df1 = df1[df1['%CSIF_par_peak'] > -1]
-            # df1 = df1[df1['%CSIF_par_peak'] < 1]
-            # df2 = self.__gen_df_init()
-            # df2 = df2['%CSIF_par_peak']
-            # df2 = df2[df2['%CSIF_par_peak'] > -1]
-            # df2 = df2[df2['%CSIF_par_peak'] < 1]
-            # df3 = self.__gen_df_init()
-            # df3 = df3['%CSIF_par_late']
-            # df3 = df3[df3['%CSIF_par_late'] > -1]
-            # df3 = df3[df3['%CSIF_par_late'] < 1]
-            # list = [df1, df2, df3]
 
-
-    def plot_LST_for_three_seasons(self,df,column_name,color):
+    def plot_GIMMS_MODIS_NDVI_for_three_seasons(self,df,column_name,color):
 
         dic = {}
         mean_val = {}
@@ -341,10 +362,17 @@ class Plot_dataframe:
         # b_value = {}
 
         std_val = {}
-        year_list = df['year'].to_list()
-        year_list = set(year_list)  # 取唯一
-        year_list = list(year_list)
-        year_list.sort()
+        if 'GIMMS_NDVI' in column_name:
+            year_list = df['year'].to_list()
+            year_list = set(year_list)  # 取唯一
+            year_list = list(year_list)
+            year_list.sort()
+
+        elif 'MODIS_NDVI' in column_name:
+            year_list=[]
+            for i in range(2002,2016):
+                year_list.append(i)
+            print(year_list)
 
         for year in tqdm(year_list):  # 构造字典的键值，并且字典的键：值初始化
             dic[year] = []
@@ -391,6 +419,119 @@ class Plot_dataframe:
         p_value_yearly=[]
 
 
+        for year in year_list:
+            mean_value_yearly.append(mean_val[year])
+            # up_list.append(mean_val[year] + confidence_value[year])
+            # bottom_list.append(mean_val[year] - confidence_value[year])
+            up_list.append(mean_val[year] + 0.125 * std_val[year])
+            bottom_list.append(mean_val[year] - 0.125 * std_val[year])
+            if len(year_list)==34:
+                xaxis = list(range(1982, 2016))
+                fit_value_yearly.append(k_value*(year-1982)+b_value)
+            elif len(year_list)==14:
+                fit_value_yearly.append(k_value * (year - 2002) + b_value)
+                xaxis = list(range(2002, 2016))
+
+        print(up_list)
+        print(bottom_list)
+
+
+        plt.plot(xaxis,mean_value_yearly, label=column_name,c=color)
+        plt.plot(xaxis,fit_value_yearly,linestyle='--',label='k={:0.2f},p={:0.3f}'.format(k_value,p_value),c=color)
+        # plt.fill_between(xaxis, up_list, bottom_list, alpha=0.1, zorder=-1,color=color)
+        plt.title(column_name.split('%')[0]+'_relative')
+        #
+        # plt.show()
+        # exit()
+
+
+    def call_plot_LST_for_three_seasons(self,df): # 实现变量的三个季节画在一起
+        df = df[df['row'] < 120]
+        df = df[df['NDVI_MASK'] ==1]
+        df=df[df['HI_class']=='Humid']
+
+        period_name=['early','peak','late']
+
+        color_list=['r','g','b']
+        flag=0
+        for period in period_name:
+            # column_name='1982-2015_GIMMS_NDVI_{}_change%_keenan'.format(period)
+            # column_name = '2002-2015_{}_CSIF_fpar_anomaly'.format(period)
+            column_name='1982-2018_LAI_GIMMS_{}_change%_keenan'.format((period))
+            # column_name='2002-2015_{}_MODIS_NDVI_anomaly'.format(period)
+
+            # column_name='mean_during_{}_GIMMS_NDVI_window'.format(period)
+            # column_name = 'during_{}_GIMMS_NDVI_trend_window'.format(period)
+            # column_name='anomaly_1982-2015_during_{}_Aridity'.format(period)
+            # column_name='{}_pre_15_LST'.format(period)
+            # column_name='%CSIF_par_{}'.format(period)
+            print(column_name)
+            color=color_list[flag]
+            self.plot_LST_for_three_seasons(df,column_name,color)
+            flag+=1
+        plt.legend()
+        plt.show()
+
+
+    def plot_LST_for_three_seasons(self,df,column_name,color):
+
+        dic = {}
+        mean_val = {}
+        confidence_value = {}
+        # p_value = {}
+        # k_value = {}
+        # b_value = {}
+
+        std_val = {}
+        year_list = df['year'].to_list()
+        year_list = set(year_list)  # 取唯一
+        year_list = list(year_list)
+        year_list.sort()
+
+
+        for year in tqdm(year_list):  # 构造字典的键值，并且字典的键：值初始化
+            dic[year] = []
+            mean_val[year] = []
+            std_val[year]=[]
+            confidence_value[year] = []
+            # p_value[year] = []
+            # k_value[year] = []
+            # b_value[year] = []
+
+        for year in year_list:
+            df_pick = df[df['year'] == year]
+            for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
+                pix = row.pix
+                val = row[column_name]
+                dic[year].append(val)
+            val_list = np.array(dic[year])
+            val_list=T.remove_np_nan(val_list)
+            n = len(val_list)
+            mean_val_i = np.nanmean(val_list)
+            std_val_i= np.nanstd(val_list)
+            se = stats.sem(val_list)
+            h = se * stats.t.ppf((1 + 0.95) / 2., n - 1)
+            confidence_value[year] = h
+            mean_val[year] = mean_val_i
+            std_val[year]=std_val_i
+
+
+
+        # a, b, r = KDE_plot().linefit(xaxis, val)
+        mean_val_list=[]    # mean_val_list=下面的mean_value_yearly
+
+        for year in year_list:
+            mean_val_list.append(mean_val[year])
+        xaxis = range(len(mean_val_list))
+        print(len(mean_val_list))
+        r, p_value = stats.pearsonr(xaxis, mean_val_list)
+        k_value, b_value = np.polyfit(xaxis, mean_val_list, 1)
+
+        mean_value_yearly = []
+        up_list = []
+        bottom_list = []
+        fit_value_yearly=[]
+        p_value_yearly=[]
 
 
         for year in year_list:
@@ -399,16 +540,23 @@ class Plot_dataframe:
             # bottom_list.append(mean_val[year] - confidence_value[year])
             up_list.append(mean_val[year] + 0.125 * std_val[year])
             bottom_list.append(mean_val[year] - 0.125 * std_val[year])
-            fit_value_yearly.append(k_value*(year-1982)+b_value)
+
+            fit_value_yearly.append(k_value * (year - 1982) + b_value)
+
         print(up_list)
         print(bottom_list)
 
 
         plt.plot(mean_value_yearly, label=column_name,c=color)
-        plt.plot(fit_value_yearly,linestyle='--',label='k={:0.2f},p={:0.3f}'.format(k_value,p_value),c=color)
-        plt.fill_between(range(len(mean_value_yearly)), up_list, bottom_list, alpha=0.3, zorder=-1,color=color)
+        plt.plot(fit_value_yearly,linestyle='--',label='k={:0.2f},p={:0.4f}'.format(k_value,p_value),c=color)
+        plt.fill_between(range(len(mean_value_yearly)), up_list, bottom_list, alpha=0.1, zorder=-1,color=color)
         plt.xticks(range(len(mean_value_yearly)), year_list,)
+        plt.title('LAI_GIMMS_change%')
+        #
         # plt.show()
+        # exit()
+
+
 
     def plot_SPEI(self,df,koppen):
         dic = {}
@@ -443,7 +591,8 @@ class Plot_dataframe:
         plt.plot(mean_value_yearly, label=koppen)
         # plt.fill_between(range(len(mean_value_yearly)),up_list,bottom_list,alpha=0.3,zorder=-1)
         plt.xticks(range(len(mean_value_yearly)), year_list)
-        # plt.show()
+        plt.title('')
+        plt.show()
 
 
     def plot_line_NDVI(self,df,column_name):
@@ -480,29 +629,26 @@ class Plot_dataframe:
         plt.plot(mean_value_yearly)
         plt.fill_between(range(len(mean_value_yearly)),up_list,bottom_list,alpha=0.3,zorder=-1)
         plt.xticks(range(len(mean_value_yearly)),year_list)
-        plt.show()
+        # plt.show()
 
     def call_greening_trend_bar(self,df):  # 实现的功能是greening_trend_percentage_bar
 
-        outdir =results_root+'Figure/2002-2015/'
+        outdir =results_root+'Figure_April/greening_bar_classfication/'
         T.mk_dir(outdir)
 
-        df = df[df['row'] < 120]
 
-        variable='CSIF'
-        period='late'
-        time='2002-2015'
-        outf = outdir + 'greening_trend_' + period + '_'+time+'_landuse'+'_'+variable
+        df = df[df['row'] < 120]
+        df = df[df['NDVI_MASK'] == 1]
+        df = df[df['HI_class'] != 'Humid']
+
+        variable='MODIS_LAI'
+        period='early'
+        time='2000-2016'
+        outf = outdir + period + '_'+time+'_landuse'+'_'+variable+'_Dryland'
 
         # outf = outdir + 'greening_trend_' + period + '_'+time+ '_koppen'+'_'+variable
         print(outf)
-        # exit()
 
-        # y = df['anomaly_{}_during_{}_MODIS_NDVI'.format(time,period)]
-        # # df = df[df['GIMMS_NDVI_{}_original'.format(period)] < 1]
-        # # df = df[df['GIMMS_NDVI_{}_original'.format(period)] > 0.2]
-        # plt.hist(df['anomaly_{}_during_{}_MODIS_NDVI'.format(time,period)], bins=80)
-        # plt.show()
         # koppen_list = ['B', 'Cf', 'Csw', 'Df', 'Dsw', 'E']
         landcover_list = ['BF', 'NF', 'shrub', 'Grassland', 'Savanna', 'Cropland']
         plt.figure(figsize=(6, 6))
@@ -511,19 +657,22 @@ class Plot_dataframe:
             # df_pick = df[df['koppen'] == koppen]  # 修改
             df_pick = df[df['landcover'] == landcover]
             # self.plot_greening_trend_bar(df_pick, koppen,period,time)
-            self.plot_greening_trend_bar(df_pick, landcover, period,time)
-        self.plot_greening_trend_bar(df, 'all',period,time)
+            self.plot_greening_trend_bar(df_pick, landcover, period,variable,time)
+        self.plot_greening_trend_bar(df,'all',period,variable,time)
         # plt.legend()
         plt.legend(["Negative_0.05", "Negative_0.1", "no trend", "Positive_0.1","Positive_0.05"])
-        plt.title('greening_trend_' + period + '_landcover_'+time+'_'+variable)
+        plt.title(period + '_landcover_'+time+'_'+variable+'_Dryland')
         # plt.title('greening_trend_' + period + '_koppen_'+time+'_'+variable)
 
-        # plt.show()
+        plt.show()
         plt.savefig(outf+'.pdf', dpi=300,)
         plt.close()
 
 
-    def plot_greening_trend_bar(self,df_pick,koppen,period,time): # greening and browning percentage
+    def plot_greening_trend_bar(self, df_pick,koppen,period,variable,time):# greening and browning percentage
+        df_pick=df_pick.dropna(how='any', subset=[f'{time}_{variable}_{period}_relative_change_trend'] )
+        print (df_pick)
+        # exit()
 
         count_no_trend=0
         count_greening_0_1=0
@@ -533,8 +682,10 @@ class Plot_dataframe:
 
 
         for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
-            trend = row['{}_during_{}_CSIF_trend_{}'.format(time,period,time)]
-            p_val=row['{}_during_{}_CSIF_p_value_{}'.format(time,period,time)]
+            trend = row[f'{time}_{variable}_{period}_relative_change_trend']
+            p_val=row[f'{time}_{variable}_{period}_relative_change_p_value']
+            # trend = row['{}_{}_trend_original'.format(variable,period,)]
+            # p_val = row['{}_{}_p_value_original'.format(variable,period)]
 
 
             if p_val>0.1:
@@ -555,11 +706,18 @@ class Plot_dataframe:
         browning_0_05 = count_browning_0_05 / len(df_pick)*100
         no_trend=count_no_trend/len(df_pick)*100
 
+
         y1 = np.array([browning_0_05])
         y2=np.array([browning_0_1])
         y3 = np.array([no_trend])
         y4=np.array([greening_0_1])
         y5=np.array([greening_0_05])
+
+        # y1 = np.array([browning_0_05]) * len(df_pick)
+        # y2 = np.array([browning_0_1]) * len(df_pick)
+        # y3 = np.array([no_trend]) * len(df_pick)
+        # y4 = np.array([greening_0_1]) * len(df_pick)
+        # y5 = np.array([greening_0_05]) * len(df_pick)
 
         # plot bars in stack manner
 
@@ -584,64 +742,98 @@ class Plot_dataframe:
 
 
 
-    def plot_greening_trend_bar(self,df_pick,koppen,period,time): # greening and browning percentage
+    def call_greening_area_statistic_bar_products(self, df):  # 实现的功能是不同产品面积greening sig greening ...
 
-        count_no_trend=0
-        count_greening_0_1=0
-        count_browning_0_1=0
-        count_greening_0_05 = 0
-        count_browning_0_05 = 0
+        outdir = results_root + 'Figure_April/greening_bar/'
+        T.mk_dir(outdir)
 
-
-        for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
-            trend = row['{}_during_{}_CSIF_trend_{}'.format(time,period,time)]
-            p_val=row['{}_during_{}_CSIF_p_value_{}'.format(time,period,time)]
+        df = df[df['row'] < 120]
+        df = df[df['NDVI_MASK'] == 1]
+        df = df[df['HI_class'] != 'Humid']
 
 
-            if p_val>0.1:
-                count_no_trend=count_no_trend+1
-            elif 0.05<p_val<0.1:
-                if trend>0:
-                    count_greening_0_1=count_greening_0_1+1
+        product_list = ['LAI4g', 'LAI3g', 'MODIS_LAI', 'VOD']
+        period = 'early'
+        time = '2000-2016'
+
+        plt.figure(figsize=(6, 6))
+
+        for product in product_list:
+            df = df.dropna(how='any', subset=[f'{time}_{product}_{period}_relative_change_trend'])
+
+            count_no_trend = 0
+            count_greening_0_1 = 0
+            count_browning_0_1 = 0
+            count_greening_0_05 = 0
+            count_browning_0_05 = 0
+            for i, row in tqdm(df.iterrows(), total=len(df)):
+                trend = row[f'{time}_{product}_{period}_relative_change_trend']
+                p_val=row[f'{time}_{product}_{period}_relative_change_p_value']
+
+                if p_val > 0.1:
+                    count_no_trend = count_no_trend + 1
+                elif 0.05 < p_val < 0.1:
+                    if trend > 0:
+                        count_greening_0_1 = count_greening_0_1 + 1
+                    else:
+                        count_browning_0_1 = count_browning_0_1 + 1
                 else:
-                    count_browning_0_1 = count_browning_0_1 + 1
-            else:
-                if trend>0:
-                    count_greening_0_05=count_greening_0_05+1
-                else:
-                    count_browning_0_05=count_browning_0_05+1
-        greening_0_1=count_greening_0_1/len(df_pick)*100
-        browning_0_1=count_browning_0_1 / len(df_pick)*100
-        greening_0_05 = count_greening_0_05 / len(df_pick)*100
-        browning_0_05 = count_browning_0_05 / len(df_pick)*100
-        no_trend=count_no_trend/len(df_pick)*100
+                    if trend > 0:
+                        count_greening_0_05 = count_greening_0_05 + 1
+                    else:
+                        count_browning_0_05 = count_browning_0_05 + 1
+            greening_0_1 = count_greening_0_1 / len(df) * 100
+            browning_0_1 = count_browning_0_1 / len(df) * 100
+            greening_0_05 = count_greening_0_05 / len(df) * 100
+            browning_0_05 = count_browning_0_05 / len(df) * 100
+            no_trend = count_no_trend / len(df) * 100
 
-        y1 = np.array([browning_0_05])
-        y2=np.array([browning_0_1])
-        y3 = np.array([no_trend])
-        y4=np.array([greening_0_1])
-        y5=np.array([greening_0_05])
+            y1 = np.array([browning_0_05])
+            y2 = np.array([browning_0_1])
+            y3 = np.array([no_trend])
+            y4 = np.array([greening_0_1])
+            y5 = np.array([greening_0_05])
 
-        # plot bars in stack manner
+            # y1 = np.array([browning_0_05]) * len(df_pick)
+            # y2 = np.array([browning_0_1]) * len(df_pick)
+            # y3 = np.array([no_trend]) * len(df_pick)
+            # y4 = np.array([greening_0_1]) * len(df_pick)
+            # y5 = np.array([greening_0_05]) * len(df_pick)
 
-        plt.bar(koppen, y1, color='sienna')
-        plt.bar(koppen, y2, bottom=y1, color='peru')
-        plt.bar(koppen, y3, bottom=y1 + y2, color='gray')
-        plt.bar(koppen, y4, bottom=y1 + y2 + y3, color='limegreen')
-        plt.bar(koppen, y5, bottom=y1 + y2 + y3+y4, color='forestgreen')
+            # plot bars in stack manner
 
+            plt.bar(product, y1, color='sienna')
+            plt.bar(product, y2, bottom=y1, color='peru')
+            plt.bar(product, y3, bottom=y1 + y2, color='gray')
+            plt.bar(product, y4, bottom=y1 + y2 + y3, color='limegreen')
+            plt.bar(product, y5, bottom=y1 + y2 + y3 + y4, color='forestgreen')
 
-        plt.text(koppen, y1 / 2., round(browning_0_05), fontsize=10, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 / 2., round(browning_0_1), fontsize=10, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 + y3 / 2., round(no_trend), fontsize=10, color='w', ha='center', va='center')
-        plt.text(koppen, y1 + y2 + y3 + y4 / 2., round(greening_0_1), fontsize=10, color='w', ha='center',
-                 va='center')
-        plt.text(koppen, y1 + y2 + y3 + y4 + y5 / 2, round(greening_0_05), fontsize=10, color='w', ha='center',
-                 va='center')
-        plt.text(koppen, 102, len(df_pick), fontsize=10, color='k', ha='center', va='center')
+            plt.text(product, y1 / 2., round(browning_0_05), fontsize=10, color='w', ha='center', va='center')
+            plt.text(product, y1 + y2 / 2., round(browning_0_1), fontsize=10, color='w', ha='center', va='center')
+            plt.text(product, y1 + y2 + y3 / 2., round(no_trend), fontsize=10, color='w', ha='center', va='center')
+            plt.text(product, y1 + y2 + y3 + y4 / 2., round(greening_0_1), fontsize=10, color='w', ha='center',
+                     va='center')
+            plt.text(product, y1 + y2 + y3 + y4 + y5 / 2, round(greening_0_05), fontsize=10, color='w', ha='center',
+                     va='center')
+            plt.text(product, 102, len(df), fontsize=10, color='k', ha='center', va='center')
 
-        # plt.xlabel("landcover")
-        plt.ylabel("Percentage")
+            # plt.xlabel("landcover")
+            plt.ylabel("Percentage")
+
+        # plt.legend()
+        plt.legend(["Negative_0.05", "Negative_0.1", "no trend", "Positive_0.1", "Positive_0.05"])
+        plt.title('percentage of greening and browning area_' + period + '_'+time )
+
+        # plt.show()
+        outf=outdir+f'{time}_{period}_Dryland'
+        plt.savefig(outf + '.pdf', dpi=300, )
+        plt.close()
+
+    def greening_area_statistic_bar_products(self, df_pick, koppen, period, variable):  # greening and browning percentage among products
+        df_pick = df_pick.dropna(how='any', subset=[f'{period}_{variable}_trend'])
+        print(df_pick)
+        # exit()
+
 
     def call_multi_correlation_bar(self, df):  # 一次实现多个变量个偏相关画图
 
@@ -839,13 +1031,20 @@ class Plot_dataframe:
         variable_list = ['CCI_SM', 'CO2', 'PAR', 'VPD', 'temperature']
         color_list=['forestgreen','limegreen','gray','peru','sienna']
         correlation_label_list=['positive_p<0.05','positive_p<0.1','non_sig','negative_p<0.1', 'negative_p<0.05']
+        plot_flag=1
+        plt.figure()
+
         for variable in variable_list:
+            plt.subplot(3, 5, plot_flag)
+
             x_list=[]
             y_list=[]
             for window in range(1,20):
-                period='early'
-                col_pcorr_name='window_{:02d}_{}_pcorr_{}'.format(window,variable,period)
-                col_p_value_name='window_{:02d}_{}_p_value_{}'.format(window,variable,period)
+                period='late'
+                col_pcorr_name='window_{:02d}_during_{}_{}_pcorr'.format(window,period,variable)
+                col_p_value_name='window_{:02d}_during_{}_{}_p_value'.format(window,period,variable)
+                # col_pcorr_name = 'window_{:02d}_{}_pcorr_{}'.format(window, variable, period)
+                # col_p_value_name = 'window_{:02d}_{}_p_value_{}'.format(window, variable, period)
                 df_new=pd.DataFrame()
                 df_new[col_p_value_name]=df[col_p_value_name]
                 df_new[col_pcorr_name] = df[col_pcorr_name]
@@ -882,7 +1081,9 @@ class Plot_dataframe:
                 x_list.append(window)
                 y_list.append(ratio_list)
 
+
             for i in range(len(x_list)):
+
                 x=x_list[i]
                 ratio_list=y_list[i]
                 bottom=0
@@ -891,8 +1092,10 @@ class Plot_dataframe:
                     plt.bar(x,ratio,bottom=bottom,color=color_list[flag],label=correlation_label_list[flag])
                     bottom+=ratio
                     flag=flag+1
-            plt.legend()
-            plt.show()
+            plt.legend(["positive p<0.05", "positive p<0.1", "no trend", "negative p<0.1", "negative p<0.05"])
+            plt.title(period+'_non_humid_'+variable)
+            plot_flag=plot_flag+1
+        plt.show()
 
 
 
@@ -923,12 +1126,64 @@ class Plot_dataframe:
         # plt.ylabel("Percentage")
         # # plt.show()
 
+    def plot_product_bar(self,df): # 不同的product relative change
+
+        df = df[df['row'] < 120]
+        df = df[df['NDVI_MASK'] == 1]
+        df = df[df['HI_class'] == 'Humid']
+        product_list = ['LAI4g', 'LAI3g',  'VOD']
+        # product_list = ['LAI4g', 'LAI3g', 'MODIS_LAI', 'GIMMS_NDVI', 'VOD', 'NIRv','CSIF']
+        # product_list = ['LAI4g', 'LAI3g', 'GIMMS_NDVI', 'VOD', 'NIRv', ]
+        color_list = ['forestgreen', 'limegreen', 'gray', 'peru', 'sienna','red','brown']
+
+        plot_flag = 1
+        plt.figure()
+        period='peak'
+
+        x_list = []
+        y_list = []
+        mean_trend_list=[]
+
+
+
+        for product in product_list:
+            trend_list = []
+            for i, row in tqdm(df.iterrows(), total=len(df)):
+                trend = row[f'1982-_{product}_{period}_relative_change_trend']
+
+                trend=trend*10
+                trend_list.append(trend)
+            mean_trend_list=np.nanmean(trend_list)
+            x_list.append(product)
+            y_list.append(mean_trend_list)
+
+        flag = 0
+
+        for i in range(len(x_list)):
+
+            x=x_list[i]
+            trend=y_list[i]
+            bottom=0
+
+            plt.bar(x,trend,bottom=bottom,color=color_list[flag],label=product_list[flag])
+            bottom+=trend
+            flag=flag+1
+        # plt.legend()
+        plt.title(period+'_Humid_2016/2018/2020',fontsize=15)
+        plt.ylabel('relative_change,% decades-1',fontsize=15)
+        plot_flag=plot_flag+1
+        plt.show()
+
+
+    pass
+
+
 class Plot_partial_correlation:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2002-2015/'
+        self.this_class_arr = results_root + 'Data_frame_1982-2018/partial_correlation_1982-2018/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_2002-2015_df.df'
+        self.dff = self.this_class_arr + 'Data_frame_1982-2018_df.df'
 
 
 
@@ -939,9 +1194,13 @@ class Plot_partial_correlation:
         # self.plot_bar(df)
 
 
-        self.call_plot_bar_max_contribution(df)
+        # self.call_plot_bar_max_contribution(df)
 
         # self.call_plot_box_correlation(df)
+        # self.call_plotbox_Yuan(df)
+        # self.plot_increase_decrease_Yuan(df)
+        self.plot_greening_trend_bar(df)
+
 
 
 
@@ -1173,12 +1432,253 @@ class Plot_partial_correlation:
             plt.show()
 
 
+    def plotbox_Yuan(self,df):
+        outdir = results_root + 'Yuan_Figure/'
+
+        df = df[df['row'] < 120]
+        df = df[df['HI_class'] != 'Humid']
+
+
+        time_range_list = ['1982-2001','2002-2018']
+        variable_list = ['CO2', 'PAR', 'SPEI3', 'VPD', 'temperature','CCI_SM']
+        # variable_list = ['SPEI3', 'VPD', ]
+
+        season_list = ['early', 'peak', 'late']
+        position_dic={}
+
+        flag=1
+        plt.figure(figsize=(18, 18))
+
+        for variable in variable_list:
+
+            for season in season_list:
+                for period in time_range_list:
+
+                    # outf = outdir + 'greening_partial_correlation_detrend_' + period + '_' + time + '_koppen'
+                    # print(outf)
+                    # exit()
+                    variable_list = {}
+                    val_list = []
+                    for i, row in tqdm(df.iterrows(), total=len(df)):
+
+                        # val = row['during_{}_{}_{}_correlation'.format(season, variable,period)]
+                        val = row['simple_during_{}_{}_{}_LAI_GIMMS_r'.format(period,season , variable)]
+
+                        val_list.append(val)
+                    val_array=np.array(val_list)
+                    val_new=T.remove_np_nan(val_array)
+                    variable_list[period] = val_new
+                    vals = variable_list[period]
+
+                    key = f'{variable}_{season}_{period}'
+                    position_dic[key] = (flag,vals)
+                    flag += 1
+
+        variable_all_list=[]
+        label_list=[]
+        position_list=[]
+        for key in position_dic:
+            vals=position_dic[key][1]
+            flag=position_dic[key][0]
+            variable_all_list.append(vals)
+            label_list.append(key)
+            position_list.append(flag)
+
+        plt.boxplot(variable_all_list,positions=position_list, labels=label_list,vert=False)
+        plt.tight_layout()
+        plt.show()
+
+        #         plt.title(period + '_' + time + '_' + variable)
+        #         flag = flag + 1
+        #
+        #     # plt.show()
+        #     plt.savefig(outf + '.pdf', dpi=300, )
+        # plt.close()
+
+    def plot_increase_decrease_Yuan(self,df):
+        outdir = results_root + 'Yuan_Figure/'
+
+        df = df[df['row'] < 120]
+        df = df[df['HI_class'] != 'Humid']
+
+        variable_list = ['CO2', 'PAR', 'SPEI3', 'VPD', 'temperature','CCI_SM']
+        # variable_list = ['SPEI3', 'VPD', ]
+
+        season_list = ['early', 'peak', 'late']
+        position_dic={}
+
+        flag=1
+        plt.figure(figsize=(18, 18))
+
+        for variable in variable_list:
+            key = f'{variable}'
+            for season in season_list:
+
+                # outf = outdir + 'greening_partial_correlation_detrend_' + period + '_' + time + '_koppen'
+                # print(outf)
+                # exit()
+                val_increase = 0
+                val_decrease = 0
+
+                val_list = []
+                for i, row in tqdm(df.iterrows(), total=len(df)):
+
+                    # val = row['during_{}_{}_{}_correlation'.format(season, variable,period)]
+                    val = row['{}_{}_LAI_GIMMS_r_difference'.format(season, variable)]
+                    if val>0:
+                        val_increase=val_increase+1
+                    if val>0:
+                        val_decrease=val_decrease+1
+                df_new = df.dropna()
+
+                val_increase_area=val_increase/len(df_new)
+                position_dic[key] = ('increase', val_increase_area)
+                val_decrease_area = val_decrease / len(df_new)
+                position_dic[key] = ('decrease', val_decrease_area)
+
+
+        variable_all_list=[]
+        label_list=[]
+        position_list=[]
+        for key in position_dic:
+            vals=position_dic[key][1]
+            flag=position_dic[key][0]
+            variable_all_list.append(vals)
+            label_list.append(key)
+            position_list.append(flag)
+
+        plt.bar(variable_all_list,positions=position_list, labels=label_list,vert=False)
+        plt.tight_layout()
+        plt.show()
+
+        #         plt.title(period + '_' + time + '_' + variable)
+        #         flag = flag + 1
+        #
+        #     # plt.show()
+        #     plt.savefig(outf + '.pdf', dpi=300, )
+        # plt.close()
+
+
+    def plot_greening_trend_bar(self,df): # greening and browning percentage
+        df = df[df['row'] < 120]
+        df = df[df['HI_class'] != 'Humid']
+        time_range='1982-2001'
+        period='early'
+        print(len(df))
+
+        count_no_trend = 0
+        count_greening_0_1 = 0
+        count_browning_0_1 = 0
+        count_greening_0_05 = 0
+        count_browning_0_05 = 0
+
+
+        for i, row in tqdm(df.iterrows(), total=len(df)):
+            trend = row[f'original_during_{period}_LAI_GIMMS_{time_range}_trend']
+            p_val=row[f'original_during_{period}_LAI_GIMMS_{time_range}_p_value']
+
+            if p_val>0.1:
+                count_no_trend=count_no_trend+1
+            elif 0.05<p_val<0.1:
+                if trend>0:
+                    count_greening_0_1=count_greening_0_1+1
+                else:
+                    count_browning_0_1 = count_browning_0_1 + 1
+            else:
+                if trend>0:
+                    count_greening_0_05=count_greening_0_05+1
+                else:
+                    count_browning_0_05=count_browning_0_05+1
+        greening_0_1=count_greening_0_1/len(df)*100
+        browning_0_1=count_browning_0_1 / len(df)*100
+        greening_0_05 = count_greening_0_05 / len(df)*100
+        browning_0_05 = count_browning_0_05 / len(df)*100
+        no_trend=count_no_trend/len(df)*100
+
+        x=np.arange(5)
+        y=[greening_0_05,greening_0_1,browning_0_05,browning_0_1,no_trend]
+
+        plt.bar(x, y)
+        plt.xticks(x, ('Sig_Increase','Increase', 'Sig_Decrease', 'Decrease', 'no_change'))
+        plt.show()
+
+class Plot_partial_moving_window:
+    def __init__(self):
+        self.this_class_arr = '/Volumes/SSD_sumsang/project_greening_redo/results/Main_flow/Moving_window/'
+        Tools().mk_dir(self.this_class_arr, force=True)
+        # self.dff = self.this_class_arr + 'data_frame.df'
+        self.dff = self.this_class_arr + 'mean/mean.df'
+
+
+
+
+    def run(self):
+        df = self.__gen_df_init()
+        # self.call_plot_LST_for_three_seasons()
+        # self.call_CSIF_par_trend_bar(df)
+        # self.plot_bar(df)
+
+        self.plot_mean_moving_window(self,df)
+
+
+
+
+    def __df_to_excel(self,df,dff,n=1000,random=True):
+        if n == None:
+            df.to_excel('{}.xlsx'.format(dff))
+        else:
+            if random:
+                df = df.sample(n=n, random_state=1)
+                df.to_excel('{}.xlsx'.format(dff))
+            else:
+                df = df.head(n)
+                df.to_excel('{}.xlsx'.format(dff))
+
+        pass
+    def __load_df(self,):
+        dff = self.dff
+        df = T.load_df(dff)
+
+        return df,dff
+        # return df_early,dff
+
+    def __gen_df_init(self,):
+        df = pd.DataFrame()
+        if not os.path.isfile(self.dff):
+            T.save_df(df, self.dff)
+            return df
+        else:
+            df, dff = self.__load_df()
+            return df
+            # raise Warning('{} is already existed'.format(self.dff))
+
+    def __load_df_wen(self,file):
+        df = T.load_df(file)
+        return df
+        # return df_early,dff
+
+    def __gen_df_init_wen(self,file):
+        df = pd.DataFrame()
+        if not os.path.isfile(file):
+            T.save_df(df, file)
+            return df
+        else:
+            df= self.__load_df_wen(file)
+            return df
+            # raise Warning('{} is already existed'.format(self.dff))
+
+    def plot_mean_moving_window(self, df):
+
+
+
+        pass
 
 
 def main():
 
     Plot_dataframe().run()
     # Plot_partial_correlation().run()
+    # Plot_partial_moving_window().run()
 
 
 if __name__ == '__main__':

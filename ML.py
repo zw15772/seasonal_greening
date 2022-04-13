@@ -19,7 +19,7 @@ class RF:
         self.dff =results_root+ 'Data_frame/'
 
     def run(self):
-        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_2002-2015/Data_frame_2002-2015_df.df'
+        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_trend_attribution_1982-2015/Data_frame_trend_attribution_1982-2015_df.df'
         df, _ = self.__load_df(f)
         df=df[df['row']<120]
         df = df[df['NDVI_MASK'] == 1]
@@ -60,16 +60,16 @@ class RF:
         pass
 
     def run1(self):
-        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_trend_attribution_1982-2015/Data_frame_trend_attribution_1982-2015_df.df'
         df, _ = self.__load_df(f)
 
         df = df[df['row'] < 120]
         df=df[df['HI_class']!='Humid']
 
 
-        x_variable_dic = self.x_variable_greeness()
+        x_variable_dic = self.x_variable_trend()
 
-        y_variable_dic = self.y_variable_greeness()
+        y_variable_dic = self.y_variable_trend()
 
         for period in x_variable_dic:
 
@@ -101,7 +101,7 @@ class RF:
             # exit()
 
             Partial_Dependence_Plots().partial_dependent_plot_regression(X,Y,x_list_new)
-            # self.train_classfication_permutation_importance(X, Y, selected_labels)
+            self.train_classfication_permutation_importance(X, Y, x_list_new)
 
             # self.train_classfication(X,Y,selected_labels=selected_labels)
         pass
@@ -331,7 +331,7 @@ class RF:
         ax2.boxplot(result.importances[perm_sorted_idx].T, vert=False,
                     labels=selected_labels_sorted)
         print(result.importances_mean)
-        plt.title('peak') # 修改
+        plt.title('early') # 修改
         fig.tight_layout()
         # plt.show()  #如果是存数据就不能有show
         now = datetime.datetime.now()
@@ -504,39 +504,30 @@ class RF:
 
     def x_variable_trend(self):
 
-        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_trend_attribution_1982-2015/Data_frame_trend_attribution_1982-2015_df.df'
         df,_=self.__load_df(f)
         # for i in df:
         #     print(i)
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
 
-        period_list=['early','peak','late']
+        # period_list=['early','peak','late']
+        period_list = ['early']
         x_variable_dic={}
         for period in period_list:
             x_list=[]
             for i in df:
                 if period in i:
-                    if not '1982-2015' in i:
-                        continue
+
                     if 'NIRv' in i:
                         continue
                     if 'GIMMS_NDVI' in i:
                         continue
-                    if 'CV' in i:
-                        # x_list.append(i)
-                        continue
+
                     if 'mean' in i:
-                        # x_list.append(i)
-                        continue
-                    if 'trend' in i:
                         x_list.append(i)
+                    # if 'trend' in i:
+                    #     x_list.append(i)
 
-            for i in df:
-                if 'anomaly' in i:
-                    continue
-
-                if 'winter' in i:
-                    x_list.append(i)
             for i in ['BDOD', 'CEC', 'clay', 'Nitrogen', 'OCD', 'PH', 'sand','MAT','MAP',]:
                 # x_list.append(i)
                 continue
@@ -554,18 +545,19 @@ class RF:
 
     def y_variable_trend(self):
 
-        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_trend_attribution_1982-2015/Data_frame_trend_attribution_1982-2015_df.df'
         df,_=self.__load_df(f)
         # for i in df:
         #     print(i)
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
 
-        period_list=['early','peak','late']
+        # period_list=['early','peak','late']
+        period_list = ['early', ]
         y_variable_dic={}
         for period in period_list:
             y_list=[]
             for i in df:
-                if 'original_during_{}_GIMMS_NDVI_trend_1982-2015'.format(period) in i:
+                if 'mean_during_{}_GIMMS_NDVI_window'.format(period) in i:
                     y_list.append(i)
             y_variable_dic[period]=y_list
         # for period in y_variable_dic:
@@ -578,13 +570,14 @@ class RF:
 
     def x_variable_greeness(self,):
 
-        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_1982-2015/Data_frame_1982-2015_df.df'
+        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Data_frame_trend_attribution_1982-2015/Data_frame_trend_attribution_1982-2015_df.df'
         df,_=self.__load_df(f)
 
         # for i in df:
         #     print(i)
         # print('xxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-        period_list = ['early','peak','late']
+        # period_list = ['early','peak','late']
+        period_list = ['early', ]
         x_variable_dic={}
         time_range='1982-2015'
         # x_list=[]

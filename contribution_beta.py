@@ -1339,20 +1339,20 @@ class Multi_liner_regression:  # 实现求beta 功能
 
     def __init__(self):
 
-        self.period='late'
-        self.variable='GIMMS_NDVI'
-        self.time_range='1982-2015'
-        self.result_dir=results_root+'multiregression_anomaly/GIMMS_NDVI/'
-        # self.result_dir = results_root + 'partial_correlation_anomaly/MODIS_NDVI/0105/'
-        self.result_f = self.result_dir+'/{}_multi_linear{}_anomaly_{}.npy'.format(self.time_range,self.period,self.variable)
-        # self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_anomaly_{}.npy'.format(self.time_range,self.period,self.variable)
-        # self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_anomaly_{}.npy'.format(
-        #     self.time_range, self.period,self.variable)
-        self.x_dir=results_root+'anomaly_variables_independently/{}_during_{}/'.format(self.time_range,self.period)
-        # self.x_dir = results_root+'partial_correlation_X_variables_2/{}_during_{}/'.format(self.time_range,self.period,)
+        self.period='early'
+        self.variable='MODIS_LAI'
+        self.time_range='2000-2016'
+        # self.result_dir=results_root+'multiregression/LAI_GIMMS/'
+        self.result_dir = results_root + 'partial_correlation_relative_change/MODIS_LAI/'
+        # self.result_f = self.result_dir+'/detrend_{}_multi_linear{}_{}.npy'.format(self.time_range,self.period,self.variable)
+        self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,self.period,self.variable)
+        self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_{}.npy'.format(
+            self.time_range, self.period,self.variable)
+        # self.x_dir=results_root+'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(self.time_range,self.time_range,self.period)
+        self.x_dir = results_root+f'Pierre_relative_change/2000-2016_X/'
         # self.y_f = results_root+'partial_correlation_X_variables_2/{}_during_{}/{}_during_{}_{}.npy'.format(self.time_range,self.period,self.time_range,self.period,self.variable)
-        self.y_f=results_root+'anomaly_variables_independently/{}_during_{}/{}_during_{}_GIMMS_NDVI.npy'.format(self.time_range,self.period,self.time_range,self.period)
-        self.y_mean = results_root + 'mean_calculation_original/during_{}_{}/during_{}_{}_mean.npy'.format(self.period,self.time_range,self.period,self.variable)
+        self.y_f=results_root+f'Pierre_relative_change/2000-2016_Y/MODIS_LAI_{self.period}_relative_change.npy'
+        # self.y_mean = results_root + 'mean_calculation_original/during_{}_{}/during_{}_{}_mean.npy'.format(self.period,self.time_range,self.period,self.variable)
         T.mk_dir(self.result_dir,force=True)
         pass
 
@@ -1363,9 +1363,9 @@ class Multi_liner_regression:  # 实现求beta 功能
         df = self.build_df(self.x_dir,self.y_f,self.period,self.time_range,)
         x_var_list = self.__get_x_var_list(self.x_dir,self.period, self.time_range)
         # # # step 2 cal correlation
-        self.cal_multi_regression_beta(df, x_var_list,34)  #修改参数
-        # self.cal_partial_correlation(df, x_var_list,14)  #修改参数
-        self.max_contribution()
+        # self.cal_multi_regression_beta(df, x_var_list,17)  #修改参数
+        self.cal_partial_correlation(df, x_var_list,17)  #修改参数
+        # self.max_contribution()
         # self.variables_contribution()
 
 
@@ -1374,20 +1374,22 @@ class Multi_liner_regression:  # 实现求beta 功能
         # x_dir = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/2001-2015/X_2001-2015/'
         x_f_list = []
         for x_f in T.listdir(x_dir):
-
-
-            if x_f == '{}_during_{}_GIMMS_NDVI.npy'.format(time_range, period, ):
+            if not period in x_f:
                 continue
-            if x_f == '{}_during_{}_VPD.npy'.format(time_range, period, ):
-                x_f_list.append(x_dir + x_f)
-            if x_f == '{}_during_{}_CO2.npy'.format(time_range, period, ):
-                x_f_list.append(x_dir + x_f)
-            if x_f == '{}_during_{}_temperature.npy'.format(time_range, period, ):
-                x_f_list.append(x_dir + x_f)
-            if x_f == '{}_during_{}_PAR.npy'.format(time_range, period, ):
-                x_f_list.append(x_dir + x_f)
-            if x_f == '{}_during_{}_CCI_SM.npy'.format(time_range, period, ):
-                x_f_list.append(x_dir + x_f)
+
+            x_f_list.append(x_dir + x_f)
+
+            # # if x_f == 'during_{}_VPD.npy'.format( period, ):
+            # #     x_f_list.append(x_dir + x_f)
+            # if x_f == 'during_{}_CO2.npy'.format(period, ):
+            #     x_f_list.append(x_dir + x_f)
+            # if x_f == 'during_{}_temperature.npy'.format(period, ):
+            #     x_f_list.append(x_dir + x_f)
+            # if x_f == 'during_{}_PAR.npy'.format( period, ):
+            #     x_f_list.append(x_dir + x_f)
+            # if x_f == 'during_{}_SPEI3.npy'.format(period, ):
+            #     x_f_list.append(x_dir + x_f)
+
 
 
         print(x_f_list)
@@ -1395,7 +1397,7 @@ class Multi_liner_regression:  # 实现求beta 功能
         for x_f in x_f_list:
             split1 = x_f.split('/')[-1]
             split2 = split1.split('.')[0]
-            var_name = '_'.join(split2.split('_')[2:])
+            var_name = '_'.join(split2.split('_')[0:-3])
             x_var_list.append(var_name)
         return x_var_list
 
@@ -1424,19 +1426,20 @@ class Multi_liner_regression:  # 实现求beta 功能
     def build_df(self,x_dir,y_f,period, time_range):
         x_f_list = []
         for x_f in T.listdir(x_dir):
-
-            if x_f == '{}_during_{}_GIMMS_NDVI.npy'.format(time_range, period, ):
+            if not period in x_f:
                 continue
-            if x_f == '{}_during_{}_VPD.npy'.format(time_range, period, ):
-                x_f_list.append(x_dir + x_f)
-            if x_f == '{}_during_{}_CO2.npy'.format(time_range, period, ):
-                x_f_list.append(x_dir + x_f)
-            if x_f == '{}_during_{}_temperature.npy'.format(time_range, period, ):
-                x_f_list.append(x_dir + x_f)
-            if x_f == '{}_during_{}_PAR.npy'.format(time_range, period, ):
-                x_f_list.append(x_dir + x_f)
-            if x_f == '{}_during_{}_CCI_SM.npy'.format(time_range, period, ):
-                x_f_list.append(x_dir + x_f)
+
+
+            # if x_f == f'detrend_during_{period}_VPD.npy':
+            #     x_f_list.append(x_dir + x_f)
+            # if x_f == f'detrend_during_{period}_SPEI3.npy':
+            #     x_f_list.append(x_dir + x_f)
+            # if x_f == f'detrend_during_{period}_PAR.npy':
+            #     x_f_list.append(x_dir + x_f)
+            # if x_f == f'detrend_during_{period}_CO2.npy':
+            #     x_f_list.append(x_dir + x_f)
+            # if x_f == f'detrend_during_{period}_temperature.npy':
+            x_f_list.append(x_dir + x_f)
 
 
         print(x_f_list)
@@ -1462,7 +1465,7 @@ class Multi_liner_regression:  # 实现求beta 功能
             # print(x_f)
             split1 = x_f.split('/')[-1]
             split2 = split1.split('.')[0]
-            var_name = '_'.join(split2.split('_')[2:])
+            var_name = '_'.join(split2.split('_')[0:-3])
             x_var_list.append(var_name)
             # print(var_name)
             x_val_list = []
@@ -1790,108 +1793,109 @@ class Multi_liner_regression:  # 实现求beta 功能
             np.save(ourdir + outf_npy, output_dic)
         pass
 
+    def variables_contribution_window(self):
+
+        fdir=results_root+'trend_window/1982-2015_during_early_window15/'
+
+        for f in (os.listdir(fdir)):
+                if not f.endswith('.npy'):
+                    continue
+                if 'p_value' in f:
+                    continue
+        # ourdir = self.result_dir + '/variables_contribution_CSIF/{}/'.format(self.period)
+        # T.mk_dir(ourdir,force=True)
+        result_dic = T.load_npy(fdir+f)
+        output_dic = {}
+
+        # color_map = dict(zip(x_var_list, list(range(len(x_var_list)))))
+        # print(color_map)
+        # exit()
+        spatial_dic = {}
+        var_name_list = []
+        for pix in result_dic:
+            result = result_dic[pix]
+            for var_i in result:
+                var_name_list.append(var_i)
+            var_name_list = list(set(var_name_list))
+            var_name_list.sort()
 
 
-class Unify_date_range:
+        for x in var_name_list:
+            for pix in result_dic:
+                if x not in result_dic[pix]:
+                    continue
+                spatial_dic[pix] = result_dic[pix][x]
 
-    def __init__(self):
+            tif_template = '/Volumes/SSD_sumsang/project_greening/Data/NIRv_tif_05/1982-2018/198205.tif'
+            arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)[:120]
+            DIC_and_TIF().plot_back_ground_arr_north_sphere(tif_template)
+        # cmap = sns.color_palette('hls',as_cmap=True)
+        # plt.imshow(arr,cmap='jet')
+        # plt.colorbar()
+        # plt.show()
 
+            outf_tif = f'{self.time_range}_{x}_p_value.tif'
+            outf_npy = f'{self.time_range}_{x}_p_value.npy'
+
+            # outf_tif = f'{self.time_range}_{x}.tif'
+            # outf_npy = f'{self.time_range}_{x}.npy'
+
+            DIC_and_TIF().arr_to_tif(arr, ourdir + outf_tif)
+            output_dic = DIC_and_TIF().spatial_arr_to_dic(arr)
+            np.save(ourdir + outf_npy, output_dic)
+        pass
+
+class plot_partial_plot():
+    class Unify_date_range:
         pass
 
     def run(self):
-        # self.__data_range_index()
-        start = 1982
-        end = 2000
-        X_dir = '/Volumes/NVME2T/wen_proj/greening_contribution/new/during_early_X/known_year_range/'
-        outdirX = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/X_{}-{}/'.format(start,end)
-        self.unify(X_dir,outdirX,start,end)
-        # #
-        Y_dir = '/Volumes/NVME2T/wen_proj/greening_contribution/new/during_early_Y/'
-        outdirY = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/Y_{}-{}/'.format(start, end)
-        self.unify(Y_dir,outdirY,start,end)
+        period='early'
+        time_range='1982-2001'
+        f = results_root+'partial_correlation/LAI_GIMMS/{}_partial_correlation_{}_anomaly_LAI_GIMMS.npy'.format(time_range,period)
+        # f=results_root+'partial_correlation/LAI_GIMMS/{}_partial_correlation_p_value_{}_anomaly_LAI_GIMMS.npy'.format(time_range,period)
+        self.beta_save_(f,time_range,period)
 
 
+    def __init__(self):
         # self.check_data_length()
         pass
 
-    def __data_range_index(self,start=0,end=0,product='NIRv',isplot=False):
-        dic = {
-            'NIRv':list(range(1982,2019)),
-            'CSIF_fpar':list(range(2000,2018)),
-            'CSIF':list(range(2001,2017)),
-            'GIMMS_NDVI':list(range(1982,2016)),
-            'CCI_SM':list(range(1982,2016)),
+    def beta_save_(self,f,time_range,period):  # 该功能实现所有因素的beta
 
-            'PAR':list(range(1982,2019)),
-            'Precip':list(range(1982,2019)),
-            'root_soil_moisture':list(range(1982,2019)),
-            'surf_soil_moisture':list(range(1982,2019)),
-            'Temperature':list(range(1982,2019)),
-            'VPD':list(range(1982,2019)),
-            'SPEI':list(range(1982,2019)),
-
-        }
-
-        def plot():
-            plt.figure(figsize=(10, int(len(dic))/2))
-            for product in dic:
-                # print(dic[product][-1])
-                plt.barh(product, len(dic[product]), left=dic[product][0], align='edge')
-            plt.xlim(1980, 2020)
-            plt.grid(True)
-            plt.tight_layout()
-            plt.show()
-
-        if isplot == True:
-            plot()
-        if start == 0:
-            plot()
-        date_range = dic[product]
-        if not start in date_range:
-            print('the year {} is not in {}'.format(start,product))
-            # plot()
-            raise UserWarning('the year {} is not in {}'.format(start,product))
-        if not end in date_range:
-            print('the year {} is not in {}'.format(start,product))
-            # plot()
-            raise UserWarning('the year {} is not in {}'.format(end,product))
-        in_date_range = list(range(start,end+1))
-        index_list = []
-        for i in in_date_range:
-            index = date_range.index(i)
-            index_list.append(index)
-
-        return index_list,len(date_range)
-
-
-    def unify(self,fdir,outdir,start=2001,end=2015):
-        # start = 2001
-        # end = 2015
-        # X_dir = '/Volumes/NVME2T/wen_proj/greening_contribution/new/during_early_X/known_year_range/'
-        # outdirX = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/X_{}-{}/'.format(start,end)
-
+        outdir=results_root+'partial_correlation/LAI_GIMMS_partial_correlation_individual/{}_{}/'.format(time_range,period)
         T.mk_dir(outdir,force=True)
-        for f in T.listdir(fdir):
-            f_split = f.split('.')[0]
-            f_split1 = f_split.split('_')
-            product = '_'.join(f_split1[2:])
-            try:
-                selected_index,data_length = self.__data_range_index(start, end, product)
-            except:
-                continue
-            fname = os.path.join(fdir,f)
-            dic = T.load_npy(fname)
-            selected_dic = {}
-            for pix in tqdm(dic):
-                vals = dic[pix]
-                # if len(vals) == 0:
-                #     continue
-                if len(vals) != data_length:
+        dic = T.load_npy(f)
+        var_list = []
+        for pix in dic:
+            # print(pix)
+            vals = dic[pix]
+            for var_i in vals:
+                var_list.append(var_i)
+        var_list = list(set(var_list))
+        for var_i in var_list:
+            spatial_dic = {}
+            for pix in dic:
+                dic_i = dic[pix]
+                if not var_i in dic_i:
                     continue
-                selected_vals = T.pick_vals_from_1darray(vals,selected_index)
-                selected_vals = np.array(selected_vals)
-                selected_dic[pix] = selected_vals
-            T.save_npy(selected_dic,outdir+f)
+                val = dic_i[var_i]
+                spatial_dic[pix] = val
+            arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+            np.save(outdir + var_i + '_corr', arr)
+            # np.save(outdir + var_i+'_p_value',arr)
+            DIC_and_TIF().arr_to_tif(arr, outdir + var_i + '_corr.tif')
+            # DIC_and_TIF().arr_to_tif(arr,outdir+var_i+'_p_value.tif')
+            std = np.nanstd(arr)
+            mean = np.nanmean(arr)
+            vmin = mean - std
+            vmax = mean + std
+        #     plt.figure()
+        #     plt.imshow(arr, vmin=vmin, vmax=vmax)
+        #     plt.title(var_i)
+        #     plt.colorbar()
+        # plt.show()
+
 
 
     def check_data_length(self):
@@ -2872,6 +2876,7 @@ def main():
     # check_NIRV_NDVI().run()
     # Linear_contribution().run()
     Multi_liner_regression().run()
+    # plot_partial_plot().run()
     # Assignment_1109().run()
     # Window_correlation().run()
     # check_vod()

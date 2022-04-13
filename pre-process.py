@@ -18,16 +18,25 @@ class process_data:
 
 
     def run(self):
-        # self.resample()
+
         # self.resample_NIRv()
         # self.resample_VOD()
         # self.sum_PET()
         # self.aridity()
         # self.mean_aridity()
-        self.Mean_LST()
+        # self.Mean_LST()
         # self.conversion()
         # self.read_mat()
+        # self.aggregation()
+
+        # self.re_name()
+        # self.re_name_doy_month()
+        # self.monthly_composite()
+        # self.flip()
+        self.resample()
         # self.MVC()
+        # self.days_to_monthly()
+
 
     def projection(self):
         fdir=self.this_class_arr = data_root + 'Terraclimate/tmmx/'
@@ -49,14 +58,30 @@ class process_data:
         # 取出第1个数据子集（MODIS反射率产品的第一个波段）进行转换
         # 第一个参数是输出数据，第二个参数是输入数据，后面可以跟多个可选项
         # gdal.Warp(out_f1,in_f,dstSRS = 'EPSG:32649') # ?UTM投影
-        # gdal.Warp(out_f2,in_f,dstSRS = 'EPSG:4326')  # ?等经纬度投影
+         # gdal.Warp(out_f2,in_f,dstSRS = 'EPSG:4326')  # ?等经纬度投影
+    def aggregation(self):  # LAI aggregation  不同于gdal resample
+
+        fdir='/Users/wenzhang/Desktop/LAI_BU/LAI_BU_MVC/'
+        outdir='/Users/wenzhang/Desktop/LAI_BU/LAI_TIFF_aggregation/'
+        T.mk_dir(outdir)
+        for f in tqdm(os.listdir(fdir),):
+            if f.startswith('.'):
+                continue
+            fpath=join(fdir,f)
+            array, originX, originY, pixelWidth, pixelHeight=ToRaster().raster2array(fpath)
+            resample_array=T.resample_nan(array,0.5,pixelWidth)
+            outf=join(outdir,f)
+            DIC_and_TIF().arr_to_tif(resample_array,outf)
+
+            # plt.imshow(resample_array)
+            # plt.show()
 
     def resample(self):
-        fdir = data_root+'NIRv/NIRv_tif/'
-        outdir=data_root + '/NIRv/NIRv_resample/'
+        fdir = data_root+'CCI_SM_2020/CCI_SM_montly_composite/'
+        outdir=data_root + 'CCI_SM_2020/CCI_SM_resample/'
 
         T.mk_dir(outdir)
-        year=list(range(1982,2020))
+        year=list(range(2018,2021))
         # print(year)
         # exit()
         for f in tqdm(os.listdir(fdir),):
@@ -64,6 +89,7 @@ class process_data:
                 continue
             if f.startswith('._'):
                 continue
+
             # year_selection=f.split('.')[1].split('_')[1]
             # print(year_selection)
             # if not int(year_selection) in year:  ##一定注意格式
@@ -73,20 +99,20 @@ class process_data:
             #     continue
             # date = f[0:4] + f[5:7] + f[8:10] MODIS
             print(f)
-            date=f.split('.')[0].split('_')[1]
-            print(date)
+            # exit()
+            date=f.split('.')[0]
+            # print(date)
             # exit()
             dataset = gdal.Open(fdir+f)
             # band = dataset.GetRasterBand(1)
             # newRows = dataset.YSize * 2
             # newCols = dataset.XSize * 2
             try:
-                 gdal.Warp(outdir + 'NIRv_resample_{}.tif'.format(date), dataset, xRes=0.5, yRes=0.5,dstSRS = 'EPSG:4326')
+                 gdal.Warp(outdir + '{}.tif'.format(date), dataset, xRes=0.5, yRes=0.5,dstSRS = 'EPSG:4326')
             #如果不想使用默认的最近邻重采样方法，那么就在Warp函数里面增加resampleAlg参数，指定要使用的重采样方法，例如下面一行指定了重采样方法为双线性重采样：
             # gdal.Warp("resampletif.tif", dataset, width=newCols, height=newRows, resampleAlg=gdalconst.GRIORA_Bilinear)
             except Exception as e:
                  pass
-
 
     def resample_NIRv(self):
         fdir = data_root+'NIRv/NIRv_tif/'
@@ -253,6 +279,97 @@ class process_data:
 
         # raster2array.array2raster(newRasterfn, longitude_start, latitude_start, pixelWidth, pixelHeight, array,
         #                                   ndv=-999999)
+
+    def re_name(self):  #////////////////////////////////
+
+        dic={}
+        fdir = data_root + 'LAI_4g/LAI_4g_resample/'
+        outdir = data_root + 'LAI_4g/LAI_4g_rename/'
+        T.mk_dir(outdir)
+        mon_dic={'jan':'01','feb':'02','mar':'03','apr':'04',
+                 'may':'05','jun':'06','jul':'07','aug':'08','sep':'09',
+                 'oct':'10','nov':'11','dec':'12'}
+        # day_dic={'a':'01','b':'02'}
+        day_dic = {'1': '01', '2': '02'}
+
+        for f in tqdm(sorted(os.listdir(fdir))):
+            if not f.endswith('.tif'):
+                continue
+            if f.startswith('._'):
+                continue
+            date=f.split('.')[0].split('_')[-1]
+            mon_str=date[4:-1]
+            year_str=date[0:4]
+            day_str=date[-1]
+            print(mon_str)
+            print(year_str)
+            print(day_str)
+            # mon=mon_dic[mon_str]
+            day=day_dic[day_str]
+            new_date=year_str+mon_str+day
+            print(new_date,date)
+            src=join(fdir,f)
+            destination=join(outdir,new_date+'.tif')
+            shutil.copy(src,destination)
+
+    def re_name_doy_month(self):  #//////////////////////////rename MODIS_LAI/
+
+        dic={}
+        fdir = data_root + '/MODIS_LAI/MODIS_LAI_resample/'
+        T.mk_dir(outdir)
+        mon_dic={'jan':'01','feb':'02','mar':'03','apr':'04',
+                 'may':'05','jun':'06','jul':'07','aug':'08','sep':'09',
+                 'oct':'10','nov':'11','dec':'12'}
+        # day_dic={'a':'01','b':'02'}
+        day_dic = {'1': '01', '2': '02'}
+
+        for f in tqdm(sorted(os.listdir(fdir))):
+            if not f.endswith('.tif'):
+                continue
+            if f.startswith('._'):
+                continue
+            date=f.split('.')[0].split('_')[-3]
+            newname=join(fdir,date+'.tif')
+            print(newname)
+            oldname=join(fdir,f)
+            os.rename(oldname,newname)
+
+    def monthly_composite(self):  #//////////////////////////composite ly ===MVC/
+
+        fdir = data_root + 'LAI_4g/LAI_4g_resample/'
+        outdir=data_root +'/LAI_4g/LAI_4g_composite/'
+        Pre_Process().monthly_compose(fdir,outdir,date_fmt='yyyymmdd',method='max')
+
+
+    def flip(self):  # LAI 4g 需要上下翻转
+        fdir = data_root+'/LAI_BU_4g/LAI_BU_4g_rename/'
+        outdir=data_root + '/LAI_BU_4g/LAI_BU_4g_flip/'
+
+        T.mk_dir(outdir)
+        year=list(range(1982,2020))
+        # print(year)
+        # exit()
+        for f in tqdm(os.listdir(fdir),):
+            if not f.endswith('.tif'):
+                continue
+            if f.startswith('._'):
+                continue
+            if  int(f[0:4])!= 2019:
+                continue
+
+
+            print(f)
+            newRasterfn=outdir+f
+            # exit()
+            date=f.split('.')[0]
+            array, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(fdir + f)
+            array = np.array(array, dtype=np.float)
+            array = array[::-1]
+            to_raster.array2raster(newRasterfn,originX,originY,pixelWidth,pixelHeight,array,ndv = -999999)
+            # plt.imshow(array)
+            # plt.show()
+
+
 
     def read_mat(self):
         fdir = data_root + 'N_Pdep_land/'
@@ -469,7 +586,7 @@ class process_data:
         T.mk_dir(outdir)
         date_dic={}
         date_dic_2={}
-        for year in range(1982,2016):
+        for year in range(1982,2019):
             for month in range(1,13):
                 date_dic[(year,month)]=[]
                 date_dic_2[(year,month)]=[]
@@ -573,26 +690,27 @@ class process_data:
         plt.imshow(all_array)
         plt.show()
 
-
     def MVC(self):  # wen 2021-4-4
-        fdir = data_root+'CSIF/CSIF-TIFF/'
-        outdir = data_root+'CSIF/CSIF_MVC/'
+        fdir = data_root+'LAI_BU_4g/LAI_BU_4g_TIFF_resample_0.5/'
+        outdir = data_root+'LAI_BU_4g/LAI_BU_4g_MVC/'
         Tools().mk_dir(outdir)
-        for year in range (20001,2017):
+        for year in range (1982,2021):
             for month in range (1,13):
                 date='{}{:02}'.format(year,month)
                 one_month_tif=[]
                 for f in os.listdir(fdir):
                     if not f.endswith('.tif'):
                         continue
+
                     date_i=f.split('.')[0]
                     date_i=date_i[:6]
-                    # print(date_i)
-                    # print(date)
+                    print(date_i)
+                    print(date)
                     # print('------------------------')
                     if date_i==date:
                         one_month_tif.append(f)
                 print(len(one_month_tif))
+
 
                 arrs=[]
                 for tif in one_month_tif:
@@ -611,6 +729,7 @@ class process_data:
                         values = np.array(values)
                         maxv = np.nanmax(values)
                         MVC_value[i][j] = maxv
+                        MVC_value[i][j] = maxv/1000.
                 # plt.imshow(MVC_value)
                 # plt.colorbar()
                 # plt.show()
@@ -663,6 +782,56 @@ class process_data:
                     one_month_mean.append(temp)
                 one_month_mean = np.array(one_month_mean)
                 D.arr_to_tif(one_month_mean, outdir + '{}.tif'.format(date))
+
+        pass
+
+
+    def days_to_monthly(self):  # Wen CCI_SM  daily to monthly
+
+        fdir = '/Volumes/SSD_sumsang/project_greening/Data/CCI_SM_2020/CCI_SM_2020_TIFF/'
+        outdir = '/Volumes/SSD_sumsang/project_greening/Data/CCI_SM_2020/CCI_SM_montly_composite/'
+        T.mk_dir(outdir)
+
+
+        for y in range(2018,2021):
+            for m in range(1, 13):
+                date = '{}{:02d}'.format(y, m)
+                print (date)
+                one_month_tif = []
+                for f in os.listdir(fdir):
+                    if not f.endswith('.tif'):
+                        continue
+                    date_i = f.split('.')[0].split('_')[2][0:6]
+                    if date_i == date:
+                        one_month_tif.append(f)
+                arrs = []
+                for tif in one_month_tif:
+                    arr, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(fdir + tif)
+                    # arr = to_raster.raster2array(fdir + tif)[0]
+                    arr = np.array(arr,dtype=np.float)
+                    arr[arr < 0] = np.nan
+                    arrs.append(arr)
+                # print arrs
+                if len(arrs) == 0:
+                    continue
+                print(len(arrs))
+                one_month_mean = []
+                for i in range(len(arrs[0])):
+                    temp = []
+                    for j in range(len(arrs[0][0])):
+                        sum_ = []
+                        for k in range(len(arrs)):
+                            val = arrs[k][i][j]
+                            sum_.append(val)
+
+                        mean = np.nanmean(sum_)
+                        temp.append(mean)
+                    one_month_mean.append(temp)
+                one_month_mean = np.array(one_month_mean)
+                # arr = DIC_and_TIF().pix_dic_to_spatial_arr(one_month_mean)
+                newRasterfn = outdir + 'CCI_SM_'+ date + '.tif'
+                to_raster.array2raster(newRasterfn, originX, originY, pixelWidth, pixelHeight, one_month_mean, ndv=-999999)
+
 
         pass
 

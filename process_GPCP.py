@@ -423,7 +423,7 @@ class interpolate:
                     continue
                 time_series = dic_NDVI[pix]
 
-                time_series = time_series / 10000.
+                time_series = time_series
                 if np.isnan(mask_dic[pix]):  # 用已经mask 好的模板
                     continue
 
@@ -456,74 +456,75 @@ class interpolate:
             # plt.show()
             np.save(outdir + 'during_NDVI', result_dic)
 
-    def interpolation_MODIS_NDVI(self):
+
+    def interpolation_MODIS_LAI(self):
 
         mask_tif='/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
 
         mask_dic=DIC_and_TIF().spatial_tif_to_dic(mask_tif)
+        variables=['CCI_SM']
 
         periods = ['early', 'peak', 'late']
-        time_range = '2002-2015'
-        len_year = 14
-
-
-        outdir = result_root + '/extraction_original_val/{}_original_extraction_all_seasons/{}_original_extraction_all_seasons_clean/'.format(
-            time_range, time_range)
-        Tools().mk_dir(outdir, force=True)
+        time_range = '1982-2020'
 
         dic_NDVI = {}
-        for period in periods:
-            fdir = result_root + '/extraction_original_val/{}_extraction_during_{}_growing_season_static/'.format(
-                time_range, period)
-            f='during_{}_CSIF_fpar.npy'.format(period)
+        for variable in variables:
+            for period in periods:
+                outdir = result_root + '/extraction_original_val/extraction_during_{}_growing_season_static/'.format(
+                    period)
+                Tools().mk_dir(outdir, force=True)
+                fdir = result_root + '/extraction_original_val/extraction_during_{}_growing_season_static/'.format(
+                   period)
+                f='during_{}_{}.npy'.format(period,variable)
 
-            dic_NDVI = dict(np.load(fdir + f, allow_pickle=True, ).item())
-            # dic_NDVI.update(dic_i)
 
-            dic_spatial_count = {}
-            result_dic = {}
-            for pix in tqdm(mask_dic):
-                if pix not in dic_NDVI:
-                    continue
-                time_series = dic_NDVI[pix]
-                time_series_array=np.array(time_series)
+                dic_NDVI = dict(np.load(fdir + f, allow_pickle=True, ).item())
+                # dic_NDVI.update(dic_i)
 
-                # time_series_array = time_series_array/10000.
-                time_series_array = time_series_array
-                if np.isnan(mask_dic[pix]):  # 用已经mask 好的模板
-                    continue
-                # print(time_series_array)
+                dic_spatial_count = {}
+                result_dic = {}
+                for pix in tqdm(mask_dic):
+                    if pix not in dic_NDVI:
+                        continue
+                    time_series = dic_NDVI[pix]
+                    time_series_array=np.array(time_series)
 
-                # 1. 去除无效值  2 插值
-                if len(time_series_array)==0:
-                    continue
-                time_series_array[time_series_array<-1]=np.nan  #将序列中的无效值变成nan--进行下一步处理
+                    # time_series_array = time_series_array/10000.
+                    time_series_array = time_series_array
+                    if np.isnan(mask_dic[pix]):  # 用已经mask 好的模板
+                        continue
+                    # print(time_series_array)
 
-                matix = np.isnan(time_series_array)  # 因为检查time series 发现
-                matix = list(matix)
-                valid_number = matix.count(False)
-                # print(matix)
-                # print(pix,valid_number)
-                if valid_number / len(time_series_array) < 0.80:
-                    continue
-                ynew = np.array(time_series_array)
-                # if ynew[0][0] < -99:
-                #     continue
-                ynew = Tools().interp_nan(ynew)
-                if ynew[0]==None:
-                    continue
-                result_dic[pix] = ynew
-                # plt.plot(ynew)
-                # plt.title('{}'.format(pix))
-                # plt.show()
-                # print(len(result_dic[pix]))
-                dic_spatial_count[pix] = len(result_dic[pix])
-            arr = DIC_and_TIF().pix_dic_to_spatial_arr(dic_spatial_count)
-            # print(arr.shape)
-            # DIC_and_TIF().plot_back_ground_arr()
-            plt.imshow(arr)
-            plt.show()
-            np.save(outdir + 'during_{}_CSIF_fpar'.format(period), result_dic)
+                    # 1. 去除无效值  2 插值
+                    if len(time_series_array)==0:
+                        continue
+                    time_series_array[time_series_array<-1]=np.nan  #将序列中的无效值变成nan--进行下一步处理
+
+                    matix = np.isnan(time_series_array)  # 因为检查time series 发现
+                    matix = list(matix)
+                    valid_number = matix.count(False)
+                    # print(matix)
+                    # print(pix,valid_number)
+                    if valid_number / len(time_series_array) < 0.70:
+                        continue
+                    ynew = np.array(time_series_array)
+                    # if ynew[0][0] < -99:
+                    #     continue
+                    ynew = Tools().interp_nan(ynew)
+                    if ynew[0]==None:
+                        continue
+                    result_dic[pix] = ynew
+                    # plt.plot(ynew)
+                    # plt.title('{}'.format(pix))
+                    # plt.show()
+                    # print(len(result_dic[pix]))
+                    dic_spatial_count[pix] = len(result_dic[pix])
+                arr = DIC_and_TIF().pix_dic_to_spatial_arr(dic_spatial_count)
+                # print(arr.shape)
+                # DIC_and_TIF().plot_back_ground_arr()
+                plt.imshow(arr)
+                plt.show()
+                np.save(outdir + f'during_{period}_{variable}_interpolation', result_dic)
 
 
     def interpolation_temp(self):  # 函数实现temp 的共计444个月的 的缺失值插值，最后生成一个字典
@@ -660,8 +661,8 @@ class interpolate:
             if not f.startswith('p'):
                 continue
             if f.endswith('.npy'):
-                dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
-                dic.update(dic_i)
+                dic= dict(np.load(fdir + f, allow_pickle=True, ).item())
+
         result_dic = {}
         spatial_dic = {}
         for pix in tqdm(dic, desc='interpolate'):
@@ -710,71 +711,59 @@ class interpolate:
         np.save(outdir + 'per_pix_dic_%03d' % 0, temp_dic)
         # np.save(outdir + 'dic_nirv_interpolation', re
 
-    def interpolation_VOD(self):  # CSIF/CSIF_par 的共计192个月的 的缺失值插值，最后生成一个字典
-        fdir = data_root + 'VOD/VOD_dic/'
-        outdir = data_root + 'VOD/VOD_interpolation/'
+    def interpolation_VOD(self):
+        fdir = result_root + '/extraction_original_val/extraction_during_early_growing_season_static/'
+        outdir = result_root + '/extraction_original_val/extraction_during_early_growing_season_static/'
         Tools().mk_dir(outdir, True)
         dic = {}
 
         for f in tqdm(os.listdir(fdir)):
-            if not f.startswith('p'):
+            if 'CCI' not in f:
                 continue
             if f.endswith('.npy'):
-                dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
-                dic.update(dic_i)
-        result_dic = {}
-        spatial_dic = {}
-        for pix in tqdm(dic, desc='interpolate'):
-            # r,c = pix
-            # if r>50:
-            #     continue
-            time_series = dic[pix]
-            # print(time_series)
-            time_series[time_series < 0] = np.nan
-            # time_series[time_series > 1] = np.nan
-            if np.isnan(np.nanmean(time_series)):
-                continue
-            matix = np.isnan(time_series)  # 因为检查time series 发现
-            matix = list(matix)
-            valid_number = matix.count(False)
-            # print(pix,valid_number)
-            if valid_number / len(time_series) < 0.6:
-                continue
-            ynew = np.array(time_series)
-            # if ynew[0][0] < -99:
-            #     continue
-            ynew = Tools().interp_nan(ynew)
-            result_dic[pix] = ynew
-            # plt.plot(ynew)
-            # plt.title('{}'.format(pix))
-            # plt.show()
-            # print(len(result_dic[pix]))
-            spatial_dic[pix] = len(result_dic[pix])
-        arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
-        # print(arr.shape)
-        # # # DIC_and_TIF().plot_back_ground_arr()
-        plt.imshow(arr)
-        plt.show()
+                dic = dict(np.load(fdir + f, allow_pickle=True, ).item())
 
-        flag = 0
-        temp_dic = {}
-        for key in tqdm(result_dic, desc='output...'):  # 存数据
-            flag = flag + 1
-            time_series = result_dic[key]
-            time_series = np.array(time_series)
-            temp_dic[key] = time_series
-            if flag % 10000 == 0:
-                # print(flag)
-                np.save(outdir + 'per_pix_dic_%03d' % (flag / 10000), temp_dic)
-                temp_dic = {}
-        np.save(outdir + 'per_pix_dic_%03d' % 0, temp_dic)
-        # np.save(outdir + 'dic_nirv_interpolation', re
+            result_dic = {}
+            spatial_dic = {}
+            for pix in tqdm(dic, desc='interpolate'):
+                # r,c = pix
+                # if r>50:
+                #     continue
+                time_series = dic[pix]
+                time_series=np.array(time_series)
+                time_series[time_series < 0] = np.nan
+                # time_series[time_series > 1] = np.nan
+                if np.isnan(np.nanmean(time_series)):
+                    continue
+                matix = np.isnan(time_series)  # 因为检查time series 发现
+                matix = list(matix)
+                valid_number = matix.count(False)
+                # print(pix,valid_number)
+                if valid_number / len(time_series) < 0.7:
+                    continue
+                ynew = np.array(time_series)
+                # if ynew[0][0] < -99:
+                #     continue
+                ynew = Tools().interp_nan(ynew)
+                result_dic[pix] = ynew
+                # plt.plot(ynew)
+                # plt.title('{}'.format(pix))
+                # plt.show()
+                # print(len(result_dic[pix]))
+                spatial_dic[pix] = len(result_dic[pix])
+            arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+            # print(arr.shape)
+            # # # DIC_and_TIF().plot_back_ground_arr()
+            plt.imshow(arr)
+            plt.show()
+
+            np.save(outdir + f.split('.')[0]+'_interpolation', result_dic)
 
 def foo():
 
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/1982-2015_original_extraction_all_seasons/1982-2015_extraction_during_early_growing_season_static/during_early_CO2.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2000-2016/during_early_CCI_SM.npy'
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/during_early_CO2.npy'
     result_dic = {}
     spatial_dic={}
@@ -906,7 +895,7 @@ def foo3(): #做平均
 def spatial_plot():
     spatial_dic_value={}
     # fdir1= data_root + 'CSIF/CSIF_dic/'
-    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_beta_window/1982-2015_during_early_window15/multiregression_early_1982-2015_window09_Beta.npy'
+    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_relative_change/MODIS_LAI/2000-2016_partial_correlation_early_MODIS_LAI.npy'
     dic=T.load_npy(f)
     spatial_dic={}
 
@@ -920,7 +909,7 @@ def spatial_plot():
         # exit()
 
         val_array = np.array(val)
-        spatial_dic[pix]=val_array[6]
+        spatial_dic[pix]=val_array
 
 
     arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
@@ -971,7 +960,7 @@ def beta_plot():  # 该功能实现所有因素的beta
     period='early'
     # f = '/Volumes/sult/multi_linear_anomaly_NDVI/{}_multi_linear{}_anomaly.npy'.format(time_range,period)
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly_NDVI/1982-1998_partial_correlationpeak_anomaly.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_window/1982-2015_during_early_window15/partial_correlation_early_1982-2015_window00_correlation.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_relative_change/MODIS_LAI/2000-2016_partial_correlation_early_MODIS_LAI.npy'
     # outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_anomaly/MODIS_NDVI_{}/'.format(period)
     # T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
@@ -1003,11 +992,11 @@ def beta_plot():  # 该功能实现所有因素的beta
     plt.show()
 
 def beta_save_():  # 该功能实现所有因素的beta
-    time_range='1982-2015'
+    time_range='2002-2018'
     period='early'
-    # f = '/Volumes/sult/multi_linear_anomaly_NDVI/{}_multi_linear{}_anomaly.npy'.format(time_range,period)
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_window/1982-2015_during_early_window15/partial_correlation_early_1982-2015_window08_correlation.npy'
-    outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/multi_linear_anomaly_NDVI_window/TIFF_{}_{}_8/'.format(time_range,period)
+    # f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression/LAI_GIMMS/detrend_1982-2001_multi_linearearly_LAI_GIMMS.npy'
+    f='rtial_correlation_original_detrend/LAI_GIMMS/2002-2018_partial_correlation_early_LAI_GIMMS.npy'
+    outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_original_detrend/TIFF_{}_{}_8/'.format(time_range,period)
     T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
     var_list = []
@@ -1027,15 +1016,15 @@ def beta_save_():  # 该功能实现所有因素的beta
             spatial_dic[pix] = val
         arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
         DIC_and_TIF().arr_to_tif(arr,outdir+var_i+'.tif')
-    #     std = np.nanstd(arr)
-    #     mean = np.nanmean(arr)
-    #     vmin = mean - std
-    #     vmax = mean + std
-    #     plt.figure()
-    #     plt.imshow(arr,vmin=vmin,vmax=vmax)
-    #     plt.title(var_i)
-    #     plt.colorbar()
-    # plt.show()
+        std = np.nanstd(arr)
+        mean = np.nanmean(arr)
+        vmin = mean - std
+        vmax = mean + std
+        plt.figure()
+        plt.imshow(arr,vmin=vmin,vmax=vmax)
+        plt.title(var_i)
+        plt.colorbar()
+    plt.show()
 
 def check_pcorr():
     f='/Users/wenzhang/Desktop/parial_corr_window_00-15.npy'
@@ -1050,17 +1039,19 @@ def check_pcorr():
 
 def spatial_check():  ## 空间上查看有多少个月
 
-    fdir = data_root + '/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2002-2015_original_extraction_all_seasons/2002-2015_original_extraction_all_seasons_clean/during_early_MODIS_NDVI.npy'
-    outdir = data_root + 'VOD/VOD_interpolation/'
-    Tools().mk_dir(outdir, True)
-    dic = {}
+    # fdir ='/Volumes/SSD_sumsang/project_greening/Result/new_result/trend_window/1982-2018_during_early_window15/trend_during_early_Aridity.npy'
 
-    for f in tqdm(os.listdir(fdir)):
-        if not f.startswith('p'):
-            continue
-        if f.endswith('.npy'):
-            dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
-            dic.update(dic_i)
+    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_window/1982-2018_during_early_window15/partial_correlation_early_1982-2018_window00_correlation.npy'
+    # outdir = data_root + 'VOD/VOD_interpolation/'
+    # Tools().mk_dir(outdir, True)
+    dic = {}
+    dic = dict(np.load(f, allow_pickle=True, ).item())
+    # for f in tqdm(os.listdir(fdir)):
+    #     if not f.startswith('p'):
+    #         continue
+    #     if f.endswith('.npy'):
+    #         dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
+    #         dic.update(dic_i)
     result_dic = {}
     spatial_dic = {}
     for pix in tqdm(dic, desc=''):
@@ -1068,13 +1059,17 @@ def spatial_check():  ## 空间上查看有多少个月
         # if r>50:
         #     continue
         time_series = dic[pix]
+
+
         # time_series[time_series < -999] = np.nan
-        time_series[time_series < 0] = np.nan
+        # time_series[time_series < 0] = np.nan
 
         if np.isnan(np.nanmean(time_series)):
             continue
 
-        spatial_dic[pix] = len(dic[pix])
+        spatial_dic[pix] = time_series
+
+        # spatial_dic[pix] = len(dic[pix])
     arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
     # print(arr.shape)
     # # # DIC_and_TIF().plot_back_ground_arr()
@@ -1151,14 +1146,16 @@ def main():
     # interpolate().interpolation_NDVI()
     # interpolate().interpolation_VOD()
     # interpolate().interpolation_NIRv()
-    # interpolate().interpolation_MODIS_NDVI()
+    # interpolate().interpolation_MODIS_LAI()
+
     # per_pixel_all_year_PAR()
     # spatial_check()
     # CSIF_par_annually_transform()
     # foo()
     # spatial_plot_Yang()
-    # spatial_plot()
+    #  spatial_plot()
     beta_plot()
+    # beta_save_()
     # check_pcorr()
     # foo4()
     #  foo3()
