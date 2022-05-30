@@ -7,10 +7,10 @@ from pingouin import partial_corr
 class Build_dataframe:
 
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_trend_relative_change/'
+        self.this_class_arr = results_root + 'landcover_change/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Data_frame_trend_relative_change.df'
+        self.dff = self.this_class_arr + 'landcover_change.df'
         self.P_PET_dir=data_root+'original_dataset/aridity_P_PET_dic/'
         pass
 
@@ -27,23 +27,27 @@ class Build_dataframe:
         # df=self.add_anomaly_GIMMIS_NDVI_to_df(df)
         # df = self.add_Pierre_GIMMIS_NDVI_to_df(df)
         # df=self.add_Keenan_GIMMIS_NDVI_to_df(df)
+        # df=self.add_window_trend_to_df(df)
+        # df=self.add_window_p_value_to_df(df)
         # df=self.add_row(df)
         # df = self.add_anomaly_to_df(df)
-        # df=self.add_trend_to_df(df)
+        df=self.add_trend_to_df(df)
         # df=self.add_p_val_trend_to_df(df)
+
         # df=self.add_mean_to_df(df)
         # df=self.add_CV_to_df(df)
         # df=self.add_soil_data_to_df(df)
         # df=self.add_MAP_MAT_to_df(df)
         # df = self.add_NDVI_mask(df)
         # df=self.add_winter_to_df(df)
-        df=self.add_Koppen_data_to_df(df)
-        df=self.add_landcover_data_to_df(df)
+        # df=self.add_Koppen_data_to_df(df)
+        # df=self.add_landcover_data_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_partial_correlation_to_df(df)
         # P_PET_dic=self.P_PET_ratio(self.P_PET_dir)
         # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
         # df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
+
 
         # df=self.show_field(df)
 
@@ -79,7 +83,7 @@ class Build_dataframe:
         return df
         # return df_early,dff
 
-    def __df_to_excel(self,df,dff,n=1000,random=False):
+    def __df_to_excel(self,df,dff,n=1000,random=True):
         dff=dff.split('.')[0]
         if n == None:
             df.to_excel('{}.xlsx'.format(dff))
@@ -95,7 +99,7 @@ class Build_dataframe:
 
     def foo1(self,df):
 
-        f = results_root+'extraction_original_val/extraction_during_early_growing_season_static/during_early_LAI4g_interpolation.npy'
+        f = results_root+'extract_relative_change_window/trend_window/1982-2020_during_early_window15_conversion/early_LAI4g_15window_trend.npy'
         dic = {}
         outf = self.dff
         result_dic = {}
@@ -104,7 +108,7 @@ class Build_dataframe:
         pix_list=[]
         change_rate_list=[]
         year=[]
-        f_name = '1982-2020_LAI4g_early_raw_data'
+        f_name = 'LAI4g_relative_change_early_trend_window'
 
         print(f_name)
         for pix in tqdm(dic):
@@ -113,7 +117,7 @@ class Build_dataframe:
             for val in time_series:
                 pix_list.append(pix)
                 change_rate_list.append(val)
-                year.append(y+1982)
+                year.append(y+1)
                 y=y+1
         df['pix']=pix_list
         df[f_name] = change_rate_list
@@ -125,12 +129,10 @@ class Build_dataframe:
 
     def foo2(self, df):  # 新建trend
 
-        f = results_root + 'trend_calculation_relative_change_2000-2016/LAI4g_early_relative_change_trend.npy'
-
+        f='/Volumes/SSD_sumsang/project_greening/Result/new_result/trend_relative_change/2000-2018/MODIS_LAI_peak_relative_change_trend.npy'
         val_array = np.load(f)
         val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
-        f_name = '2000-2016_'+f.split('.')[0].split('/')[-1]
-        print(f_name)
+
         # exit()
 
         pix_list=[]
@@ -223,77 +225,138 @@ class Build_dataframe:
 
     def add_Keenan_GIMMIS_NDVI_to_df(self, df):
         periods = ['early','peak','late']
-        # periods = ['early']
+        # periods = ['peak']
+        variable_list=['LAI4g','LAI3g','MODIS_LAI']
+        # variable_list=['MODIS_LAI']
 
-        time = '2000-2016'
-        variable='LAI4g'
-        for period in periods:
+        time = '2000-2018'
+        # variable='LAI3g'
+        for variable in variable_list:
+            for period in periods:
 
-            f = results_root + f'Pierre_relative_change/2000-2016/{variable}_{period}_relative_change.npy'
+                f = results_root + f'Pierre_relative_change/2000-2018_Y/{variable}_{period}_relative_change.npy'
+                # f = results_root + f'Pierre_relative_change/2000-2016_Y/{variable}_{period}_relative_change.npy'
+                # f=results_root+f'extraction_original_val/extraction_during_{period}_growing_season_static/during_{period}_{variable}.npy'
+                # f=results_root+f'extraction_original_val/2000-2016/during_{period}_{variable}.npy'
+                NDVI_dic = T.load_npy(f)
+                f_name = f'{time}_{variable}_{period}_relative_change'
+                # f_name = f'{time}_{variable}_{period}_raw'
+                print(f_name)
 
-            NDVI_dic = T.load_npy(f)
-            f_name = f'{time}_{variable}_{period}_relative_change'.format(time,variable, period)
-            print(f_name)
+                NDVI_list = []
+                for i, row in tqdm(df.iterrows(), total=len(df)):
+                    year = row['year']
+                    if year<2000:
+                        NDVI_list.append(np.nan)
+                        continue
+                    # #
+                    if year>2018:
+                        NDVI_list.append(np.nan)
+                        continue
 
-            NDVI_list = []
-            for i, row in tqdm(df.iterrows(), total=len(df)):
-                year = row['year']
-                if year<2000:
-                    NDVI_list.append(np.nan)
-                    continue
-
-                if year>2016:
-                    NDVI_list.append(np.nan)
-                    continue
-
-                # pix = row.pix
-                pix = row['pix']
-                if not pix in NDVI_dic:
-                    NDVI_list.append(np.nan)
-                    continue
-                vals = NDVI_dic[pix]
-                # if len(vals) != 17:
-                #     NDVI_list.append(np.nan)
-                #     continue
-                #
-                v1 = vals[year - 2000]
-                NDVI_list.append(v1)
-            df[f_name] = NDVI_list
+                    # pix = row.pix
+                    pix = row['pix']
+                    if not pix in NDVI_dic:
+                        NDVI_list.append(np.nan)
+                        continue
+                    vals = NDVI_dic[pix]
+                    # print(vals)
+                    if np.isnan(np.nanmean(vals)):
+                        NDVI_list.append(np.nan)
+                        continue
+                    if len(vals) != 19:
+                        NDVI_list.append(np.nan)
+                        continue
+                    #
+                    v1 = vals[year - 2000]
+                    NDVI_list.append(v1)
+                df[f_name] = NDVI_list
         return df
 
-    def add_winter_to_df(self, df):
-        period = 'winter'
-        time='1982-2015'
-        f = results_root + '/anomaly_variables_independently/1982-2015_winter_temperature.npy'
+    def add_window_trend_to_df(self, df):
+        period_list = ['early','peak','late']
+        # period_list = ['early']
+        time='1982-2018'
+        product='LAI3g'
 
-        NDVI_dic = T.load_npy(f)
-        f_name = 'anomaly_1982-2015_during_winter_temperature'
-        print(f_name)
-        # exit()
-        NDVI_list = []
-        for i, row in tqdm(df.iterrows(), total=len(df)):
-            year = row['year']
-            # pix = row.pix
-            pix = row['pix']
-            if not pix in NDVI_dic:
-                NDVI_list.append(np.nan)
-                continue
-            vals = NDVI_dic[pix]
-            if len(vals) != 33:
-                NDVI_list.append(np.nan)
-                continue
+        window_list = list(range(0, 22))
+        print(window_list)
 
-            if (year - 1983) < 0:
-                NDVI_list.append(np.nan)
-                continue
-            v1 = vals[year - 1983]
-            NDVI_list.append(v1)
-        df[f_name] = NDVI_list
+        for period in period_list:
+            for slice in window_list:
+
+                new_col_name=f'{product}_relative_change_{period}_trend_window_{slice:02d}'
+
+                print(new_col_name)
+
+                f = results_root + f'extract_relative_change_window/trend_window/{product}/{time}_during_{period}_window15_{product}/{slice:02d}_{product}_trend.tif.npy'
+
+                # f = results_root + f'Partial_corr_{period}/window_{slice:02d}-15.npy'
+                print(f)
+                # exit()
+                val_array = np.load(f)
+                val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
+                val_list = []
+                for i, row in tqdm(df.iterrows(), total=len(df)):
+
+                    pix = row['pix']
+                    if not pix in val_dic:
+                        val_list.append(np.nan)
+                        continue
+
+                    vals = val_dic[pix]
+
+                    if vals < -9999:
+                        val_list.append(np.nan)
+                        continue
+                    val_list.append(vals)
+                df[new_col_name] = val_list
         return df
+
+    def add_window_p_value_to_df(self, df):
+        period_list = ['early', 'peak', 'late']
+        # period_list = ['early']
+        time = '1982-2018'
+        product = 'LAI3g'
+
+        window_list = list(range(0, 22))
+        print(window_list)
+
+        for period in period_list:
+            for slice in window_list:
+
+                new_col_name = f'{product}_relative_change_{period}_p_value_window_{slice:02d}'
+
+                print(new_col_name)
+
+                f = results_root + f'extract_relative_change_window/trend_window/{product}/{time}_during_{period}_window15_{product}/{slice:02d}_{product}_p_value.tif.npy'
+
+                # f = results_root + f'Partial_corr_{period}/window_{slice:02d}-15.npy'
+                print(f)
+                # exit()
+                val_array = np.load(f)
+                val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
+                val_list = []
+                for i, row in tqdm(df.iterrows(), total=len(df)):
+
+                    pix = row['pix']
+                    if not pix in val_dic:
+                        val_list.append(np.nan)
+                        continue
+
+                    vals = val_dic[pix]
+
+                    if vals < -9999:
+                        val_list.append(np.nan)
+                        continue
+                    val_list.append(vals)
+                df[new_col_name] = val_list
+        return df
+
 
     def add_trend_to_df(self, df):
 
-        fdir = results_root + 'trend_calculation_relative_change_1982-1988-2000-/'
+        fdir = results_root + '/lc_trend/'
         for f in (os.listdir(fdir)):
                 # print()
             if not f.endswith('.npy'):
@@ -304,7 +367,7 @@ class Build_dataframe:
 
             val_array = np.load(fdir + f)
             val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
-            f_name = '1982-_'+f.split('.')[0]
+            f_name = f.split('.')[0]
             print(f_name)
             # exit()
             val_list = []
@@ -315,6 +378,7 @@ class Build_dataframe:
                     val_list.append(np.nan)
                     continue
                 val = val_dic[pix]
+                val = val*20
                 if val < -99:
                     val_list.append(np.nan)
                     continue
@@ -325,7 +389,7 @@ class Build_dataframe:
 
 
     def add_p_val_trend_to_df(self, df):
-        fdir = results_root + 'trend_calculation_relative_change_1982-1988-2000-/'
+        fdir = results_root + 'trend_relative_change/2000-2018_Y/'
         for f in (os.listdir(fdir)):
             # print()
             if not f.endswith('.npy'):
@@ -336,7 +400,7 @@ class Build_dataframe:
 
             val_array = np.load(fdir + f)
             val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
-            f_name = '1982-_'+f.split('.')[0]
+            f_name = '2000-2018_'+f.split('.')[0]
             print(f_name)
             # exit()
             val_list = []
@@ -968,7 +1032,7 @@ class Build_dataframe:
         #         print(i)
         #         df=df.drop(columns=[i])
 
-        # df = df.drop(columns=['1982-_MODIS_LAI_peak_relative_change_trend','1982-_MODIS_LAI_early_relative_change_trend','1982-_MODIS_LAI_late_relative_change_trend'])
+        # df = df.drop(columns=['1982-2020_LAI3g_peak_raw','1982-2020_LAI3g_early_raw','1982-2020_LAI3g_late_raw'])
 
         for i in df:
             print(i)
@@ -1896,10 +1960,10 @@ class Build_partial_correlation_dataframe:
 class Build_trend_dataframe:
 
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_trend_2000-2015_2018_2020.df'
+        self.this_class_arr = results_root + 'landcover_trend/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Data_frame_trend_2000-2015_2018_2020.df'
+        self.dff = self.this_class_arr + 'landcover_trend.df'
         self.P_PET_dir=data_root+'original_dataset/aridity_P_PET_dic/'
         pass
 

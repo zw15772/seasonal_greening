@@ -5,6 +5,7 @@ from osgeo import gdal
 from lytools import *
 
 # import h5py
+import scipy.io as scio
 import scipy.io
 project_root='/Volumes/SSD_sumsang/project_greening/'
 data_root=project_root+'Data/'
@@ -27,13 +28,13 @@ class process_data:
         # self.Mean_LST()
         # self.conversion()
         # self.read_mat()
-        # self.aggregation()
+        self.aggregation()
 
         # self.re_name()
         # self.re_name_doy_month()
-        # self.monthly_composite()
+        # self.monthly_composite_ly()
         # self.flip()
-        self.resample()
+        # self.resample()
         # self.MVC()
         # self.days_to_monthly()
 
@@ -61,8 +62,8 @@ class process_data:
          # gdal.Warp(out_f2,in_f,dstSRS = 'EPSG:4326')  # ?等经纬度投影
     def aggregation(self):  # LAI aggregation  不同于gdal resample
 
-        fdir='/Users/wenzhang/Desktop/LAI_BU/LAI_BU_MVC/'
-        outdir='/Users/wenzhang/Desktop/LAI_BU/LAI_TIFF_aggregation/'
+        fdir=data_root+'LAI_3g/LAI_3g_TIFF/'
+        outdir=data_root+'LAI_3g/LAI_3g_resample_522/'
         T.mk_dir(outdir)
         for f in tqdm(os.listdir(fdir),):
             if f.startswith('.'):
@@ -334,11 +335,12 @@ class process_data:
             oldname=join(fdir,f)
             os.rename(oldname,newname)
 
-    def monthly_composite(self):  #//////////////////////////composite ly ===MVC/
+    def monthly_composite_ly(self):  #//////////////////////////composite ly ===MVC/
 
-        fdir = data_root + 'LAI_4g/LAI_4g_resample/'
-        outdir=data_root +'/LAI_4g/LAI_4g_composite/'
-        Pre_Process().monthly_compose(fdir,outdir,date_fmt='yyyymmdd',method='max')
+        fdir = data_root + 'MODIS_LAI/MODIS_LAI_resample/'
+        outdir=data_root +'/MODIS_LAI/MODIS_LAI_composite/'
+        # Pre_Process().monthly_compose(fdir,outdir,date_fmt='yyyymmdd',method='max')
+        Pre_Process().monthly_compose(fdir, outdir, date_fmt='doy', method='max')
 
 
     def flip(self):  # LAI 4g 需要上下翻转
@@ -372,43 +374,50 @@ class process_data:
 
 
     def read_mat(self):
-        fdir = data_root + 'N_Pdep_land/'
-        outdir=data_root+'N_Pdep_land/N_Pdep_land/'
+        fdir = data_root + '/MODIS_LAI/BU_MCD_LAI_CMG005_NSustain_00_19/'
+        outdir=data_root+'Data/MODIS_LAI/BU_MCD_LAI/'
+        T.open_path_and_file(outdir)
         T.mk_dir(outdir,True)
 
         for f in tqdm(os.listdir(fdir), desc='loading...'):
+
             if f.startswith('.'):
                 continue
             if not f.endswith('.mat'):
                 continue
             print(f)
+            fname = 'MODIS_LAI_' + f.split('.')[0].split('_')[7]
+            print(fname)
             # year=f.split('.')[0].split('_')[3]
             # print(year)
             # exit()
-            mat = h5py.File(fdir+f)
-            print(list(mat.keys()))
-            NIRv_arr_list = mat['monthly_NIRv_point05']
-            print(NIRv_arr_list)
+            mat=scio.loadmat(fdir+f)
 
-            for i in range(len(NIRv_arr_list)):
+            # mat = h5py.File(fdir+f)
+            # print(list(mat.keys()))
 
-                fname = 'NIRv_' + '{}{:02d}.tif'.format(year, i+1)
-                print(fname)
-                # exit()
-                newRasterfn = outdir + fname
-                print(newRasterfn)
-                array = NIRv_arr_list[i]
-                array = np.array(array)
+            # NIRv_arr_list = mat['outmat']
+            print(mat.items())
+            NIRv_arr = mat['outmat'][0][0][0]
+            print(NIRv_arr)
+            # exit()
 
-                # array = array[::-1]
-                array = array.T
-                array[array > 1] = np.nan
-                array[array < 0] = np.nan
-                # plt.imshow(array, cmap='jet', vmin=0, vmax=0.4)
-                # plt.colorbar()
-                # plt.show()
-                to_raster.array2raster(newRasterfn, -180, 90, 0.05, -0.05, array,
-                                   ndv=-999999)
+            newRasterfn = outdir + fname
+            print(newRasterfn)
+            array = NIRv_arr
+            array = np.array(array)
+            # plt.imshow(array)
+            # plt.show()
+
+            # array = array[::-1]
+            # array = array.T
+            # array[array > 1] = np.nan
+            array[array < 0] = np.nan
+            # plt.imshow(array, cmap='jet', vmin=0, vmax=0.4)
+            # plt.colorbar()
+            # plt.show()
+            to_raster.array2raster(newRasterfn, -180, 90, 0.05, -0.05, array,
+                               ndv=-999999)
 
     def NAN_TIF(self):
         f = data_root + 'AIRS_CO2/CO2_tif_resample/resample_2004.07.01.tif'

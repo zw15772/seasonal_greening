@@ -65,6 +65,7 @@ from sklearn.inspection import permutation_importance
 T=Tools()
 
 
+
 project_root='/Volumes/SSD_sumsang/project_greening/'
 data_root=project_root+'Data/'
 result_root=project_root+'Result/new_result/'
@@ -78,10 +79,10 @@ def tif2dict(fdir, outdir):
     array_mask, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(NDVI_mask_f)
     array_mask[array_mask<0]=np.nan
 
-    mk_dir(outdir)
+    T.mk_dir(outdir,force=True)
     flist=os.listdir(fdir)
     all_array=[]
-    year_list=list(range(1982,2021))  # 作为筛选条件
+    year_list=list(range(2001,2021))  # 作为筛选条件
     for f in tqdm(sorted(flist),desc='loading...'):
         if f.startswith('.'):
             continue
@@ -91,8 +92,8 @@ def tif2dict(fdir, outdir):
         # print(f.split('.')[0].split('_')[2][0:4])
         # print(f.split('.')[0][0:4])
 
-        if int(f.split('.')[0].split('_')[2][0:4]) not in year_list:  #
-            continue
+        # if int(f.split('.')[0].split('_')[2][0:4]) not in year_list:  #
+        #     continue
 
         # if int(f.split('.')[0][0:4]) not in year_list:  #
         #     continue
@@ -107,7 +108,8 @@ def tif2dict(fdir, outdir):
         array=array[:360]  # PAR是361*720
 
         # array[array<-999]=np.nan
-        array[array < 0] = np.nan # 当变量是LAI 的时候，<0!!
+        array[array ==0] = np.nan
+        # array[array < 0] = np.nan # 当变量是LAI 的时候，<0!!
         # plt.imshow(array)
         # plt.show()
         array_mask=np.array(array_mask,dtype=np.float)
@@ -981,7 +983,9 @@ class Main_flow_Early_Peak_Late_Dormant:
             trend_arr = np.array(trend_arr)
             p_value_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_p_value)
             p_value_arr = np.array(p_value_arr)
-            # trend_arr[trend_arr < -10] = np.nan
+            # trend_
+            #
+            # trend_arr < -10] = np.nan
             # trend_arr[trend_arr > 10] = np.nan
 
             hist = []
@@ -1300,19 +1304,24 @@ class Main_flow_Early_Peak_Late_Dormant:
             np.save(outdir + '{}_{}_{}.npy'.format(time_range,variable, period), delta_dic)
 
 
-    def anonmaly_variables(self):  # 方案 张永光方法求气候变量anomaly
+    def anonmaly_variables(self):  # Pierre 求气候变量anomaly
+
         periods = ['early', 'peak', 'late']
 
-        len_year = 17
-        # variables = ['MODIS_LAI','LAI4g','LAI3g','VOD']
+
+
+        # variables = ['MODIS_LAI','LAI4g','LAI3g',]
         variables = ['CO2', 'CCI_SM', 'PAR', 'VPD','Temp']
-        # variable = 'VOD'
+        # variables = [ 'LAI4g','VOD']
+        # variables = ['MODIS_LAI']
 
         for variable in variables:
+
             for period in periods:
                 dic_NDVI={}  # so important!!
-                fdir = result_root + f'extraction_original_val/2000-2016/'
-                outdir = result_root + 'Pierre_relative_change/2000-2016_Y/'
+                # fdir = result_root + f'extraction_original_val/extraction_during_{period}_growing_season_static/'
+                fdir=result_root+f'extraction_original_val/extraction_during_{period}_growing_season_static/'
+                outdir = result_root + 'Pierre_relative_change/1982-/'
                 Tools().mk_dir(outdir, force=True)
 
                 file=fdir+f'during_{period}_{variable}.npy'
@@ -1325,9 +1334,11 @@ class Main_flow_Early_Peak_Late_Dormant:
                     val_NDVI = dic_NDVI[pix]
                     val_NDVI=np.array(val_NDVI)
                     # print(val_NDVI)
-                    if val_NDVI[0]==None:
+                    # if val_NDVI[0]==None:
+                    #     continue
+                    if np.nanmean(val_NDVI)==np.nan:
                         continue
-                    val_NDVI[val_NDVI<0]=np.nan
+                    # val_NDVI[val_NDVI<0]=np.nan
 
                     # if len(val_NDVI) != len_year:
                     #     continue
@@ -1368,6 +1379,82 @@ class Main_flow_Early_Peak_Late_Dormant:
 
                 np.save(outdir + f'{variable}_{period}_relative_change.npy', delta_dic)
                 # np.save(outdir + '{}_during_{}_CSIF.npy'.format(time_range, period), delta_dic)
+
+
+    def zscore(self):  #
+        periods = ['early', 'peak', 'late']
+        # variables = ['MODIS_LAI','LAI4g','LAI3g',]
+        variables = ['CO2', 'CCI_SM', 'PAR', 'VPD','Temp']
+        # variables = [ 'LAI4g','VOD']
+        # variables = ['MODIS_LAI']
+
+        for variable in variables:
+            for period in periods:
+                dic_NDVI={}  # so important!!
+                # fdir = result_root + f'extraction_original_val/extraction_during_{period}_growing_season_static/'
+                fdir=result_root+f'extraction_original_val/extraction_during_{period}_growing_season_static/'
+                outdir = result_root + 'zscore/1982-/'
+                Tools().mk_dir(outdir, force=True)
+
+                file=fdir+f'during_{period}_{variable}.npy'
+
+                dic_NDVI = dict(np.load(file, allow_pickle=True, ).item())
+
+
+                delta_dic = {}
+                for pix in tqdm(dic_NDVI):
+                    val_NDVI = dic_NDVI[pix]
+                    val_NDVI=np.array(val_NDVI)
+                    # print(val_NDVI)
+                    # if val_NDVI[0]==None:
+                    #     continue
+                    if np.nanmean(val_NDVI)==np.nan:
+                        continue
+                    # val_NDVI[val_NDVI<0]=np.nan  #！！！！！！！！
+
+                    # if len(val_NDVI) != len_year:
+                    #     continue
+
+                    if np.isnan(np.nanmean(val_NDVI)):
+                        print('error')
+                        continue
+                    row = len(val_NDVI)
+
+                    NDVI_mean = np.nanmean(val_NDVI)
+                    NDVI_std=np.nanstd(val_NDVI)
+
+
+                    delta_time_series = []
+
+                    for i in range(row):
+                        delta = (val_NDVI[i] - NDVI_mean)/NDVI_std
+                        delta_time_series.append(delta)
+                    delta_dic[pix] = delta_time_series
+                    # print(delta_time_series)
+
+
+                    # dic_spatial_count[pix] = len(delta_time_series)
+
+                    # 画每个pix的时间序列
+                    # plt.plot(delta_time_series)
+                    # plt.show()
+
+                    # 看看空间有多少有有效值
+
+                # arr = DIC_and_TIF().pix_dic_to_spatial_arr(dic_spatial_count)
+                # plt.imshow(arr, cmap='jet')
+                # plt.colorbar()
+                # plt.title('')
+                # plt.show()
+
+                # plt.plot(result_dic[pix])
+                # plt.show()
+
+                np.save(outdir + f'{variable}_{period}_zscore.npy', delta_dic)
+                # np.save(outdir + '{}_during_{}_CSIF.npy'.format(time_range, period), delta_dic)
+
+
+
 
     def anonmaly_winter(self):  # 方案 张永光方法求winter precipitation_anomaly
      f=result_root+'extraction_original_val/1982-2015_original_extraction_all_seasons/winter_temperature_extraction.npy'
@@ -1422,9 +1509,6 @@ class Main_flow_Early_Peak_Late_Dormant:
     # plt.show()
 
      np.save(outdir + '1982-2015_winter_temperature.npy', delta_dic)
-
-
-
     def average_phenology_retrieval_Yao_method(self):
         fdir = '/Volumes/1T/wen_prj/dic_CSIF_par/'
         dic = {}
@@ -1652,8 +1736,8 @@ class Main_flow_Early_Peak_Late_Dormant:
         np.save(outf2, EOS_index_dic)
 
 
-
-
+def slices(args):
+    pass
 
 
 class statistic_anaysis:
@@ -1668,7 +1752,7 @@ class statistic_anaysis:
         # self.extraction_pre_window()
         # self.daily_anomaly()
         # self.extraction_variables_static_pre_month()
-        self.detrend_extraction_during_pre_variables()
+        # self.detrend_extraction_during_pre_variables()
         # self.univariate_correlation()
         # self.univariate_correlation_partial()
         # self.partial_correlation_test()
@@ -1735,56 +1819,55 @@ class statistic_anaysis:
 
     def extraction_during_window(self):
 
-        window_list=[10,20]
+        window_list=[10,15,20]
         period_list=['early','peak','late']
-        variable='MODIS_LAI'
-        time_range='2000-2020'
+        # variables=['VPD','CCI_SM','CO2','Temp','PAR']
+        variables=['LAI4g']
+
+
         for i in window_list:
+            fdir = results_root + f'Pierre_relative_change/1982_Y/'
+
+            outdir = result_root + f'extract_relative_change_window/{i}_year_window_1982/'
+
+            Tools().mk_dir(outdir, force=True)
             for period in period_list:
 
-                fdir=results_root+f'Pierre_relative_change/{time_range}_{variable}/'
+                for variable in variables:
 
+                    for f in tqdm(sorted(os.listdir(fdir))):
+                        dic = {}
 
-                # fdir = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(time_range,time_range,period)  # without detrend 窗口提取
-                # outdir = result_root + 'extraction_original_val_window_mean/{}_during_{}/{}_year_window/'.format(time_range,period,i)
-                outdir = result_root + f'extract_relative_change_window/{i}_year_window/'
-
-
-                Tools().mk_dir(outdir,force=True)
-
-                for f in tqdm(sorted(os.listdir(fdir))):
-                    dic = {}
-
-                    if f != f'{time_range}_during_{period}_{variable}.npy':
-                        continue
-
-                    if f.endswith('.npy'):
-                        dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
-                        dic.update(dic_i)
-                    print(f)
-                    # filename=f.split('.')[0]+'/'
-                    filename = f.split('.')[0]
-                    print(filename)
-
-                    result_dic = {}
-
-                    new_x_extraction_by_window={}
-                    for pix in tqdm(dic):
-
-                        time_series = dic[pix]
-                        time_series = np.array(time_series)
-
-                        time_series[time_series < -999] = np.nan
-                        if np.isnan(np.nanmean(time_series)):
-                            print('error')
+                        if f != f'{variable}_{period}_relative_change.npy':
                             continue
 
-                        # new_x_extraction_by_window[pix]=self.forward_window_extract_anomaly(time_series,i) # extraction 窗口时同时求anomaly
-                        new_x_extraction_by_window[pix] = self.forward_window_extract(time_series, i)
-                        # new_x_extraction_by_window[pix] = self.forward_window_extract_mean(time_series, i)
+                        if f.endswith('.npy'):
+                            dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
+                            dic.update(dic_i)
+                        print(f)
+                        # filename=f.split('.')[0]+'/'
+                        filename = f.split('.')[0]
+                        print(filename)
+
+                        result_dic = {}
+
+                        new_x_extraction_by_window={}
+                        for pix in tqdm(dic):
+
+                            time_series = dic[pix]
+                            time_series = np.array(time_series)
+
+                            time_series[time_series < -999] = np.nan
+                            if np.isnan(np.nanmean(time_series)):
+                                print('error')
+                                continue
+
+                            # new_x_extraction_by_window[pix]=self.forward_window_extract_anomaly(time_series,i) # extraction 窗口时同时求anomaly
+                            new_x_extraction_by_window[pix] = self.forward_window_extract(time_series, i)
+                            # new_x_extraction_by_window[pix] = self.forward_window_extract_mean(time_series, i)
 
 
-                    np.save(outdir +filename, new_x_extraction_by_window)
+                        np.save(outdir +filename, new_x_extraction_by_window)
 
 
                     # np.save(outdir +filename, new_x_extraction_by_window)
@@ -2086,14 +2169,14 @@ class statistic_anaysis:
         #                 np.save(outdir_val2 + 'per_pix_dic_%03d' % (flag / 10000), temp_dic)
         #                 temp_dic = {}
         #         np.save(outdir_val2 + 'per_pix_dic_%03d' % 0, temp_dic)
-        time_range='1982-2018'
+        time_range='2000-2016'
         periods=['early','peak','late']
         f = '/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
         arr=ToRaster().raster2array(f)[0]
         dic_mask_NDVI=DIC_and_TIF().spatial_arr_to_dic(arr)
         for period in periods:
 
-            fdir_all = result_root + f'extraction_original_val/{time_range}_original_extraction_all_seasons/{time_range}_extraction_during_{period}_growing_season_static/'
+            fdir_all = result_root + f'extraction_original_val/2000-2016/'
             outdir = result_root + f'detrend_original/detrend_{time_range}/detrend_{time_range}_during_{period}/'
             Tools().mk_dir(outdir,force=True)
             dic = {}
@@ -3240,12 +3323,12 @@ class statistic_anaysis:
 
     def max_correlation_among_all_variables(self):
 
-        period=['early','peak','late']
+        # period=['early','peak','late']
 
         # fdir1 = result_root + 'detrend_max_correlation/{}_withoutCO2/'.format(period)
         # outdir = result_root + 'detrend_max_correlation/{}_among_all_variables_withoutCO2/'.format(period)
-        fdir1 = result_root + 'correlation_with_trend/during_{}_1982-1998/'.format(period)
-        outdir = result_root + 'max_correlation/{}_among_all_variables_withoutCO2/'.format(period)
+        fdir1 = result_root + f'/lc_trend/'
+        outdir = result_root + f'lc_trend/'
 
         Tools().mk_dir(outdir)
 
@@ -3253,7 +3336,7 @@ class statistic_anaysis:
         all_arr_p_value = []
 
         for f1 in tqdm(sorted(os.listdir(fdir1))):
-            if not f1.endswith('_correlation.tif'):
+            if not f1.endswith('_trend.tif'):
                 continue
             print(f1)
             arr_climate_pre,originX,originY,pixelWidth,pixelHeight = to_raster.raster2array(fdir1 + f1)
@@ -3265,118 +3348,56 @@ class statistic_anaysis:
             print(f2)
             arr_p_value_pre,originX,originY,pixelWidth,pixelHeight = to_raster.raster2array(fdir1 + f2)
             all_arr_p_value.append(arr_p_value_pre)
-        # for i in range(len(all_arr_climate)):
-        #     arr=all_arr_climate[i]
-        #     arr[arr<-999]=np.nan
-        #     plt.figure()
-        #     plt.imshow(arr,vmin=-0.5,vmax=0.5)
-        #     plt.title(str(i))
-        # plt.show()
 
-        correlation_matrix = np.ones_like(all_arr_climate[0])*np.nan
+
         max_arr=np.ones_like(all_arr_climate[0])*np.nan
         p_value_arr=np.ones_like(all_arr_climate[0])*np.nan
         print(len(all_arr_climate[0]))
-
-        all_arr_climate[0][all_arr_climate[0] < -99] = np.nan
-        all_arr_climate[1][all_arr_climate[1] < -99] = np.nan
-        all_arr_climate[2][all_arr_climate[2] < -99] = np.nan
-        all_arr_climate[3][all_arr_climate[3] < -99] = np.nan
-        # all_arr_climate[4][all_arr_climate[4] < -99] = np.nan
+        print(len(all_arr_climate[0][0]))
 
         for r in range(len(all_arr_climate[0])):
             for c in range(len(all_arr_climate[0][0])):
+                trend_value_list = []
+                trend_value_array=np.ones_like(11)*np.nan
+                p_value_list = []
+                for climate in all_arr_climate:
 
-                v1 = (all_arr_climate[0][r][c])
-                v2 = (all_arr_climate[1][r][c])
-                v3 = (all_arr_climate[2][r][c])
-                v4 = (all_arr_climate[3][r][c])
-                # v5 = (all_arr_climate[4][r][c])
+                    trend_value_list.append(abs(climate[r][c]))
+                trend_value_array=np.array(trend_value_list)
+                trend_value_array[trend_value_array>99]=np.nan
 
-                v1_abs = abs(all_arr_climate[0][r][c])
-                v2_abs = abs(all_arr_climate[1][r][c])
-                v3_abs = abs(all_arr_climate[2][r][c])
-                v4_abs = abs(all_arr_climate[3][r][c])
-                # v5_abs = abs(all_arr_climate[4][r][c])
-
-                p1 = (all_arr_p_value[0][r][c])
-                p2 = (all_arr_p_value[1][r][c])
-                p3 = (all_arr_p_value[2][r][c])
-                p4 = (all_arr_p_value[3][r][c])
-                # p5 = (all_arr_p_value[4][r][c])
-
-                v_list = [v1, v2, v3, v4]
-                v_abs_list = [v1_abs, v2_abs, v3_abs, v4_abs]
-                p_list=[p1,p2,p3,p4]
-
-                # v_list = [v1, v2, v3, v4,v5]
-                # v_abs_list = [v1_abs, v2_abs, v3_abs, v4_abs,v5_abs]
-                # p_list = [p1, p2, p3, p4, p5]
-
-                matrix=np.isnan(v_list)
-                if True in matrix:
-                    continue
-
-                if np.nanmax(v_list)<0:
-                    correlation_matrix[r][c]=np.nanmin(v_list)
-                    max_arr[r][c] = np.argmin(v_list)
-                    p_value_arr[r][c]=p_list[int(max_arr[r][c])]
-
-                elif np.nanmin(v_list)>0:
-                    correlation_matrix[r][c] = np.nanmax(v_list)
-                    max_arr[r][c] = np.argmax(v_list)
-                    p_value_arr[r][c] = p_list[int(max_arr[r][c])]
-                else:
-
-                    max_arg = np.argmax(v_abs_list)
-                    selected_v = v_list[max_arg]
-                    max_arr[r][c] = max_arg
-                    correlation_matrix[r][c]=selected_v
-                    p_value_arr[r][c] = p_list[max_arg]
-                # if not np.isnan(max_correlation[r][c]):
+                matrix=np.isnan(trend_value_array)
+                # if True in matrix:
                 #     continue
-                # if not np.isnan(p_value_arr[r][c]):
-                #     continue
-                # print(r,c)
-                # print(v_list)
-
-                # if np.isnan(max_correlation[r][c]):
-                #     continue
-                # if np.isnan(min_correlation[r][c]):
-                #     continue
+                # max_arr[r][c]=np.argmax(trend_value_list)
+                max_arr[r][c] = np.nanmax(trend_value_array)*20   # per_year %*20 years in totoal
+                print(max_arr[r][c])
+                # exit()
 
 
 
-            # correlation_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
-            # correlation_arr = np.array(correlation_arr)
-            # p_value_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_p_value)
-            # p_value_arr = np.array(p_value_arr)
-            # trend_arr[trend_arr < -10] = np.nan
-            # trend_arr[trend_arr > 10] = np.nan
-        # print(type(max_correlation))
-        plt.figure()
-        plt.imshow(correlation_matrix, cmap='jet', vmin=-1, vmax=1)
-        plt.figure()
-        plt.imshow(p_value_arr,cmap='jet', vmin=-1, vmax=1)
-        plt.figure()
-        plt.imshow(max_arr, cmap='jet', vmin=0, vmax=3)
-        # plt.title(outf)
-        plt.colorbar()
-        plt.show()
-
+        # plt.figure()
+        #
+        # plt.imshow(p_value_arr,cmap='jet', vmin=-1, vmax=1)
+        # plt.figure()
+        # plt.imshow(max_arr, cmap='jet', vmin=0, vmax=3)
+        # # plt.title(outf)
+        # plt.colorbar()
+        # plt.show()
+        #
             # save arr to tif
-        DIC_and_TIF().arr_to_tif(correlation_matrix, outdir + 'max_correlation.tif')
-        np.save(outdir + 'max_correlation', correlation_matrix)
-        DIC_and_TIF().arr_to_tif(max_arr, outdir + 'max_index.tif')
-        np.save(outdir + 'max_index', max_arr)
-        DIC_and_TIF().arr_to_tif(p_value_arr, outdir + 'max_p_value.tif')
-        np.save(outdir + 'max_p_value', max_correlation)
+        # DIC_and_TIF().arr_to_tif(correlation_matrix, outdir + 'max_correlation.tif')
+        # np.save(outdir + 'max_correlation', correlation_matrix)
+        DIC_and_TIF().arr_to_tif(max_arr, outdir + 'max_trend.tif')
+        np.save(outdir + 'max_trend', max_arr)
+        # DIC_and_TIF().arr_to_tif(p_value_arr, outdir + 'max_p_value.tif')
+        # np.save(outdir + 'max_p_value', max_correlation)
 
     def extraction_variables_static_during(self):  # 静态提取during multiyear
 
         # variable_list = ['CO2','PAR',
-        #                 'Temp','VPD',] # '修改'
-        variable_list=['CCI_SM',] #  长度为39
+        #                 'Temp','VPD'] # '修改'
+        variable_list=['CCI_SM'] #  长度为39
         # variable_list=['GIMMS_NDVI'] #  长度为34
         # variable_list=['VOD'] #  长度29 348
         # variable_list = ['NIRv']  # 长度37
@@ -3415,6 +3436,7 @@ class statistic_anaysis:
                 dic_during_variables = DIC_and_TIF().void_spatial_dic()
                 outdir = result_root + 'extraction_original_val/extraction_during_{}_growing_season_static/'.format(
                     period)
+
                 Tools().mk_dir(outdir, True)
                 dic_period = T.df_to_spatial_dic(phenology_df, period)
 
@@ -3441,6 +3463,7 @@ class statistic_anaysis:
                     # plt.show()
                     time_series = time_series.reshape(-1, 12)  # 修改
                     picked_month = np.array(picked_month, dtype=int)
+                    picked_month = picked_month-1
 
                     for year in range(39):  # 修改
 
@@ -4165,15 +4188,14 @@ class statistic_anaysis:
                 np.save(outf + '_Beta', multi_derivative)
 
     def partial_correlation_window(self):  # 实现滑动相关
-        period = 'early'
+        period = 'late'
         window = 15
-        slices=37-window
-        time_range = '1982-2018'
+        slices=39-window
+        time_range = '1982-2020'
+        product='LAI4g'
 
-        fdir_all = result_root + 'extraction_original_val_window/{}_during_{}/{}_year_window/'.format(time_range,
-                                                                                                             period,                                                                                                window)
-        outdir = result_root + 'partial_window/{}_during_{}_window{}/'.format(time_range, period,
-                                                                                                     window)
+        fdir_all = result_root + f'extract_relative_change_window/{window}_year_window_1982/'
+        outdir = result_root + 'partial_window/{}_during_{}_window{}_{}/'.format(time_range, period, window,product)
 
         Tools().mk_dir(outdir, force=True)
         dic_y = {}
@@ -4181,14 +4203,13 @@ class statistic_anaysis:
 
         for Y_variables in tqdm(sorted(os.listdir(fdir_all))):
 
-            if Y_variables != 'during_{}_LAI_GIMMS'.format(period):
+            if Y_variables != 'LAI4g_{}_relative_change.npy'.format(period):
                 continue
+            print(Y_variables)
 
-            for f_y in tqdm(sorted(os.listdir(fdir_all+Y_variables))):
-
-                # dic_y = dict(np.load(fdir_all + '/' + Y_variables, allow_pickle=True, ).item())
-                dic_i = dict(np.load(fdir_all + '/' + Y_variables +'/'+f_y, allow_pickle=True, ).item())
-                dic_y.update(dic_i)
+           
+            dic_i = dict(np.load(fdir_all  + Y_variables, allow_pickle=True, ).item())
+            dic_y.update(dic_i)
 
             climate_all_variables_dic = {}
             climate_name_list = []
@@ -4197,31 +4218,16 @@ class statistic_anaysis:
                 print(X_variable)
                 # exit()
 
-                if X_variable == 'during_{}_root_soil_moisture'.format(period, ):
+                if X_variable == f'LAI4g_{period}_relative_change.npy'.format(period, ):
                     continue
-                if X_variable == 'during_{}_surf_soil_moisture'.format(period, ):
-                    continue
-                if X_variable == 'during_{}_GIMMS_NDVI'.format(period):
-                    continue
-                if X_variable == 'during_{}_CSIF_fpar'.format( period):
-                    continue
-                if X_variable == 'during_{}_NIRv'.format(period):
-                    continue
-                if X_variable == 'during_{}_VOD'.format(period):
-                    continue
-                if X_variable == 'during_{}_CCI_SM'.format(period):
-                    continue
-                if X_variable == 'during_{}_Aridity'.format(period):
-                    continue
-                if X_variable == 'during_{}_Precip'.format(period):
+
+                if period not in X_variable:
                     continue
 
                 dic_climate = {}
 
-                for f_x in tqdm(sorted(os.listdir(fdir_all + X_variable))):
-
-                    dic_ii = dict(np.load(fdir_all + '/' + X_variable +'/'+f_x, allow_pickle=True, ).item())
-                    dic_climate.update(dic_ii)
+                dic_ii = dict(np.load(fdir_all  + X_variable , allow_pickle=True, ).item())
+                dic_climate.update(dic_ii)
 
                 climate_all_variables_dic[X_variable] = dic_climate
                 climate_name_list.append(X_variable)
@@ -4397,16 +4403,15 @@ class statistic_anaysis:
             T.save_npy(spatial_trend_p_value, ourf_p_value)
 
     def trend_window_LAI(self):  # 实现trend only for LAI4g 所以这里省去了文件夹套文件夹
-        variable='LAI4g'
-        period = 'early'
+        variable='LAI3g'
+        period = 'late'
         window = 15
-        slices = 39 - window
-        time_range = '1982-2020'
+        slices = 37 - window
+        time_range = '1982-2018'
 
-        fdir_all = result_root + 'extract_original_window/{}_during_{}/{}_year_window/'.format(time_range,
-                                                                                               period, window)
-        outdir = result_root + 'trend_window/{}_during_{}_window{}/'.format(time_range, period,
-                                                                            window)
+        fdir_all = result_root + 'extract_relative_change_window/15_year_window/'
+        outdir = result_root + 'extract_relative_change_window/trend_window/{}_during_{}_window{}_{}/'.format(time_range, period,
+                                                                            window,variable)
 
         Tools().mk_dir(outdir, force=True)
 
@@ -4419,7 +4424,7 @@ class statistic_anaysis:
         spatial_trend_p_value = {}
         for f in tqdm(sorted(os.listdir(fdir_all))):
             print(f)
-            if f != f'during_{period}_LAI4g.npy':
+            if f != f'{variable}_{period}_relative_change.npy':
                 continue
             dic_i = dict(np.load(fdir_all  + f, allow_pickle=True, ).item())
             dic_climate.update(dic_i)
@@ -4573,22 +4578,21 @@ class statistic_anaysis:
                 np.save(outf + '', p_value_arr)
 
     def variables_contribution_window(self):  #  将trend_window 转换成 19层-每个像素一个值
-        period = 'late'
-        fdir = result_root + 'trend_window/1982-2015_during_{}_window15/'.format(period)
+        period = 'early'
+        fdir = result_root + f'partial_window/1982-2000_during_{period}_window15/'
 
-        var_name_list = [f'during_{period}_Aridity', f'during_{period}_CCI_SM', f'during_{period}_CO2', f'during_{period}_GIMMS_NDVI',
-                       f'during_{period}_NIRv', f'during_{period}_PAR',
-                       f'during_{period}_Precip',
-                       f'during_{period}_VPD', f'during_{period}_SPEI3', f'during_{period}_temperature']
+        var_name_list = [f'during_{period}_CCI_SM', f'during_{period}_CO2',
+                        f'during_{period}_PAR',
+                       f'during_{period}_VPD', f'during_{period}_Temp']
 
-        year_list=list(range(0,19))
+        window_list=list(range(0,24))
 
         for x in var_name_list:
             spatial_dic_time_series = {}
-            ourdir = result_root + f'trend_window/variables_contribution/'
+            ourdir = result_root + f'partial_window/conversion/1982-2000_during_{period}_{x}_partial_correlation_window15/'
             T.mk_dir(ourdir,force=True)
-            for year in year_list:
-                f = fdir + f'trend_window_{period}_1982-2015_window{year:02d}_trend.npy'
+            for window in window_list:
+                f = fdir + f'partial_correlation_{period}_1982-2000_window{window:02d}_correlation.npy'
 
                 result_dic = T.load_npy(f)
 
@@ -4602,7 +4606,7 @@ class statistic_anaysis:
                         continue
                     spatial_dic[pix] = result_dic[pix][x]
             #
-                spatial_dic_time_series[year]=spatial_dic
+                # spatial_dic_time_series[window]=spatial_dic
 
             # tif_template = '/Volumes/SSD_sumsang/project_greening/Data/NIRv_tif_05/1982-2018/198205.tif'
             # arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_time_series[1])[:120]
@@ -4612,32 +4616,31 @@ class statistic_anaysis:
             # plt.colorbar()
             # plt.show()
 
-            outf_npy = f'{x}_trend.npy'
+                outf_npy = f'{x}_{window:02d}_partial_correlation.npy'
 
-
-            np.save(ourdir + outf_npy, spatial_dic_time_series)
+                np.save(ourdir + outf_npy, spatial_dic)
             pass
 
     def conversion(self):  ## trend_window 转变一个像素19年的值
-        period_list = ['peak', ]
-        slice_list = list(range(0, 19))
+        period_list = ['early', ]
+        slice_list = list(range(0, 23))
 
-        time = '1982-2015'
+        time = '1982-2020'
         for period in period_list:
 
-            fdir = result_root + 'trend_window/variables_contribution/'
-            outdir = result_root + 'trend_window/variables_contribution_conversion/'
-            T.mk_dir(outdir)
+            fdir = result_root + f'extract_relative_change_window/trend_window/1982-2020_during_{period}_window15/'
+            outdir = result_root + f'extract_relative_change_window/trend_window/1982-2020_during_{period}_window15_conversion/'
+            T.mk_dir(outdir,force=True)
 
             for f in (os.listdir(fdir)):
                 outf_npy=f.split('.')[0]
 
                 if not f.endswith('.npy'):
                     continue
-                if period not in f:
-                    continue
 
-                val_dic = T.load_npy(fdir + f)
+                # val_dic = T.load_npy(fdir + f)
+                val_array = np.load(fdir+f)
+                val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
 
 
                 fname = f.split('.')[0]
@@ -4657,12 +4660,61 @@ class statistic_anaysis:
                             val_list.append(np.nan)
 
                         val_list.append(val)
-                    if len(val_list) != 19:
+                    if len(val_list) != 23:
                         continue
                     spatial_dic[pix]=val_list
 
                 np.save(outdir + outf_npy, spatial_dic)
             pass
+
+    def conversion_trend(self):  ## trend_window 转变一个像素19年的值
+        period_list = ['early','peak','late']
+        slice_list = list(range(0, 22))
+        variable='LAI3g'
+        time = '1982-2018'
+        for period in period_list:
+
+            fdir = result_root + f'extract_relative_change_window/trend_window/{variable}/{time}_during_{period}_window15_{variable}/'
+            outdir = result_root + f'extract_relative_change_window/trend_window/{variable}/{time}_during_{period}_window15_conversion_{variable}/'
+            T.mk_dir(outdir,force=True)
+            val_dic_list=[]
+
+
+            for f in (os.listdir(fdir)):
+
+
+                if not f.endswith('.npy'):
+                    continue
+                # if 'p_value' in f:
+                #     continue
+                if 'trend' in f:
+                    continue
+                print(f)
+
+                # val_dic = T.load_npy(fdir + f)
+                val_array = np.load(fdir+f)
+                val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
+                val_dic_list.append(val_dic)
+
+                spatial_dic={}
+
+            for pix in val_dic_list[0]:
+
+                val_list = []
+                for slice in slice_list:
+                    if pix not in val_dic_list[slice]:
+                        continue
+                    val = val_dic_list[slice][pix]
+                    if val < -99:
+                        val_list.append(np.nan)
+
+                    val_list.append(val)
+                if len(val_list) != 22:
+                    continue
+                spatial_dic[pix] = val_list
+
+            np.save(outdir + f'{period}_{variable}_15window_p_value', spatial_dic)
+        pass
 
 
     def save_moving_window_correlation(self):
@@ -4686,7 +4738,7 @@ class statistic_anaysis:
 
                     # print(f)
                     # exit()
-                    if not 'GIMMS' in f:
+                    if not 'LAI4g' in f:
                         continue
                     if not f.endswith('correlation.npy'):
                         continue
@@ -4961,117 +5013,117 @@ class statistic_anaysis:
         pass
 
     def simple_correlation(self): #
-        period = 'early'
-        time='1982-2001'
+        periods = ['early','peak','late']
+        time='2000-2018'
         # fdir = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(time,time,period)
-        fdir=results_root+f'detrend_original/detrend_{time}/detrend_{time}_during_{period}/'
-        outdir = result_root + 'test_detrend_original_simple_correlation/during_{}_{}/'.format(period,time)
-        Tools().mk_dir(outdir,force=True)
+        fdir_X=results_root+f'/zscore/2000-2018_X/'
+        fdir_Y = results_root + f'/zscore/2000-2018_Y/'
+        outdir = result_root + 'zscore_simple_correlation/during_{}/'.format(time)
+        Tools().mk_dir(outdir, force=True)
+
         # exit()
 
         spatial_dic = {}
         spatial_dic_p_value = {}
         spatial_dic_count = {}
-        for Y_variables in tqdm(sorted(os.listdir(fdir))):
-            # if Y_variables != 'during_{}_LAI_GIMMS.npy'.format(period):
-            #     continue
-            if Y_variables!=f'detrend_during_{period}_LAI_GIMMS.npy':
-                continue
+        for period in periods:
 
-            dic_y = dict(np.load(fdir + Y_variables, allow_pickle=True, ).item())
-            dic_GIMMS={}
-            for pix in dic_y:
-                val = dic_y[pix]
-                val = np.array(val)
-
-                dic_GIMMS[pix] = val
-
-
-            # climate_variables = {}
-            for X_variable in tqdm(sorted(os.listdir(fdir))):
-
-                if X_variable == f'detrend_during_{period}_LAI_GIMMS.npy':
-                    continue
-                # if X_variable != 'during_{}_CCI_SM.npy'.format(period):
+            for Y_variable in tqdm(sorted(os.listdir(fdir_Y))):
+                # if Y_variables != 'during_{}_LAI_GIMMS.npy'.format(period):
                 #     continue
+                if Y_variable!=f'LAI4g_{period}_zscore.npy':
+                    continue
+
+                dic_y = dict(np.load(fdir_Y + Y_variable, allow_pickle=True, ).item())
+                dic_GIMMS={}
+                for pix in dic_y:
+                    val = dic_y[pix]
+                    val = np.array(val)
+
+                    dic_GIMMS[pix] = val
 
 
-                dic_climate = dict(np.load(fdir + X_variable, allow_pickle=True, ).item())
-                variable_name = X_variable
-                print(variable_name)
-                # climate_variables[variable_name] = dic_climate
-                # print(len(dic_climate))
-                outf=outdir+X_variable.split('.')[0]+'_LAI_GIMMS'
-                print(outf)
-                # exit()
-                for pix in tqdm(dic_GIMMS):
-                    if pix not in dic_climate:
-                        continue
-                    val_climate = dic_climate[pix]
-                    # print(val_climate)
+                # climate_variables = {}
+                for X_variable in tqdm(sorted(os.listdir(fdir_X))):
+
+
+
+                    dic_climate = dict(np.load(fdir_X + X_variable, allow_pickle=True, ).item())
+                    variable_name = X_variable
+                    print(variable_name)
+                    # climate_variables[variable_name] = dic_climate
+                    # print(len(dic_climate))
+                    outf=outdir+X_variable.split('.')[0]+'_LAI4g'
+                    print(outf)
                     # exit()
+                    for pix in tqdm(dic_GIMMS):
+                        if pix not in dic_climate:
+                            continue
+                        val_climate = dic_climate[pix]
+                        # print(val_climate)
+                        # exit()
 
-                    val_y = dic_GIMMS[pix]
-
-
-                    if len(val_climate) != 20:
-                        continue
-
-                    if len(val_y) != 20:
-                        continue
-                    val_climate = np.array(val_climate)
-                    val_CSIF_par = np.array(val_y)
-                    val_climate[val_climate < -99] = np.nan
-                    val_CSIF_par[val_CSIF_par < -99] = np.nan
-                    if np.isnan(np.nanmean(val_climate)):
-                        continue
-                    if np.isnan(np.nanmean(val_CSIF_par)):
-                        continue
-                    try:
+                        val_y = dic_GIMMS[pix]
 
 
-                        r, p = T.nan_correlation(val_climate, val_CSIF_par)
+                        if len(val_climate) != 19:
+                            continue
 
-                        # print(k)
-                        # spatial_dic_count[pix] = len(val_climate)
+                        if len(val_y) != 19:
+                            continue
+                        val_climate = np.array(val_climate)
+                        val_CSIF_par = np.array(val_y)
+                        val_climate[val_climate < -99] = np.nan
+                        val_CSIF_par[val_CSIF_par < -99] = np.nan
+                        if np.isnan(np.nanmean(val_climate)):
+                            continue
+                        if np.isnan(np.nanmean(val_CSIF_par)):
+                            continue
+                        try:
 
-                    except Exception as e:
-                        print(val_climate, val_CSIF_par)
-                        r = np.nan
-                        p = np.nan
-                    spatial_dic[pix] = r  #
 
-                # count_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_count)
-                # plt.imshow(count_arr)
-                # plt.colorbar()
-                # plt.show()
-                correlation_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
-                correlation_arr = np.array(correlation_arr)
-                p_value_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_p_value)
-                p_value_arr = np.array(p_value_arr)
-                # trend_arr[trend_arr < -10] = np.nan
-                # trend_arr[trend_arr > 10] = np.nan
+                            r, p = T.nan_correlation(val_climate, val_CSIF_par)
 
-                # hist = []
-                # for i in correlation_arr:
-                #     for j in i:
-                #         if np.isnan(j):
-                #             continue
-                #         hist.append(j)
+                            # print(k)
+                            # spatial_dic_count[pix] = len(val_climate)
 
-                # plt.hist(hist, bins=80)
-                # plt.figure()
-                # plt.imshow(correlation_arr, cmap='jet', vmin=-0.5, vmax=0.5)
-                # # plt.title(f_X.split('.')[0])
-                # plt.colorbar()
-                # plt.show()
+                        except Exception as e:
+                            print(val_climate, val_CSIF_par)
+                            r = np.nan
+                            p = np.nan
+                        spatial_dic[pix] = r  #
 
-                # #     # save arr to tif
-                DIC_and_TIF().arr_to_tif(correlation_arr, outf + '_r.tif')
-                DIC_and_TIF().arr_to_tif(p_value_arr, outf + '_p.tif')
+                    # count_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_count)
+                    # plt.imshow(count_arr)
+                    # plt.colorbar()
+                    # plt.show()
+                    correlation_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+                    correlation_arr = np.array(correlation_arr)
+                    p_value_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_p_value)
+                    p_value_arr = np.array(p_value_arr)
+                    # trend_arr[trend_arr < -10] = np.nan
+                    # trend_arr[trend_arr > 10] = np.nan
 
-                np.save(outf + '_r', correlation_arr)
-                np.save(outf + '_p', p_value_arr)
+                    # hist = []
+                    # for i in correlation_arr:
+                    #     for j in i:
+                    #         if np.isnan(j):
+                    #             continue
+                    #         hist.append(j)
+
+                    # plt.hist(hist, bins=80)
+                    # plt.figure()
+                    # plt.imshow(correlation_arr, cmap='jet', vmin=-0.5, vmax=0.5)
+                    # # plt.title(f_X.split('.')[0])
+                    # plt.colorbar()
+                    # plt.show()
+
+                    # #     # save arr to tif
+                    DIC_and_TIF().arr_to_tif(correlation_arr, outf + '_r.tif')
+                    DIC_and_TIF().arr_to_tif(p_value_arr, outf + '_p.tif')
+
+                    np.save(outf + '_r', correlation_arr)
+                    np.save(outf + '_p', p_value_arr)
 
         pass
 
@@ -5490,34 +5542,43 @@ class statistic_anaysis:
         # for period in periods:
 
         # fdir_X = result_root +f'extraction_original_val/{time}_original_extraction_all_seasons/{time}_extraction_during_{period}_growing_season_static/'
-        fdir_X=result_root+f'extraction_original_val/2000-2016/'
-        outdir = result_root + f'trend_calculation_raw_data/2000-2016/'
+        # fdir_X=result_root+f'zscore/2000-2018_Y/'
+        # outdir = result_root + f'trend_zscore/2000-2018_Y/'
+        lc_list = ['water', 'grass', 'shrub', 'crop', 'EBF', 'ENF', 'DBF', 'DNF', 'savanna', 'urban', 'nonveg']
+        for lc in lc_list:
+            fdir_X=data_root+f'original_dataset/landcover/{lc}_dic/'
+            outdir = result_root + f'lc_trend/'
 
-        # fdir_X = result_root + 'Pierre_relative_change/1982-/'
-        # outdir = result_root + f'trend_calculation_relative_change_1982_/'
-        Tools().mk_dir(outdir,force=True)
+            # fdir_X = result_root + f'Pierre_relative_change/2000-2018_Y/'
+            # outdir = result_root + f'trend_relative_change/2000-2018_Y/'
+
+            # fdir_X = result_root + 'Pierre_relative_change/1982-/'
+            # outdir = result_root + f'trend_calculation_relative_change_1982_/'
+            Tools().mk_dir(outdir,force=True)
 
 
-        dic_climate={}
-        spatial_dic = {}
-        spatial_dic_p_value = {}
-        spatial_dic_count = {}
+            dic_climate={}
+            spatial_dic = {}
+            spatial_dic_p_value = {}
+            spatial_dic_count = {}
 
 
-        for f_X in tqdm(sorted(os.listdir(fdir_X))):
-            # if not 'VOD' in f_X:
-            #     continue
+            for f_X in tqdm(sorted(os.listdir(fdir_X))):
 
-            dic_climate = dict(np.load(fdir_X + f_X, allow_pickle=True, ).item())
+                dic_i = dict(np.load(fdir_X + f_X, allow_pickle=True, ).item())
+                dic_climate.update(dic_i)
 
-            # outf=outdir+f_X.split('.')[0]
-            split1 = f_X.split('.')[0].split('_')[0:]
-            split2='_'.join(split1)
-            outf=outdir+split2
-            print(outf)
-            # exit()
+                # dic_climate = dict(np.load(fdir_X + f_X, allow_pickle=True, ).item())
 
-#/////////////////////////////// 出错点！！！/////////////////////////////
+                # outf=outdir+f_X.split('.')[0]
+                # split1 = f_X.split('.')[0].split('_')[0:]
+                # split2='_'.join(split1)
+                outf=outdir+fdir_X.split('/')[-2].split('_')[0]
+                # outf=outdir+split2
+                print(outf)
+                # exit()
+
+    #/////////////////////////////// 出错点！！！/////////////////////////////
 
 
             for pix in tqdm(dic_climate):
@@ -5563,7 +5624,8 @@ class statistic_anaysis:
 
             # plt.hist(hist, bins=80)
             # plt.figure()
-            # plt.imshow(correlation_arr, cmap='jet', vmin=-0.02, vmax=0.02)
+            # plt.imshow(correlation_arr, cmap='jet', vmin=-0.2, vmax=0.2)
+            # plt.imshow(p_value_arr, cmap='jet', vmin=0, vmax=0.1)
             # plt.title('')
             # plt.colorbar()
             # plt.show()
@@ -5730,6 +5792,76 @@ class statistic_anaysis:
         plt.show()
         DIC_and_TIF().pix_dic_to_tif(result_dic_r, outdir + 'SOS_pre15_r.tif')
         DIC_and_TIF().pix_dic_to_tif(result_dic_p, outdir + 'SOS_pre15_p.tif')
+
+    def product_comparison(self):
+        fdir=result_root+'trend_relative_change/2000-2018/'
+        outdir = result_root + 'trend_relative_change/product_comparison_2000-2018/'
+        T.mk_dir(outdir, force=True)
+        all_products={}
+        marked={}
+        period='peak'
+
+        for f in tqdm(sorted(os.listdir(fdir))):
+
+            if period not in f:
+                continue
+
+            if not f.endswith('trend.npy'):
+                continue
+            print(f)
+            outf=outdir+period
+            print(outf)
+            arr_climate = np.load(fdir + f)
+            arr_climate[arr_climate<-999]=np.nan
+            dic_climate=DIC_and_TIF().spatial_arr_to_dic(arr_climate)# 只能用这个为什么
+            products_name = f.split('_')[0]
+            all_products[products_name]=dic_climate
+
+        mark_list=[]
+
+        for pix in tqdm(dic_climate):
+            val_all=[]
+            for product in all_products:
+
+                val_all.append(all_products[product][pix])
+
+            sig_list=[]
+            for val in val_all:
+                if np.isnan(val):
+                    continue
+                if val>0:
+                    sig='+'
+                elif val<0:
+                    sig='-'
+                else:
+                    continue
+                sig_list.append(sig)
+            set_sig_list=list(set(sig_list))
+            if len(set_sig_list)==1:
+                sig=set_sig_list[0]
+                if sig=='-':
+                    mark=-len(val_all)
+                else:
+                    mark=len(val_all)
+
+            elif len(set_sig_list) == 2:
+                negative_sig_number=T.count_num(sig_list,'-')
+                positive_sig_number = T.count_num(sig_list, '+')
+                if negative_sig_number>positive_sig_number:
+                    mark=-negative_sig_number
+                else:
+                    mark=positive_sig_number
+            else:
+                # print(len(set_sig_list))
+                continue
+            marked[pix]=mark
+        arr=DIC_and_TIF().pix_dic_to_spatial_arr(marked)
+        plt.imshow(arr,cmap='jet')
+        plt.show()
+        DIC_and_TIF().arr_to_tif(arr, outf + '.tif')
+
+
+
 
 def rename():
     variable='CCI_SM'
@@ -6186,8 +6318,8 @@ class Unify_date_range:
     def run(self):
         # self.__data_range_index()
         start = 2000
-        end = 2016
-        period='early'
+        end = 2018
+        period='late'
 
 
 
@@ -6225,11 +6357,11 @@ class Unify_date_range:
 
             # 'VOD': list(range(1988, 2017)),
             # 'CSIF': list(range(2001, 2017)),
-            # 'LAI3g': list(range(1982, 2019)),
-            # 'LAI4g': list(range(1982, 2021)),
+            'LAI3g': list(range(1982, 2019)),
+            'LAI4g': list(range(1982, 2021)),
             # 'GIMMS_NDVI': list(range(1982, 2016)),
             # 'NIRv': list(range(1982, 2019)),
-            # 'MODIS_LAI': list(range(2000, 2020)),
+            'MODIS_LAI': list(range(2000, 2020)),
 
              'CCI_SM':list(range(1982,2021)),
             # 'CCI_SM_2018': list(range(1982, 2019)),
@@ -6288,7 +6420,7 @@ class Unify_date_range:
             f_split = f.split('.')[0]
             f_split1 = f_split.split('_')
             product = '_'.join(f_split1[2:])
-            # product = '_'.join(f_split1[2:4])
+            # product = '_'.join(f_split1[2:3])
             print(product)
 
             try:
@@ -6448,33 +6580,35 @@ def normalization():
 def main():
 
     # statistic_anaysis().extraction_during_window()
-
+    # statistic_anaysis().extraction_variables_static_pre_month()
+    # statistic_anaysis().extraction_variables_static_during()
     # statistic_anaysis().extraction_pre_window()
-    # statistic_anaysis().detrend_extraction_during_pre_variables()
+
+
     # statistic_anaysis().multiregression_beta_window()
     # statistic_anaysis().save_moving_window_multi_regression()
     #
     # statistic_anaysis().plot_moving_window_correlation()
     # statistic_anaysis().trend_window()
     # statistic_anaysis().trend_window_LAI()
-    # statistic_anaysis().trend_window_trend()
-    #  statistic_anaysis().variables_contribution_window()
+    # statistic_anaysis().conversion_trend()
+    # statistic_anaysis().variables_contribution_window()
     # statistic_anaysis().conversion()
-    # statistic_anaysis().partial_correlation_window()
 
-    # statistic_anaysis().extraction_variables_static_pre_month()
-    # statistic_anaysis().extraction_variables_static_during()
+    # statistic_anaysis().partial_correlation_window()
     # statistic_anaysis().univariate_correlation_window()
     # statistic_anaysis().plot_simple_moving_window_correlation()
-
     # statistic_anaysis().save_moving_window_correlation()
+
+
     # statistic_anaysis().trend_calculation()
     # statistic_anaysis().detrend()
     # statistic_anaysis().mean_calculation()
     # statistic_anaysis().CV_calculation()
     # statistic_anaysis().extraction_winter_index()
     # statistic_anaysis().extraction_winter_during()
-    # statistic_anaysis().plot_phenology()
+
+
     # statistic_anaysis().simple_correlation()
     # statistic_anaysis().difference_correlation_between_two_period()
     # statistic_anaysis().multiregression_beta_window()
@@ -6482,14 +6616,15 @@ def main():
     # statistic_anaysis().plot_anomaly_for_three_seasons()
     # statistic_anaysis().save_anomaly_for_three_seasons()
     # statistic_anaysis().plot_anomaly_for_three_seasons()
-    # statistic_anaysis().max_correlation_among_all_variables()
+    statistic_anaysis().max_correlation_among_all_variables()
+    # statistic_anaysis().product_comparison()
 
-    # fdir=data_root+'VOD/VOD_resample/'
-    # outdir=data_root+'original_dataset/VOD_dic/'
-    # tif2dict(fdir,outdir)
-    # fdir = '/Volumes/SSD_sumsang/project_greening/Data/CCI_SM_2020/CCI_SM_resample/'
-    # outdir = '/Volumes/SSD_sumsang/project_greening/Data/original_dataset/CCI_SM_dic/'
-    # tif2dict(fdir, outdir)
+    # lc_list = ['water', 'grass', 'shrub', 'crop', 'EBF', 'ENF', 'DBF', 'DNF', 'savanna', 'urban', 'nonveg']
+    # for lc in lc_list:
+    #     fdir = f'/Volumes/SSD_sumsang/project_greening/Data/landcover/landcover_tif/{lc}/'
+    #     outdir = f'/Volumes/SSD_sumsang/project_greening/Data/original_dataset/landcover/{lc}_dic/'
+    #     # # Pre_Process().data_transform(fdir, outdir)
+    #     tif2dict(fdir, outdir)
     # Phenology_retrieval()
     # average_peak_calculation()
 
@@ -6497,10 +6632,10 @@ def main():
     # Main_flow_Early_Peak_Late_Dormant().trend()
     # Main_flow_Early_Peak_Late_Dormant().contribution()
     # Main_flow_Early_Peak_Late_Dormant().changes_NDVI_keenan()
-    Main_flow_Early_Peak_Late_Dormant().anonmaly_variables()
-    # Main_flow_Early_Peak_Late_Dormant().anonmaly_winter()
 
-    # Main_flow_Early_Peak_Late_Dormant().change_trend()
+    # Main_flow_Early_Peak_Late_Dormant().anonmaly_variables()
+    # Main_flow_Early_Peak_Late_Dormant().zscore()
+
 
     # Main_flow_Early_Peak_Late_Dormant().phenology_Yao_method()
     # Main_flow_Early_Peak_Late_Dormant().annual_phenology_retrieval_Yao_method()

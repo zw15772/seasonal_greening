@@ -613,6 +613,68 @@ def nc_to_tif_SM_CCI():  #Wen 处理1982-2020nc 数据
                 to_raster.array2raster(newRasterfn, longitude_start, latitude_start, pixelWidth, pixelHeight, array,
                                        ndv=-999999)
 
+def nc_to_tif_landcover():
+
+    f = '/Volumes/SSD_sumsang/project_greening/mcd12c1_halfdegree.nc'
+    outdir = '/Volumes/SSD_sumsang/project_greening/Data/landcover/landcover_tif/'
+    Tools().mk_dir(outdir, force=True)
+
+    nc = Dataset(f)
+    lc_list=['water', 'grass', 'shrub', 'crop', 'EBF', 'ENF', 'DBF', 'DNF', 'savanna', 'urban', 'nonveg']
+    for lc in lc_list:
+        print(nc)
+        print(nc.variables.keys())
+        year_list = nc['year']
+        print(year_list)
+        for year in year_list:
+            print(year)
+
+        lat_list = nc['lat']
+        lon_list = nc['lon']
+        # lat_list=lat_list[::-1]  #取反
+        print(lat_list[:])
+        print(lon_list[:])
+        origin_x = lon_list[0]  #要为负数-180
+        origin_y = lat_list[0]  #要为正数90
+        pix_width = lon_list[1] - lon_list[0] #经度0.5
+        pix_height = lat_list[1] - lat_list[0] # 纬度-0.5
+        print (origin_x)
+        print (origin_y)
+        print (pix_width)
+        print (pix_height)
+
+        SPEI_arr_list = nc[lc]
+        print(SPEI_arr_list.shape)
+        print(SPEI_arr_list[0])
+        # plt.imshow(SPEI_arr_list[5])
+        # # plt.imshow(SPEI_arr_list[::])
+        # plt.show()
+
+
+        # date_list=list(range(2001,2020))
+        # print(date_list)
+        for i in range(len(SPEI_arr_list)):
+            year=year_list[i]
+
+            fname = f'Landcover_{lc}_{int(year)}.tif'
+            print (fname)
+            newRasterfn = outdir + fname
+            print (newRasterfn)
+            longitude_start = origin_x
+            latitude_start = origin_y
+            pixelWidth = pix_width
+            pixelHeight = pix_height
+        # array = val
+            array=SPEI_arr_list[i]
+            array = np.array(array)
+        # method 2
+            array= numpy.rot90(array, 1,(0,1))
+            array = array[::-1]
+
+            # plt.imshow(array)
+            # plt.colorbar()
+            # plt.show()
+            to_raster.array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeight,array,ndv = -999999)
 
 def transformation_array(array):
     newarray=[]
@@ -636,8 +698,9 @@ def main():
     # nc_to_tif_CO2()
     # nc_to_tif_PET()
     # nc_to_tif_GLEAM()
-    montly_composite()
+    # montly_composite()
     # nc_to_tif_SM_CCI()
+    nc_to_tif_landcover()
 
 if __name__ == '__main__':
                 main()

@@ -34,6 +34,7 @@ import random
 from netCDF4 import Dataset
 import shutil
 import requests
+import green_driver_trend_contribution
 
 import os
 from sklearn.ensemble import RandomForestClassifier
@@ -465,16 +466,14 @@ class interpolate:
         variables=['CCI_SM']
 
         periods = ['early', 'peak', 'late']
-        time_range = '1982-2020'
+        # time_range = '1988-2016'
 
         dic_NDVI = {}
         for variable in variables:
             for period in periods:
-                outdir = result_root + '/extraction_original_val/extraction_during_{}_growing_season_static/'.format(
-                    period)
+                outdir = result_root + f'/extraction_original_val/2000-2018/'
                 Tools().mk_dir(outdir, force=True)
-                fdir = result_root + '/extraction_original_val/extraction_during_{}_growing_season_static/'.format(
-                   period)
+                fdir = result_root + '/extraction_original_val/2000-2018/'
                 f='during_{}_{}.npy'.format(period,variable)
 
 
@@ -496,15 +495,19 @@ class interpolate:
                     # print(time_series_array)
 
                     # 1. 去除无效值  2 插值
+
+                    if np.isnan(np.nanmean(time_series)):
+                        continue
                     if len(time_series_array)==0:
                         continue
-                    time_series_array[time_series_array<-1]=np.nan  #将序列中的无效值变成nan--进行下一步处理
+
+                    time_series_array[time_series_array<0]=np.nan  #将序列中的无效值变成nan--进行下一步处理
 
                     matix = np.isnan(time_series_array)  # 因为检查time series 发现
                     matix = list(matix)
                     valid_number = matix.count(False)
                     # print(matix)
-                    # print(pix,valid_number)
+                    print(pix,valid_number)
                     if valid_number / len(time_series_array) < 0.70:
                         continue
                     ynew = np.array(time_series_array)
@@ -524,7 +527,7 @@ class interpolate:
                 # DIC_and_TIF().plot_back_ground_arr()
                 plt.imshow(arr)
                 plt.show()
-                np.save(outdir + f'during_{period}_{variable}_interpolation', result_dic)
+                np.save(outdir + f'during_{period}_{variable}_1', result_dic)
 
 
     def interpolation_temp(self):  # 函数实现temp 的共计444个月的 的缺失值插值，最后生成一个字典
@@ -759,11 +762,49 @@ class interpolate:
 
             np.save(outdir + f.split('.')[0]+'_interpolation', result_dic)
 
+def plot_dic():  # LAI4g
+    build_dataframe=green_driver_trend_contribution.Build_dataframe()
+
+    # f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/extraction_during_late_growing_season_static/during_late_LAI3g_interpolation.npy'
+    fdir='/Volumes/SSD_sumsang/project_greening/Data/original_dataset/MODIS_LAI_dic/'
+    for f in tqdm(os.listdir(fdir)):
+
+        if f.endswith('.npy'):
+            dic = dict(np.load(fdir + f, allow_pickle=True, ).item())
+
+    NDVI_dic = dic
+
+    # NDVI_dic = T.load_npy(f)
+    dics={'late_LAI_raw':NDVI_dic}
+    df=T.spatial_dics_to_df(dics)
+    df=build_dataframe.add_NDVI_mask(df)
+    df = build_dataframe.add_row(df)
+
+    P_PET_dic=build_dataframe.P_PET_ratio(build_dataframe.P_PET_dir)
+    P_PET_reclass_dic=build_dataframe.P_PET_reclass(P_PET_dic)
+    df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
+
+    df = df[df['row'] < 120]
+    df = df[df['NDVI_MASK'] == 1]
+    df = df[df['HI_class'] == 'Humid']
+    # df=df.dropna(subset=['late_LAI_raw'])
+    late_LAI_raw=df['late_LAI_raw'].tolist()
+    # late_LAI_raw=np.array(late_LAI_raw)
+    late_LAI_raw=np.array(late_LAI_raw)
+    print(type(late_LAI_raw))
+    T.print_head_n(df)
+    print(df)
+    mean_series=np.nanmean(late_LAI_raw,axis=0)
+    plt.plot(mean_series)
+    plt.show()
+
+
+    pass
+
 def foo():
 
-
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2000-2016/during_early_CCI_SM.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Data/original_dataset/landcover/EBF_dic/per_pix_dic_012.npy'
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/during_early_CO2.npy'
     result_dic = {}
     spatial_dic={}
@@ -894,29 +935,40 @@ def foo3(): #做平均
 
 def spatial_plot():
     spatial_dic_value={}
-    # fdir1= data_root + 'CSIF/CSIF_dic/'
-    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_relative_change/MODIS_LAI/2000-2016_partial_correlation_early_MODIS_LAI.npy'
+    fdir1=data_root+'/original_dataset/CCI_SM_dic/'
+    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/2000-2018/during_peak_CCI_SM.npy'
+
     dic=T.load_npy(f)
+    # dic=T.load_npy_dir(fdir1)
     spatial_dic={}
+    spatial_length_dic={}
 
     for pix in tqdm(dic):
 
         val=dic[pix]
+
         val=val
         if len(val)==0:
             continue
+        # length = len(val)
+        isnan_list=np.isnan(val)
+        length=T.count_num(isnan_list,False)
         # print(val)
         # exit()
-
         val_array = np.array(val)
         spatial_dic[pix]=val_array
+        spatial_length_dic[pix] = length
 
 
-    arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
-    arr = np.array(arr)
+    # arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+    # arr = np.array(arr)
+    #  看长度
+    arr_len = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_length_dic)
+    arr_len = np.array(arr_len)
 
     plt.figure()
-    plt.imshow(arr, cmap='jet', vmin=-0.1, vmax=0.01)
+    plt.imshow(arr_len, cmap='jet',)
+    # plt.imshow(arr_len, cmap='jet', vmin=-0.1, vmax=0.01)
     plt.colorbar()
     plt.show()
 
@@ -960,7 +1012,7 @@ def beta_plot():  # 该功能实现所有因素的beta
     period='early'
     # f = '/Volumes/sult/multi_linear_anomaly_NDVI/{}_multi_linear{}_anomaly.npy'.format(time_range,period)
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_anomaly_NDVI/1982-1998_partial_correlationpeak_anomaly.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_relative_change/MODIS_LAI/2000-2016_partial_correlation_early_MODIS_LAI.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_window/1982-2000_during_early_window15/partial_correlation_early_1982-2000_window10_correlation.npy'
     # outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression_anomaly/MODIS_NDVI_{}/'.format(period)
     # T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
@@ -986,16 +1038,18 @@ def beta_plot():  # 该功能实现所有因素的beta
         vmin = mean - std
         vmax = mean + std
         plt.figure()
-        plt.imshow(arr,vmin=vmin,vmax=vmax)
+        arr[arr>0.1]=1
+        # plt.imshow(arr,vmin=vmin,vmax=vmax)
+        plt.imshow(arr)
         plt.title(var_i)
         plt.colorbar()
     plt.show()
 
 def beta_save_():  # 该功能实现所有因素的beta
     time_range='2002-2018'
-    period='early'
+    period='late'
     # f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression/LAI_GIMMS/detrend_1982-2001_multi_linearearly_LAI_GIMMS.npy'
-    f='rtial_correlation_original_detrend/LAI_GIMMS/2002-2018_partial_correlation_early_LAI_GIMMS.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_zscore/2000-2018_partial_correlation_late_LAI4g.npy'
     outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_original_detrend/TIFF_{}_{}_8/'.format(time_range,period)
     T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
@@ -1003,6 +1057,8 @@ def beta_save_():  # 该功能实现所有因素的beta
     for pix in dic:
         # print(pix)
         vals = dic[pix]
+
+
         for var_i in vals:
             var_list.append(var_i)
     var_list = list(set(var_list))
@@ -1015,13 +1071,15 @@ def beta_save_():  # 该功能实现所有因素的beta
             val = dic_i[var_i]
             spatial_dic[pix] = val
         arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
-        DIC_and_TIF().arr_to_tif(arr,outdir+var_i+'.tif')
+        arr[arr<-99]=np.nan
+        # DIC_and_TIF().arr_to_tif(arr,outdir+var_i+'.tif')
         std = np.nanstd(arr)
         mean = np.nanmean(arr)
         vmin = mean - std
         vmax = mean + std
         plt.figure()
-        plt.imshow(arr,vmin=vmin,vmax=vmax)
+        # plt.imshow(arr,vmin=vmin,vmax=vmax)
+        plt.imshow(arr, vmin=-0.5, vmax=0.5,cmap='jet')
         plt.title(var_i)
         plt.colorbar()
     plt.show()
@@ -1151,11 +1209,13 @@ def main():
     # per_pixel_all_year_PAR()
     # spatial_check()
     # CSIF_par_annually_transform()
+    # plot_dic()
+
     # foo()
     # spatial_plot_Yang()
-    #  spatial_plot()
-    beta_plot()
-    # beta_save_()
+    # spatial_plot()
+    # beta_plot()
+    beta_save_()
     # check_pcorr()
     # foo4()
     #  foo3()

@@ -5,6 +5,15 @@ from __init__ import *
 import lytools
 from lytools import *
 T = lytools.Tools()
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import scale
+from sklearn import model_selection
+from sklearn.model_selection import RepeatedKFold
+from sklearn.model_selection import train_test_split
+from sklearn.cross_decomposition import PLSRegression
+from sklearn.metrics import mean_squared_error
 
 
 
@@ -1339,19 +1348,21 @@ class Multi_liner_regression:  # 实现求beta 功能
 
     def __init__(self):
 
-        self.period='early'
-        self.variable='MODIS_LAI'
-        self.time_range='2000-2016'
+        self.period='peak'
+        self.variable='LAI4g'
+        self.time_range='2000-2018'
         # self.result_dir=results_root+'multiregression/LAI_GIMMS/'
-        self.result_dir = results_root + 'partial_correlation_relative_change/MODIS_LAI/'
+        self.result_dir = results_root + f'partial_correlation_zscore/'
         # self.result_f = self.result_dir+'/detrend_{}_multi_linear{}_{}.npy'.format(self.time_range,self.period,self.variable)
         self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,self.period,self.variable)
-        self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_{}_{}.npy'.format(
+        self.partial_correlation_R2_result_f = self.result_dir + '/{}_partial_correlation_R2_{}_{}.npy'.format(
             self.time_range, self.period,self.variable)
+        self.partial_correlation_VIP_result_f = self.result_dir + '/{}_partial_correlation_VIP_{}_{}.npy'.format(
+            self.time_range, self.period, self.variable)
         # self.x_dir=results_root+'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(self.time_range,self.time_range,self.period)
-        self.x_dir = results_root+f'Pierre_relative_change/2000-2016_X/'
+        self.x_dir = results_root+f'zscore/2000-2018_X/'
         # self.y_f = results_root+'partial_correlation_X_variables_2/{}_during_{}/{}_during_{}_{}.npy'.format(self.time_range,self.period,self.time_range,self.period,self.variable)
-        self.y_f=results_root+f'Pierre_relative_change/2000-2016_Y/MODIS_LAI_{self.period}_relative_change.npy'
+        self.y_f=results_root+f'zscore/2000-2018_Y/{self.variable}_{self.period}_zscore.npy'
         # self.y_mean = results_root + 'mean_calculation_original/during_{}_{}/during_{}_{}_mean.npy'.format(self.period,self.time_range,self.period,self.variable)
         T.mk_dir(self.result_dir,force=True)
         pass
@@ -1360,17 +1371,18 @@ class Multi_liner_regression:  # 实现求beta 功能
     def run(self):
 
         # step 1 build dataframe
-        df = self.build_df(self.x_dir,self.y_f,self.period,self.time_range,)
-        x_var_list = self.__get_x_var_list(self.x_dir,self.period, self.time_range)
+        df = self.build_df(self.x_dir,self.y_f,self.period)
+        x_var_list = self.__get_x_var_list(self.x_dir,self.period)
         # # # step 2 cal correlation
         # self.cal_multi_regression_beta(df, x_var_list,17)  #修改参数
-        self.cal_partial_correlation(df, x_var_list,17)  #修改参数
+        # self.cal_partial_correlation(df, x_var_list,19)  #修改参数
+        self.cal_PLS(df, x_var_list, 19)  # 修改参数
         # self.max_contribution()
         # self.variables_contribution()
 
 
 
-    def __get_x_var_list(self,x_dir,period,time_range):
+    def __get_x_var_list(self,x_dir,period):
         # x_dir = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/2001-2015/X_2001-2015/'
         x_f_list = []
         for x_f in T.listdir(x_dir):
@@ -1379,16 +1391,6 @@ class Multi_liner_regression:  # 实现求beta 功能
 
             x_f_list.append(x_dir + x_f)
 
-            # # if x_f == 'during_{}_VPD.npy'.format( period, ):
-            # #     x_f_list.append(x_dir + x_f)
-            # if x_f == 'during_{}_CO2.npy'.format(period, ):
-            #     x_f_list.append(x_dir + x_f)
-            # if x_f == 'during_{}_temperature.npy'.format(period, ):
-            #     x_f_list.append(x_dir + x_f)
-            # if x_f == 'during_{}_PAR.npy'.format( period, ):
-            #     x_f_list.append(x_dir + x_f)
-            # if x_f == 'during_{}_SPEI3.npy'.format(period, ):
-            #     x_f_list.append(x_dir + x_f)
 
 
 
@@ -1397,7 +1399,7 @@ class Multi_liner_regression:  # 实现求beta 功能
         for x_f in x_f_list:
             split1 = x_f.split('/')[-1]
             split2 = split1.split('.')[0]
-            var_name = '_'.join(split2.split('_')[0:-3])
+            var_name = '_'.join(split2.split('_')[0:-2])
             x_var_list.append(var_name)
         return x_var_list
 
@@ -1423,22 +1425,12 @@ class Multi_liner_regression:  # 实现求beta 功能
         return a,b,r
 
 
-    def build_df(self,x_dir,y_f,period, time_range):
+    def build_df(self,x_dir,y_f,period):
         x_f_list = []
         for x_f in T.listdir(x_dir):
             if not period in x_f:
                 continue
 
-
-            # if x_f == f'detrend_during_{period}_VPD.npy':
-            #     x_f_list.append(x_dir + x_f)
-            # if x_f == f'detrend_during_{period}_SPEI3.npy':
-            #     x_f_list.append(x_dir + x_f)
-            # if x_f == f'detrend_during_{period}_PAR.npy':
-            #     x_f_list.append(x_dir + x_f)
-            # if x_f == f'detrend_during_{period}_CO2.npy':
-            #     x_f_list.append(x_dir + x_f)
-            # if x_f == f'detrend_during_{period}_temperature.npy':
             x_f_list.append(x_dir + x_f)
 
 
@@ -1465,7 +1457,7 @@ class Multi_liner_regression:  # 实现求beta 功能
             # print(x_f)
             split1 = x_f.split('/')[-1]
             split2 = split1.split('.')[0]
-            var_name = '_'.join(split2.split('_')[0:-3])
+            var_name = '_'.join(split2.split('_')[0:-2])
             x_var_list.append(var_name)
             # print(var_name)
             x_val_list = []
@@ -1647,6 +1639,234 @@ class Multi_liner_regression:  # 实现求beta 功能
         r = float(stats_result['r'])
         p = float(stats_result['p-val'])
         return r, p
+
+
+    def cal_PLS(self,df,x_var_list,val_len):
+
+        outf1 = self.partial_correlation_result_f
+        outf2= self.partial_correlation_R2_result_f
+        outf3 = self.partial_correlation_VIP_result_f
+
+        partial_correlation_dic={}
+
+        partial_VIP_dic={}
+
+        for i,row in tqdm(df.iterrows(),total=len(df)):
+            pix = row.pix
+            r,c = pix
+            if r > 120:
+                continue
+            y_vals = row['y']
+            y_vals=T.remove_np_nan(y_vals)
+
+            if len(y_vals)!=val_len:
+                continue
+            # print(y_vals)
+
+
+            #  calculate partial derivative with multi-regression
+            df_new = pd.DataFrame()
+            x_var_list_valid = []
+            partial_correlation={}
+
+            partial_correlation_VIP={}
+
+            for x in x_var_list:
+                x_vals = row[x]
+                if not len(x_vals) == val_len:  ##
+                    continue
+                if len(x_vals) == 0:
+                    continue
+
+                if np.isnan(np.nanmean(x_vals)):
+                    continue
+                x_vals= T.interp_nan(x_vals)
+                # print(x_vals)
+                if x_vals[0]==None:
+                    continue
+                # x_vals_detrend = signal.detrend(x_vals) #detrend
+                df_new[x] = x_vals
+                # df_new[x] = x_vals_detrend   #detrend
+
+                x_var_list_valid.append(x)
+            if len(df_new) <= 3:
+                continue
+
+            df_new['y'] = y_vals   # 不detrend
+
+            # T.print_head_n(df_new)
+            df_new = df_new.dropna(axis=1,how='all')
+            x_var_list_valid_new = []
+            for v_ in x_var_list_valid:
+                if not v_ in df_new:
+                    continue
+                else:
+                    x_var_list_valid_new.append(v_)
+            # T.print_head_n(df_new)
+
+            df_new = df_new.dropna()
+            X=df_new[x_var_list_valid_new]
+            Y=df_new['y']
+
+            coeff,VIPs=self.PLS_time_series(X,x_var_list_valid_new,Y)
+            # print(coeff)
+            if coeff is None:
+                continue
+            coeff=coeff.flatten()
+            coeff_dic=dict(zip(x_var_list_valid_new,coeff))
+            # print(coeff_dic)
+            VIP_dic=dict(zip(x_var_list_valid_new,VIPs))
+            # print(VIP_dic)
+
+            partial_correlation_dic[pix]=coeff_dic
+
+            partial_VIP_dic[pix] = VIP_dic
+
+
+        T.save_npy(partial_correlation_dic, outf1)
+        T.save_npy(partial_VIP_dic, outf3)
+
+
+    def PLS(self, X, x_var_list_valid_new, Y):
+        # print(X)
+        # print(x_var_list_valid_new)
+        # print(Y)
+        # RepeatedKFold  p次k折交叉验证
+        kf = RepeatedKFold(n_splits=2, n_repeats=5, random_state=1)
+
+
+        n_components=2
+        mse = []
+        n = len(X)
+
+        # Calculate MSE using cross-validation, adding one component at a time
+        R2_list=[]
+        coef_list=[]
+        VIPs_list=[]
+
+        for train_index, test_index in kf.split(X):
+
+
+            # print('train_index', train_index, 'test_index', test_index)
+            if len(test_index)<3:
+                continue
+            X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+            Y_train, Y_test = Y.iloc[train_index], Y.iloc[test_index]
+
+        # for i in np.arange(0, len(x_var_list_valid_new)):
+        #     pls = PLSRegression(n_components=i)
+        #     score = -1 * model_selection.cross_val_score(pls, scale(X), Y, cv=kf,
+        #                                                  scoring='neg_mean_squared_error').mean()
+        #     mse.append(score)
+        #
+        #     # plot test MSE vs. number of components
+        # plt.plot(mse)
+        # plt.xlabel('Number of PLS Components')
+        # plt.ylabel('MSE')
+        # plt.title('hp')
+
+            pls = PLSRegression(n_components,scale=True, max_iter=500, tol=1e-06, copy=True)
+            pls.fit(X_train, Y_train)
+
+            Y_pred = pls.predict(X_test)
+            # print(pls.coef_)
+
+            # # Calculate coef
+            coef_list.append(pls.coef_)
+
+            # # Calculate scores
+            Y_test=np.array(Y_test.tolist())
+            Y_test = Y_test.flatten()
+
+            Y_pred = Y_pred.tolist()
+            Y_pred = np.array(Y_pred)
+            Y_pred = Y_pred.flatten()
+
+            R,p=stats.pearsonr(Y_pred,Y_test)
+            R2=R**2
+
+
+            R2_list.append(R2)
+
+            # # Calculate importance
+
+            x_test_trans=pls.transform(X_test)
+            # print(X_test)
+            # print(pls.x_rotations_)
+            if len(pls.x_rotations_)<2:
+                continue
+            VIPs=self.compute_VIP(X_test,Y_test,pls.x_rotations_,x_test_trans,n_components)
+
+            VIPs_list.append(VIPs)
+            # plt.scatter(np.arange(0,X.shape[1]),VIPs)
+            # plt.show()
+
+        VIPs_array = np.array(VIPs_list)
+        VIPs_reshape = VIPs_array.reshape(len(x_var_list_valid_new), -1)
+
+        VIPs_majority_list=[]
+        for i in VIPs_reshape:
+            i[i<1]=0
+            i[i > 1] = 1
+            count_one=np.count_nonzero(i,axis=0)
+            if count_one>=len(i)/2:
+                VIPs_majority_list.append(1)
+            else:
+                VIPs_majority_list.append(0)
+
+        VIPs_majority = np.array(VIPs_majority_list)
+
+
+        coef_array=np.array(coef_list)
+        coef_array_flatten=coef_array.flatten()
+
+        coef_reshape=coef_array_flatten.reshape(len(x_var_list_valid_new),-1)
+        print(coef_reshape.shape)
+
+        coeff_mean_list=[]
+
+        for i in coef_reshape:
+
+            mean = np.mean(i)
+            print(list(i))
+            coeff_mean_list.append(mean)
+        coeff_mean = np.array(coeff_mean_list)
+
+        R2=np.mean(R2_list)
+
+        # plt.scatter(Y_test, Y_pred)
+        # plt.show()
+        # print(R2, coeff_mean, VIPs)
+        return R2, coeff_mean, VIPs_majority
+
+    def PLS_time_series(self, X, x_var_list_valid_new, Y): # 不做cross_validation 因为时间序列数据不能拆分
+        n_components=2
+        pls = PLSRegression(n_components,scale=True, max_iter=500, tol=1e-06, copy=True)
+        pls.fit(X, Y)
+
+        x_trans=pls.transform(X)
+
+        if len(pls.x_rotations_)<2:
+            return None,None
+
+        VIPs=self.compute_VIP(X,Y,pls.x_rotations_,x_trans,n_components)
+
+        return pls.coef_, VIPs
+
+    def compute_VIP(self,X,Y,R,T,A):
+        p=X.shape[1]
+        Q2=np.square(np.dot(Y.T,T))
+        VIPs=np.zeros(p)
+        temp=np.zeros(A)
+
+        for j in range(p):
+            for a in range (A):
+
+                temp[a]=Q2[a]*pow(R[j,a]/np.linalg.norm(R[:,a]),2)
+            VIPs[j]=np.sqrt(p*np.sum(temp)/np.sum(Q2))
+        return VIPs
+
+        pass
 
     def performance(self,df):
         pass
