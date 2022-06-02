@@ -5639,6 +5639,70 @@ class statistic_anaysis:
 
 
 
+    def max_trend_among_all_variables(self):
+
+        fdir1 = result_root + f'/lc_trend/'
+        outdir = result_root + f'lc_trend/'
+
+        Tools().mk_dir(outdir)
+
+        all_arr_climate=[]
+        all_arr_p_value = []
+
+        for f1 in tqdm(sorted(os.listdir(fdir1))):
+            if not f1.endswith('_trend.tif'):
+                continue
+            print(f1)
+            arr_climate_pre,originX,originY,pixelWidth,pixelHeight = to_raster.raster2array(fdir1 + f1)
+            all_arr_climate.append(arr_climate_pre)
+
+        for f2 in tqdm(sorted(os.listdir(fdir1))):
+            if not f2.endswith('_p_value.tif'):
+                continue
+            print(f2)
+            arr_p_value_pre,originX,originY,pixelWidth,pixelHeight = to_raster.raster2array(fdir1 + f2)
+            all_arr_p_value.append(arr_p_value_pre)
+
+
+        max_arr=np.ones_like(all_arr_climate[0])*np.nan
+        p_value_arr=np.ones_like(all_arr_climate[0])*np.nan
+        print(len(all_arr_climate[0]))
+        print(len(all_arr_climate[0][0]))
+
+        for r in range(len(all_arr_climate[0])):
+            for c in range(len(all_arr_climate[0][0])):
+                trend_value_list = []
+
+                p_value_list = []
+                for climate in all_arr_climate:
+
+                    trend_value_list.append(abs(climate[r][c]))
+                trend_value_array=np.array(trend_value_list)
+                trend_value_array[trend_value_array>99]=np.nan
+
+                # matrix=np.isnan(trend_value_array)
+                # if True in matrix:
+                #     continue
+                max_arr[r][c] = np.nanmax(trend_value_array)   # per_year %*20 years in total
+                print(max_arr[r][c])
+                # exit()
+
+        plt.figure()
+
+        plt.imshow(p_value_arr,cmap='jet', vmin=-1, vmax=1)
+        plt.figure()
+        plt.imshow(max_arr, cmap='jet', vmin=0, vmax=3)
+        # plt.title(outf)
+        plt.colorbar()
+        plt.show()
+        #
+            # save arr to tif
+        # DIC_and_TIF().arr_to_tif(correlation_matrix, outdir + 'max_correlation.tif')
+        # np.save(outdir + 'max_correlation', correlation_matrix)
+        DIC_and_TIF().arr_to_tif(max_arr, outdir + 'max_trend.tif')
+        np.save(outdir + 'max_trend', max_arr)
+        # DIC_and_TIF().arr_to_tif(p_value_arr, outdir + 'max_p_value.tif')
+        # np.save(outdir + 'max_p_value', max_correlation)
 
 
 
@@ -6616,7 +6680,7 @@ def main():
     # statistic_anaysis().plot_anomaly_for_three_seasons()
     # statistic_anaysis().save_anomaly_for_three_seasons()
     # statistic_anaysis().plot_anomaly_for_three_seasons()
-    statistic_anaysis().max_correlation_among_all_variables()
+    statistic_anaysis().max_trend_among_all_variables()
     # statistic_anaysis().product_comparison()
 
     # lc_list = ['water', 'grass', 'shrub', 'crop', 'EBF', 'ENF', 'DBF', 'DNF', 'savanna', 'urban', 'nonveg']

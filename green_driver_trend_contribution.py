@@ -11,7 +11,7 @@ class Build_dataframe:
 
         Tools().mk_dir(self.this_class_arr, force=True)
         self.dff = self.this_class_arr + 'landcover_change.df'
-        self.P_PET_dir=data_root+'original_dataset/aridity_P_PET_dic/'
+        self.P_PET_fdir=data_root+'original_dataset/aridity_P_PET_dic/'
         pass
 
     def run(self):
@@ -44,9 +44,10 @@ class Build_dataframe:
         # df=self.add_landcover_data_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_partial_correlation_to_df(df)
-        # P_PET_dic=self.P_PET_ratio(self.P_PET_dir)
-        # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
-        # df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
+        P_PET_dic=self.P_PET_ratio(self.P_PET_dir)
+        P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
+        df=self.add_P_PET_to_df(df,P_PET_reclass_dic)
+        df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
 
 
         # df=self.show_field(df)
@@ -418,7 +419,38 @@ class Build_dataframe:
             df[f_name] = val_list
 
         return df
+    def add_landcover_trend_to_df(self, df):
 
+        fdir = results_root + '/lc_trend/'
+        for f in (os.listdir(fdir)):
+                # print()
+            if not f.endswith('.npy'):
+                continue
+            if 'p_value' in f:
+                continue
+
+
+            val_array = np.load(fdir + f)
+            val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
+            f_name = f.split('.')[0]
+            print(f_name)
+            # exit()
+            val_list = []
+            for i, row in tqdm(df.iterrows(), total=len(df)):
+
+                pix = row['pix']
+                if not pix in val_dic:
+                    val_list.append(np.nan)
+                    continue
+                val = val_dic[pix]
+                val = val*20
+                if val < -99:
+                    val_list.append(np.nan)
+                    continue
+                val_list.append(val)
+            df[f_name]=val_list
+
+        return df
     def add_mean_to_df(self, df):
         period_list = ['early', 'peak', 'late']
         # period_list = ['winter']
@@ -945,24 +977,23 @@ class Build_dataframe:
         df[f_name] = val_list
         return df
 
-    def P_PET_ratio(self, P_PET_fdir):
-        # fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
-        fdir = P_PET_fdir
-        dic = T.load_npy_dir(fdir)
-        dic_long_term = {}
-        for pix in dic:
-            vals = dic[pix]
-            vals = np.array(vals)
-            vals=T.mask_999999_arr(vals,warning=False)
-            vals[vals == 0] = np.nan
-            if np.isnan(np.nanmean(vals)):
-                continue
-            vals = self.drop_n_std(vals)
-            long_term_vals = np.nanmean(vals)
-            dic_long_term[pix] = long_term_vals
-        return dic_long_term
+    def drop_n_std(self, vals, n=1):
+        vals = np.array(vals)
+        mean = np.nanmean(vals)
+        std = np.nanstd(vals)
+        up = mean + n * std
+        down = mean - n * std
+        vals[vals > up] = np.nan
+        vals[vals < down] = np.nan
+        return vals
 
-    def P_PET_reclass(self,dic):
+    def P_PET_class(self):
+        outdir = join(self.this_class_arr, 'P_PET_class')
+        T.mkdir(outdir)
+        outf = join(outdir, 'P_PET_class.npy')
+        if isfile(outf):
+            return T.load_npy(outf)
+        dic = self.P_PET_ratio(self.P_PET_fdir)
         dic_reclass = {}
         for pix in dic:
             val = dic[pix]
@@ -981,17 +1012,33 @@ class Build_dataframe:
                 label = 'Semi Humid'
                 # label = 2
             dic_reclass[pix] = label
+        T.save_npy(dic_reclass, outf)
         return dic_reclass
 
-    def drop_n_std(self,vals, n=1):
-        vals = np.array(vals)
-        mean = np.nanmean(vals)
-        std = np.nanstd(vals)
-        up = mean + n * std
-        down = mean - n * std
-        vals[vals > up] = np.nan
-        vals[vals < down] = np.nan
-        return vals
+    def P_PET_ratio(self, P_PET_fdir):
+        # fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+        fdir = P_PET_fdir
+        dic = T.load_npy_dir(fdir)
+        dic_long_term = {}
+        for pix in dic:
+            vals = dic[pix]
+            vals = np.array(vals)
+            vals = T.mask_999999_arr(vals, warning=False)
+            vals[vals == 0] = np.nan
+            if T.is_all_nan(vals):
+                continue
+            vals = self.drop_n_std(vals)
+            long_term_vals = np.nanmean(vals)
+            dic_long_term[pix] = long_term_vals
+        return dic_long_term
+
+    def add_Humid_nonhumid(self, df):
+        P_PET_dic_reclass = self.P_PET_class()
+        df = T.add_spatial_dic_to_df(df, P_PET_dic_reclass, 'HI_reclass')
+        df = T.add_spatial_dic_to_df(df, P_PET_dic_reclass, 'HI_class')
+        df = df.dropna(subset=['HI_class'])
+        df.loc[df['HI_reclass'] != 'Humid', ['HI_reclass']] = 'Dryland'
+        return df
 
     def __rename_dataframe_columns(self, df):
 

@@ -1,6 +1,6 @@
 # coding=gbk
 import matplotlib.pyplot as plt
-
+import plotly.graph_objs as go
 from __init__ import *
 import lytools
 from lytools import *
@@ -13,6 +13,7 @@ from sklearn import model_selection
 from sklearn.model_selection import RepeatedKFold
 from sklearn.model_selection import train_test_split
 from sklearn.cross_decomposition import PLSRegression
+import green_driver_trend_contribution
 from sklearn.metrics import mean_squared_error
 
 
@@ -2231,812 +2232,475 @@ class Window_correlation:
         plt.tight_layout()
         plt.show()
 
-class check_NIRV_NDVI:
+
+class Sankey_plot_PLS:
 
     def __init__(self):
-        self.template_file = '/Volumes/NVME2T/drought_legacy_new/conf/tif_template.tif'
-        self.phe_dir = '/Volumes/NVME2T/wen_proj/greening_contribution/20%_transform_early_peak_late_dormant_period_multiyear_CSIF_par/'
-        pass
+        # self.Y_name = 'LAI3g'
+        self.Y_name = 'LAI4g'
+        # self.Y_name = 'MODIS-LAI'
+        self.var_list = ['CCI_SM', 'CO2', 'PAR', 'Temp', 'VPD']
+        self.period_list = ['early', 'peak', 'late']
+        self.fdir = results_root+f'Sankey_plot/Data/{self.Y_name}/'
+        self.this_class_arr=results_root+f'Sankey_plot/Results/'
+        outdir = join(self.this_class_arr,f'{self.Y_name}')
+        Tools().mk_dir(outdir,force=True)
+        self.dff = join(outdir,'dataframe.df')
+        self.this_class_png=join(outdir,'png')
+        Tools().mk_dir(self.this_class_arr, force=True)
+        # T.open_path_and_file(outdir)
 
+        pass
 
     def run(self):
-        # self.resample()
-        # self.per_pix()
-        # self.anomaly()
-        # self.anomaly_wen()
-        # self.spatial_correlation()
-        # self.pick_early_nirv()
-        # self.Moving_window_correlation()
-        self.self_make_data()
+        # self.plot_p_value_spatial()
+        # df,var_list = self.join_dataframe(self.fdir)
+        # df = self.build_sankey_plot(df,var_list)
+        # #
+        df = self.__gen_df_init()
+        # df = green_driver_trend_contribution.Build_dataframe().add_Humid_nonhumid(df)
+        # 加字段 NDVI mask,
+        # df=self.add_max_trend_to_df(df)
+        # df=self.add_landcover_data_to_df(df)
+        #
+        # T.save_df(df,self.dff)
+        # T.df_to_excel(df,self.dff)
+
+        ## 加筛选条件
+        df=df[df['max_lc_trend']<5]
+        # df = df[df['late_CO2_VIP'] >1 ]
+        df = df[df['landcover'] != 'Cropland']
+
+        self.plot_Sankey(df,True)
+
+        self.plot_Sankey(df,False)
+        # self.plot_max_corr_spatial(df)
+        # self.max_contribution_bar()
         pass
 
+    def __load_df(self):
+        dff = self.dff
+        df = T.load_df(dff)
+        return df,dff
 
-    def __cal_anomaly(self,pix_dic):
+    def __gen_df_init(self):
+        if not os.path.isfile(self.dff):
+            df = pd.DataFrame()
+            T.save_df(df,self.dff)
+            return df
+        else:
+            df,dff = self.__load_df()
+            return df
 
-        anomaly_pix_dic = {}
-        for pix in tqdm(pix_dic,desc='cal anomaly'):
-            ####### one pix #######
-            vals = pix_dic[pix]
-            vals = np.array(vals)
-            Tools().mask_999999_arr(vals)
-            # 清洗数据
-            climatology_means = []
-            climatology_std = []
-            # vals = signal.detrend(vals)
-            for m in range(1, 13):
-                one_mon = []
-                for i in range(len(pix_dic[pix])):
-                    mon = i % 12 + 1
-                    if mon == m:
-                        one_mon.append(pix_dic[pix][i])
-                mean = np.nanmean(one_mon)
-                std = np.nanstd(one_mon)
-                climatology_means.append(mean)
-                climatology_std.append(std)
+    def plot_max_corr_spatial(self,df):
+        outdir = join(self.this_class_tif,'plot_max_corr_spatial')
+        T.mkdir(outdir)
+        T.open_path_and_file(outdir)
+        period_list = self.period_list
+        var_list = self.var_list
+        var_color_dict = {'CCI_SM':'#ff7f0e','CO2':'#1f77b4','PAR':'#2ca02c','Temp':'#9467bd','VPD':'#d62728'}
+        var_value_dict = {'CCI_SM':0,'CO2':1,'PAR':2,'Temp':3,'VPD':4,'None':np.nan,'nan':np.nan}
+        color_list = []
+        for var_ in var_list:
+            color_list.append(var_color_dict[var_])
+        cmap = T.cmap_blend(color_list)
+        for period in period_list:
+            col_name = f'{period}_max_var'
+            spatial_dict = T.df_to_spatial_dic(df,col_name)
+            spatial_dict_value = {}
+            for pix in spatial_dict:
+                var_ = spatial_dict[pix]
+                var_ = str(var_)
+                var_ = var_.replace(period+'_','')
+                # print(var_)
+                value = var_value_dict[var_]
+                spatial_dict_value[pix] = value
+            arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dict_value)
+            arr = arr[:180]
+            # plt.figure()
+            # DIC_and_TIF().plot_back_ground_arr(global_land_tif,aspect='auto')
+            # plt.imshow(arr, cmap=cmap,aspect='auto')
+            # plt.colorbar()
+            # plt.title(f'{self.Y_name}_{period}')
+            # T.plot_colors_palette(cmap)
+            outf = join(outdir,f'{self.Y_name}_{period}.tif')
+            DIC_and_TIF().arr_to_tif(arr,outf)
+        # plt.show()
 
-            # 算法1
-            # pix_anomaly = {}
-            # for m in range(1, 13):
-            #     for i in range(len(pix_dic[pix])):
-            #         mon = i % 12 + 1
-            #         if mon == m:
-            #             this_mon_mean_val = climatology_means[mon - 1]
-            #             this_mon_std_val = climatology_std[mon - 1]
-            #             if this_mon_std_val == 0:
-            #                 anomaly = -999999
-            #             else:
-            #                 anomaly = (pix_dic[pix][i] - this_mon_mean_val) / float(this_mon_std_val)
-            #             key_anomaly = i
-            #             pix_anomaly[key_anomaly] = anomaly
-            # arr = pandas.Series(pix_anomaly)
-            # anomaly_list = arr.to_list()
-            # anomaly_pix_dic[pix] = anomaly_list
+    def join_dataframe(self,fdir):
 
-            # 算法2
-            pix_anomaly = []
-            for i in range(len(vals)):
-                mon = i % 12
-                std_ = climatology_std[mon]
-                mean_ = climatology_means[mon]
-                if std_ == 0:
-                    anomaly = 0  ##### 修改gpp
-                else:
-                    anomaly = (vals[i] - mean_) / std_
-
-                pix_anomaly.append(anomaly)
-            # pix_anomaly = Tools().interp_1d_1(pix_anomaly,-100)
-            # plt.plot(pix_anomaly)
-            # plt.show()
-            pix_anomaly = np.array(pix_anomaly)
-            anomaly_pix_dic[pix] = pix_anomaly
-        return anomaly_pix_dic
-
-
-    def __cal_anomaly_array(self,vals):
-        vals = np.array(vals)
-        Tools().mask_999999_arr(vals)
-        # 清洗数据
-        climatology_means = []
-        climatology_std = []
-        # vals = signal.detrend(vals)
-        for m in range(1, 13):
-            one_mon = []
-            for i in range(len(vals)):
-                mon = i % 12 + 1
-                if mon == m:
-                    one_mon.append(vals[i])
-            mean = np.nanmean(one_mon)
-            std = np.nanstd(one_mon)
-            climatology_means.append(mean)
-            climatology_std.append(std)
-
-        # 算法1
-        # pix_anomaly = {}
-        # for m in range(1, 13):
-        #     for i in range(len(pix_dic[pix])):
-        #         mon = i % 12 + 1
-        #         if mon == m:
-        #             this_mon_mean_val = climatology_means[mon - 1]
-        #             this_mon_std_val = climatology_std[mon - 1]
-        #             if this_mon_std_val == 0:
-        #                 anomaly = -999999
-        #             else:
-        #                 anomaly = (pix_dic[pix][i] - this_mon_mean_val) / float(this_mon_std_val)
-        #             key_anomaly = i
-        #             pix_anomaly[key_anomaly] = anomaly
-        # arr = pandas.Series(pix_anomaly)
-        # anomaly_list = arr.to_list()
-        # anomaly_pix_dic[pix] = anomaly_list
-
-        # 算法2
-        pix_anomaly = []
-        for i in range(len(vals)):
-            mon = i % 12
-            std_ = climatology_std[mon]
-            mean_ = climatology_means[mon]
-            if std_ == 0:
-                anomaly = 0  ##### 修改gpp
+        df_list = []
+        var_list = []
+        for f in T.listdir(fdir):
+            # print(f)
+            period = f.split('.')[0].split('_')[-2]
+            dic = T.load_npy(join(fdir,f))
+            df_i = T.dic_to_df(dic,key_col_str='pix')
+            old_col_list = []
+            var_list = []
+            for col in df_i.columns:
+                if col == 'pix':
+                    continue
+                old_col_list.append(col)
+                var_list.append(col)
+            if 'VIP' in f:
+                new_col_list = [f'{period}_{col}_VIP' for col in old_col_list]
             else:
-                anomaly = (vals[i] - mean_) / std_
+                new_col_list = [f'{period}_{col}' for col in old_col_list]
+            for i in range(len(old_col_list)):
+                new_name = new_col_list[i]
+                old_name = old_col_list[i]
+                df_i = T.rename_dataframe_columns(df_i,old_name,new_name)
+            df_list.append(df_i)
+        df = pd.DataFrame()
+        df = Tools().join_df_list(df,df_list,'pix')
+        ## re-index dataframe
+        df = df.reset_index(drop=True)
+        return df,var_list
 
-            pix_anomaly.append(anomaly)
-        return pix_anomaly
+    def add_landcover_data_to_df(self, df):  #
+
+        lc_dic = {
+            1: 'ENF',
+            2: 'EBF',
+            3: 'DNF',
+            4: 'DBF',
+            6: 'open shrubs',
+            7: 'closed shrubs',
+            8: 'Woody Savanna',
+            9: 'Savanna',
+            10: 'Grassland',
+            12: 'Cropland',
+
+        }
+
+        lc_integrate_dic = {
+            1: 'NF',
+            2: 'BF',
+            3: 'NF',
+            4: 'BF',
+            6: 'shrub',
+            7: 'shrub',
+            8: 'Savanna',
+            9: 'Savanna',
+            10: 'Grassland',
+            12: 'Cropland',
+        }
+
+        landcover_dic = {}
+        fdir = data_root + 'GLC2000_0.5DEG/dic_landcover/'
+        for f in tqdm(os.listdir(fdir)):
+            if f.endswith('.npy'):
+                dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
+                landcover_dic.update(dic_i)
+        f_name = 'landcover'
+        landcover_list = []
+        for i, row in tqdm(df.iterrows(), total=len(df)):
+            # year = row['year']
+            # pix = row.pix
+            pix = row['pix']
+            if not pix in landcover_dic:
+                landcover_list.append(np.nan)
+                continue
+            vals = landcover_dic[pix][0]
+            # if vals in lc_dic:
+            if vals in lc_integrate_dic:
+                lc = lc_integrate_dic[vals]
+                # lc=lc_dic[vals]
+            else:
+                lc = np.nan
+            landcover_list.append(lc)
+            # landcover_list.append(vals)
+        df[f_name] = landcover_list
+        return df
+
+    def add_landcover_trend_to_df(self, df):
+
+        fdir = results_root + '/lc_trend/'
+        for f in (os.listdir(fdir)):
+                # print()
+            if not f.endswith('.npy'):
+                continue
+            if 'p_value' in f:
+                continue
 
 
+            val_array = np.load(fdir + f)
+            val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
+            f_name = f.split('.')[0]
+            print(f_name)
+            # exit()
+            val_list = []
+            for i, row in tqdm(df.iterrows(), total=len(df)):
 
-    def resample(self):
+                pix = row['pix']
+                if not pix in val_dic:
+                    val_list.append(np.nan)
+                    continue
+                val = val_dic[pix]
+                val = val*20
+                if val < -99:
+                    val_list.append(np.nan)
+                    continue
+                val_list.append(val)
+            df[f_name]=val_list
 
-        # fdir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NDVI_MODIS/MOD13C1.006_NDVI_MVC/'
-        # outdir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NDVI_MODIS/MOD13C1.006_NDVI_MVC_05/'
+        return df
 
-        fdir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NIRv/tif/'
-        outdir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NIRv/tif_05/'
+    def add_max_trend_to_df(self,df):
 
-        T.mk_dir(outdir)
-        for f in tqdm(T.listdir(fdir)):
+        f = results_root + f'lc_trend/max_trend.npy'
+
+        val_array = np.load( f)
+        val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
+        f_name = 'max_lc_trend'
+        print(f_name)
+        # exit()
+        val_list = []
+        for i, row in tqdm(df.iterrows(), total=len(df)):
+
+            pix = row['pix']
+            if not pix in val_dic:
+                val_list.append(np.nan)
+                continue
+            vals = val_dic[pix]*20
+            if vals < -99:
+                val_list.append(np.nan)
+                continue
+            val_list.append(vals)
+        df[f_name] = val_list
+        return df
+
+
+    def build_sankey_plot(self,df,var_list,p_threshold=0.1):
+
+        period_list = ['early','peak','late']
+        for period in period_list:
+            var_name_list = []
+            for var_ in var_list:
+                var_name_corr = f'{period}_{var_}'
+                var_name_list.append(var_name_corr)
+            for i,row in tqdm(df.iterrows(),total=len(df)):
+                value_dict = {}
+                for var_ in var_name_list:
+                    value = row[var_]
+                    value = abs(value)
+                    value_dict[var_] = value
+                max_key = T.get_max_key_from_dict(value_dict)
+                df.loc[i,f'{period}_max_var'] = max_key
+        T.save_df(df, self.dff)
+        T.df_to_excel(df, self.dff)
+
+
+    def __get_var_list(self,fdir):
+        var_list = []
+        for f in T.listdir(fdir):
+            period = f.split('.')[0].split('_')[-2]
+            dic = T.load_npy(join(fdir, f))
+            df_i = T.dic_to_df(dic, key_col_str='pix')
+            var_list = []
+            for col in df_i.columns:
+                if col == 'pix':
+                    continue
+                var_list.append(col)
+            break
+        return var_list
+
+    def __add_alpha_to_color(self,hexcolor,alpha=0.8):
+        rgb = T.hex_color_to_rgb(hexcolor)
+        rgb = list(rgb)
+        rgb[-1] = alpha
+        rgb = tuple(rgb)
+        rgb_str = 'rgba'+str(rgb)
+        return rgb_str
+
+    def plot_Sankey(self,df,ishumid):
+        if ishumid:
+            df = df[df['HI_reclass'] == 'Humid']
+            outdir = join(self.this_class_png, f'{self.Y_name}/Humid')
+            title = 'Humid'
+        else:
+            df = df[df['HI_reclass'] == 'Dryland']
+            outdir = join(self.this_class_png, f'{self.Y_name}/Dryland')
+            title = 'Dryland'
+        T.mkdir(outdir,force=True)
+        # T.open_path_and_file(outdir)
+        var_list = self.__get_var_list(self.fdir)
+
+        period_list = ['early','peak','late']
+        # period_list = ['late']
+        early_max_var_list = [f'early_{var}' for var in var_list]
+        peak_max_var_list = [f'peak_{var}' for var in var_list]
+        late_max_var_list = [f'late_{var}' for var in var_list]
+
+        node_list = early_max_var_list+peak_max_var_list+late_max_var_list
+        position_dict = dict(zip(node_list, range(len(node_list))))
+
+        color_dict = {'CO2': self.__add_alpha_to_color('#00FF00'),
+                      'CCI_SM': self.__add_alpha_to_color('#00E7FF'),
+                      'PAR': self.__add_alpha_to_color('#FFFF00'),
+                      'Temp': self.__add_alpha_to_color('#FF0000'),
+                      'VPD': self.__add_alpha_to_color('#B531AF'),
+                      }
+        node_color_list = [color_dict[var_] for var_ in var_list]
+        node_color_list = node_color_list * 3
+        # print(node_color_list)
+        # exit()
+        early_max_var_col = 'early_max_var'
+        peak_max_var_col = 'peak_max_var'
+        late_max_var_col = 'late_max_var'
+
+        source = []
+        target = []
+        value = []
+        # color_list = []
+        # node_list_anomaly_value_mean = []
+        # anomaly_value_list = []
+        node_list_with_ratio = []
+        node_name_list = []
+        for early_status in early_max_var_list:
+            # print(early_status)
+            # exit()
+            df_early = df[df[early_max_var_col] == early_status]
+            vals = df_early[early_status].tolist()
+            vals_mean = np.nanmean(vals)
+            ratio = len(df_early)/len(df)
+            node_list_with_ratio.append(ratio)
+            node_name_list.append(f'{early_status} {vals_mean:.2f}')
+        for peak_status in peak_max_var_list:
+            df_peak = df[df[peak_max_var_col] == peak_status]
+            vals = df_peak[peak_status].tolist()
+            vals_mean = np.nanmean(vals)
+            ratio = len(df_peak)/len(df)
+            node_list_with_ratio.append(ratio)
+            node_name_list.append(f'{peak_status} {vals_mean:.2f}')
+        for late_status in late_max_var_list:
+            df_late = df[df[late_max_var_col] == late_status]
+            vals = df_late[late_status].tolist()
+            vals_mean = np.nanmean(vals)
+            ratio = len(df_late)/len(df)
+            node_list_with_ratio.append(ratio)
+            node_name_list.append(f'{late_status} {vals_mean:.2f}')
+        node_list_with_ratio = [round(i,3) for i in node_list_with_ratio]
+
+        for early_status in early_max_var_list:
+            df_early = df[df[early_max_var_col] == early_status]
+            early_count = len(df_early)
+            for peak_status in peak_max_var_list:
+                df_peak = df_early[df_early[peak_max_var_col] == peak_status]
+                peak_count = len(df_peak)
+                source.append(position_dict[early_status])
+                target.append(position_dict[peak_status])
+                value.append(peak_count)
+                for late_status in late_max_var_list:
+                    df_late = df_peak[df_peak[late_max_var_col] == late_status]
+                    late_count = len(df_late)
+                    source.append(position_dict[peak_status])
+                    target.append(position_dict[late_status])
+                    value.append(late_count)
+        link = dict(source=source, target=target, value=value,)
+        # node = dict(label=node_list_with_ratio, pad=100,
+        node = dict(label=node_name_list, pad=100,
+                    thickness=15,
+                    line=dict(color="black", width=0.5),
+                    # x=node_x,
+                    # y=node_y,
+                    color=node_color_list
+                )
+        data = go.Sankey(link=link, node=node, arrangement='snap', textfont=dict(color="rgba(0,0,0,1)", size=18))
+        fig = go.Figure(data)
+        fig.update_layout(title_text=f'{title}')
+        fig.write_html(join(outdir, f'{title}.html'))
+        # fig.write_image(join(outdir, f'{title}.png'))
+        # fig.show()
+
+
+    def plot_p_value_spatial(self):
+        fdir = self.fdir
+        var_ = 'Temp'
+        # var_ = 'CCI_SM'
+        period = 'early'
+        f = join(fdir, '2000-2018_partial_correlation_p_value_early_LAI3g.npy')
+        dict_ = T.load_npy(f)
+        spatial_dict = {}
+        for pix in tqdm(dict_):
+            dict_i = dict_[pix]
+            if not var_ in dict_i:
+                continue
+            value = dict_i[var_]
+            spatial_dict[pix] = value
+        arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dict)
+        arr = arr[:180]
+        arr[arr>0.1] = 1
+        plt.imshow(arr, cmap='jet',aspect='auto')
+        plt.colorbar()
+        DIC_and_TIF().plot_back_ground_arr_north_sphere(global_land_tif,aspect='auto')
+        plt.title(f'{var_}_{period}')
+        plt.show()
+
+        pass
+
+    def max_contribution_bar(self):
+        fdir = '/Volumes/NVME2T/greening_project_redo/results/Main_flow_1/tif/Sankey_plot_max_contribution/plot_max_corr_spatial'
+        outdir = join(self.this_class_png, 'max_contribution_bar')
+        T.mkdir(outdir)
+        T.open_path_and_file(outdir)
+        var_value_dict = {'CCI_SM': 0, 'CO2': 1, 'PAR': 2, 'Temp': 3, 'VPD': 4}
+        color_dict = {'CCI_SM': '#00E7FF', 'CO2': '#00FF00', 'PAR': '#FFFF00', 'Temp': '#FF0000', 'VPD': '#B531AF'}
+        var_value_dict_reverse = T.reverse_dic(var_value_dict)
+        all_dict = {}
+        product_list = []
+        period_list = []
+        for f in T.listdir(fdir):
             if not f.endswith('.tif'):
                 continue
-            tif = fdir + f
-            outtif = outdir + f
-            dataset = gdal.Open(tif)
-            gdal.Warp(outtif, dataset, xRes=0.5, yRes=0.5, srcSRS='EPSG:4326', dstSRS='EPSG:4326')
-
-
-    def per_pix(self):
-        # fdir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NIRv/tif_05/2002-2018/'
-        # outdir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NIRv/per_pix/'
-        fdir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NDVI_MODIS/MOD13C1.006_NDVI_MVC_05/2002-2018/'
-        outdir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NDVI_MODIS/per_pix/'
-
-        T.mk_dir(outdir)
-        Pre_Process().data_transform(fdir,outdir)
-        pass
-
-    def spatial_correlation(self):
-        ndvi_dir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NDVI_MODIS/per_pix_anomaly/'
-        nirv_dir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NDVI_MODIS/per_pix_anomaly_wen/'
-        # nirv_dir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NIRv/per_pix_anomaly/'
-
-        ndvi_dic = T.load_npy_dir(ndvi_dir)
-        nirv_dic = T.load_npy_dir(nirv_dir)
-
-        spatial_dic = {}
-        for pix in tqdm(ndvi_dic):
-            if not pix in nirv_dic:
-                continue
-            ndvi = ndvi_dic[pix]
-            nirv = nirv_dic[pix]
-            ndvi = np.array(ndvi,dtype=float)
-            nirv = np.array(nirv,dtype=float)
-
-            T.mask_999999_arr(ndvi)
-            T.mask_999999_arr(nirv)
-            r,p = T.nan_correlation(ndvi,nirv)
-            spatial_dic[pix] = r
-        arr = DIC_and_TIF(self.template_file).pix_dic_to_spatial_arr(spatial_dic)
-        plt.imshow(arr)
-        plt.colorbar()
-        plt.show()
-        pass
-
-    def anomaly(self):
-        in_dir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NDVI_MODIS/per_pix/'
-        out_dir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NDVI_MODIS/per_pix_anomaly/'
-        Pre_Process().cal_anomaly(in_dir,out_dir)
-        in_dir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NIRv/per_pix/'
-        out_dir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NIRv/per_pix_anomaly/'
-        Pre_Process().cal_anomaly(in_dir,out_dir)
+            print(f)
+            fname = f.split('.')[0]
+            product,period = fname.split('_')
+            product_list.append(product)
+            period_list.append(period)
+            arr = ToRaster().raster2array(join(fdir, f))[0]
+            arr = T.mask_999999_arr(arr,warning=False)
+            dic = DIC_and_TIF().spatial_arr_to_dic(arr)
+            key = f'{product}_{period}'
+            all_dict[key] = dic
+        df = T.spatial_dics_to_df(all_dict)
+        df = Dataframe().add_Humid_nonhumid(df)
+        humid_var = 'HI_reclass'
+        humid_list = T.get_df_unique_val_list(df, humid_var)
+        for humid in humid_list:
+            df_humid = df[df[humid_var] == humid]
+            fig,axs = plt.subplots(3,3,figsize=(10,10))
+            product_list = list(set(product_list))
+            period_list = ['early','peak','late']
+            for m,product in enumerate(product_list):
+                for n,period in enumerate(period_list):
+                    col = f'{product}_{period}'
+                    df_i = df_humid[col]
+                    df_i = df_i.dropna()
+                    unique_value = T.get_df_unique_val_list(df_humid,col)
+                    x_list = []
+                    y_list = []
+                    color_list = []
+                    for val in unique_value:
+                        df_i_i = df_i[df_i == val]
+                        ratio = len(df_i_i)/len(df_i) * 100
+                        x = var_value_dict_reverse[int(val)][0]
+                        x_list.append(x)
+                        y_list.append(ratio)
+                        color_list.append(color_dict[x])
+                    # plt.figure()
+                    # print(m,n)
+                    axs[m][n].bar(x_list,y_list,color=color_list)
+                    axs[m][n].set_title(f'{product}_{period}')
+                    axs[m][n].set_ylim(0,47)
+            plt.suptitle(f'{humid}')
+            plt.tight_layout()
+            outf = join(outdir, f'{humid}.pdf')
+            plt.savefig(outf)
+            plt.close()
 
         pass
-
-    def anomaly_wen(self): # 实现monthly anomaly
-        fdir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NDVI_MODIS/per_pix/'
-        outdir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NDVI_MODIS/per_pix_anomaly_wen/'
-        Tools().mk_dir(outdir)
-        dic={}
-        for f in tqdm(sorted(os.listdir(fdir))):
-
-            if f.endswith('.npy'):
-                # if not '005' in f:
-                #     continue
-                dic_i = T.load_npy(fdir+f)
-                dic.update(dic_i)
-
-        result_dic = {}
-        for pix in tqdm(dic):
-            # r,c=pix
-            # china_r = list(range(75, 150))
-            # china_c = list(range(550, 620))
-            # if not r in china_r:
-            #     continue
-            # if not c in china_c:
-            #     continue
-            time_series = dic[pix]
-            time_series=np.array(time_series)
-            # if len(time_series) != 444:
-            #     continue
-                # plt.plot(time_series)
-                # plt.show()
-
-            time_series[time_series < -999] = np.nan
-            if np.isnan(np.nanmean(time_series)):
-                # print('error')
-                continue
-            time_series = time_series.reshape(-1, 12)
-            # print(time_series)
-            time_series_T = time_series.T
-            row = len(time_series_T)
-            col = len(time_series_T[0])
-            anomaly = np.ones_like(time_series_T) * np.nan
-            for i in range(row):
-                time_series_mean = np.nanmean(time_series_T[i])
-                time_series_std = np.nanstd(time_series_T[i])
-                for j in range(col):
-                    anomaly[i][j] = (time_series_T[i][j] - time_series_mean) / time_series_std
-                    # anomaly[i][j] = (time_series_T[i][j] - time_series_mean)
-            anomaly = anomaly.T
-            anomaly_15_year = anomaly.flatten()
-            # plt.plot(anomaly_15_year)
-            # plt.show()
-            result_dic[pix] = anomaly_15_year
-            # plt.plot(result_dic[pix])
-            # plt.show()
-
-        flag = 0
-        temp_dic = {}
-        for key in tqdm(result_dic, desc='output...'):  # 存数据
-            flag = flag + 1
-            time_series = result_dic[key]
-            time_series = np.array(time_series)
-            temp_dic[key] = time_series
-            if flag % 10000 == 0:
-                # print(flag)
-                np.save(outdir + 'per_pix_dic_%03d' % (flag / 10000), temp_dic)
-                temp_dic = {}
-        np.save(outdir + 'per_pix_dic_%03d' % 0, temp_dic)
-
-    def pick_early_nirv(self):
-        outf = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/2001-2015/Y_2001-2015/during_early_NIRv_new.npy'
-        nirv_dir = '/Volumes/NVME2T/wen_proj/nirv_ndvi_check/NIRv/per_pix/'
-        nirv_dic = T.load_npy_dir(nirv_dir)
-        start_f = self.phe_dir + 'early_start_mon.npy'
-        end_f = self.phe_dir + 'early_end_mon.npy'
-        start_dic = T.load_npy(start_f)
-        end_dic = T.load_npy(end_f)
-        nirv_dic_clean = {}
-        for pix in tqdm(nirv_dic):
-            vals = nirv_dic[pix]
-            vals = np.array(vals)
-            T.mask_999999_arr(vals)
-            if True in np.isnan(vals):
-                continue
-            nirv_dic_clean[pix] = vals
-
-        nirv_anomaly = self.__cal_anomaly(nirv_dic_clean)
-        early_nirv_anomaly = {}
-
-        for pix in nirv_anomaly:
-            vals = nirv_anomaly[pix]
-            vals_reshape = np.reshape(vals,(-1,12))
-            start = start_dic[pix]
-            end = end_dic[pix]
-            if len(start) == 0:
-                continue
-            if len(end) == 0:
-                continue
-            start = start[0]
-            end = end[0]
-            if end + 1 >= 12:
-                continue
-            pick_range = list(range(start,end+1))
-            annual_vals = []
-            for y_val in vals_reshape:
-                y_val_picked = T.pick_vals_from_1darray(y_val,pick_range)
-                y_val_picked_mean = np.mean(y_val_picked)
-                annual_vals.append(y_val_picked_mean)
-            annual_vals = np.array(annual_vals)
-            early_nirv_anomaly[pix] = annual_vals
-        T.save_npy(early_nirv_anomaly,outf)
-
-        pass
-
-
-    def Moving_window_correlation(self):
-        y_f = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/2001-2015/Y_2001-2015/during_early_NIRv_new.npy'
-        x_f = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/2001-2015/X_2001-2015/during_early_Temperature.npy'
-
-        y_dic = T.load_npy(y_f)
-        x_dic = T.load_npy(x_f)
-        window = 3
-        for pix in y_dic:
-            if not pix in x_dic:
-                continue
-            y = y_dic[pix]
-            x = x_dic[pix]
-            # print(x)
-            # print(y)
-            corr_list = []
-            for i in range(len(x)):
-                # print(i+window)
-                if i + window >= len(x):
-                    continue
-                new_x = x[i:i+window]
-                new_y = y[i:i+window]
-                r,p = stats.pearsonr(new_x,new_y)
-                corr_list.append(r)
-            if len(corr_list) == 0:
-                continue
-            plt.plot(corr_list)
-            plt.show()
-
-        pass
-
-
-    def self_make_data(self):
-        m = 10
-        n = 12*m
-
-        x_vals = np.linspace(0,m*2*np.pi,n) / 4
-        trend1 = np.linspace(0,1,n)
-        trend2 = np.linspace(0,1.5,n)
-        random1 = np.random.random(n)
-        random2 = np.random.random(n)
-        y1 = np.sin(x_vals) + trend1 + 100
-        y2 = np.sin(x_vals) + trend2 + 100
-
-        y1 = y1 + random1
-        y2 = y2 + random2
-
-        y1_anomaly = self.__cal_anomaly_array(y1)
-        y2_anomaly = self.__cal_anomaly_array(y2)
-
-
-        r,p = stats.pearsonr(y1,y1)
-        r_anomaly,p_anomaly = stats.pearsonr(y1_anomaly,y2_anomaly)
-        print('r,p',r,p)
-        print('r_anomaly,p_anomaly',r_anomaly,p_anomaly)
-
-        plt.figure()
-        plt.plot(x_vals,y1)
-        plt.plot(x_vals,y2)
-        plt.title('origin')
-
-        plt.figure()
-        plt.plot(x_vals, y1_anomaly)
-        plt.plot(x_vals, y2_anomaly)
-        plt.title('anomaly')
-        plt.show()
-
-        pass
-
-
-class Assignment_1109:
-    def __init__(self):
-        self.asd_f_green = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_DeepGreen_DigitalNumber_ASD.txt'
-        self.asd_f_brown = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_LightGreen_DigitalNumber_ASD.txt'
-        self.oo_f_green = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_Green_AbsoluteRadiance_OO.txt'
-        self.oo_f_brown = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_Brown_AbsoluteRadiance_OO.txt'
-        self.oo_f_sif_green = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_Green_AbsoluteSIF_OO.txt'
-        self.oo_f_sif_brown = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_Brown_AbsoluteSIF_OO.txt'
-
-        self.white_DN_ASD = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/WhiteReference_DigitalNumber_ASD.txt'
-        self.white_abs_OO = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_WhiteReference_AbsoluteIrradiance_OO.txt'
-
-        pass
-
-    def run(self):
-        # self.lamp()
-        # self.cal_ndvi()
-        self.cal_apar_to_chlf()
-        # self.plot_OO()
-        # self.plot_abs_sif()
-        # self.plot_ASD_white()
-        # self.plot_OO_white()
-        # self.plot_ASD_green_brown()
-        # self.plot_OO_green_brown()
-        # plt.xlim(680, 800)
-        # plt.ylim(-0.02, 0.06)
-        # plt.xlabel('Spectral')
-        # plt.ylabel('SIF (uW/cm2/nm/sr)')
-        # plt.show()
-        pass
-
-    def ASD(self, f1):
-        # f1 = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/WhiteReference_DigitalNumber_ASD.txt'
-        fr = open(f1, 'r')
-        fr.readline()
-        lines = fr.readlines()
-        x = []
-        y = []
-        for l in lines:
-            l = l.split('\n')[0]
-            band, DN = l.split()
-            band = float(band)
-            DN = float(DN)
-            x.append(band)
-            y.append(DN)
-        # plt.scatter(x, y, marker='o', facecolor='none', edgecolors='r', s=80, lw=0.1)
-        # plt.ylabel('ASD DN')
-        # plt.xlabel('Spectral')
-        # plt.show()
-        return x,y
-        pass
-
-    def OO(self,f ):
-
-        # f = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Leaf_WhiteReference_AbsoluteIrradiance_OO.txt'
-        fr = open(f, 'r')
-        for i in range(14):
-            l = fr.readline()
-            # print(l)
-        # exit()
-        lines = fr.readlines()
-        x1 = []
-        x2 = []
-        y1 = []
-        y2 = []
-        for l in lines:
-            l = l.split('\n')[0]
-            l_split = l.split()
-            # print(l_split)
-            if len(l_split) == 4:
-                band1, DN1, band2, DN2 = l.split()
-                band2 = float(band2)
-                DN2 = float(DN2)
-                x2.append(band2)
-                y2.append(DN2)
-            elif len(l_split) == 2:
-                band1, DN1 = l.split()
-            else:
-                raise UserWarning
-            band1 = float(band1)
-            DN1 = float(DN1)
-            x1.append(band1)
-            y1.append(DN1)
-        x1 = np.array(x1)
-        y1 = np.array(y1)
-        return x1,y1
-        # plt.twinx()
-        # plt.scatter(x1, y1, marker='o', facecolor='none', edgecolors='b', s=80, lw=0.1)
-        # plt.scatter(x2, y2, marker='o', facecolor='none', edgecolors='b', s=80, lw=2)
-        # # plt.xlabel('spectral')
-        # plt.ylabel('OO uW/m2/nm/sr')
-        # plt.xlim(300, 1100)
-        # plt.show()
-
-    def lamp(self, ):
-        f = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/LAMP_AbsoluteIrradiance.txt'
-        fr = open(f, 'r')
-        for i in range(13):
-            fr.readline()
-        lines = fr.readlines()
-        x1 = []
-        x2 = []
-        y1 = []
-        y2 = []
-        for l in lines:
-            l = l.split('\n')[0]
-            l_split = l.split()
-            if len(l_split) == 4:
-                band1, DN1, band2, DN2 = l.split()
-                band2 = float(band2)
-                DN2 = float(DN2)
-                x2.append(band2)
-                y2.append(DN2)
-            elif len(l_split) == 2:
-                band1, DN1 = l.split()
-            else:
-                raise UserWarning
-            band1 = float(band1)
-            DN1 = float(DN1)
-            x1.append(band1)
-            y1.append(DN1)
-        plt.scatter(x1, y1, marker='o', facecolor='none', edgecolors='r', s=80, lw=0.1,label='Absolute Irradiance')
-        plt.scatter(x2, y2, marker='o', facecolor='none', edgecolors='b', s=80, lw=1,label='Calibration')
-        a, b, r = KDE_plot().linefit(x1, y1)
-        KDE_plot().plot_fit_line(a, b, r, x1,lw=2,line_color='r')
-
-        a, b, r = KDE_plot().linefit(x2, y2)
-        KDE_plot().plot_fit_line(a, b, r, x2,lw=2,line_color='b')
-        plt.xlabel('spectral')
-        plt.ylabel('DN')
-        plt.legend()
-        plt.show()
-
-    def OO_green(self, ):
-
-        f = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Leaf_Green_AbsoluteSIF_OO.txt'
-        fr = open(f, 'r')
-        for i in range(14):
-            l = fr.readline()
-            # print(l)
-        # exit()
-        lines = fr.readlines()
-        x1 = []
-        x2 = []
-        y1 = []
-        y2 = []
-        for l in lines:
-            l = l.split('\n')[0]
-            l_split = l.split()
-            # print(l_split)
-            if len(l_split) == 4:
-                band1, DN1, band2, DN2 = l.split()
-                band2 = float(band2)
-                DN2 = float(DN2)
-                x2.append(band2)
-                y2.append(DN2)
-            elif len(l_split) == 2:
-                band1, DN1 = l.split()
-            else:
-                raise UserWarning
-            band1 = float(band1)
-            DN1 = float(DN1)
-            x1.append(band1)
-            y1.append(DN1)
-        # plt.twinx()
-        plt.scatter(x1, y1, marker='o', facecolor='none', edgecolors='g', s=80, lw=1, alpha=0.6)
-        # plt.xlabel('spectral')
-        # plt.ylabel('OO uW/m2/nm/sr')
-        # plt.xlim(300,1100)
-        # plt.show()
-
-    def OO_brown(self, ):
-
-        f = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Leaf_Brown_AbsoluteSIF_OO.txt'
-        fr = open(f, 'r')
-        for i in range(14):
-            l = fr.readline()
-            # print(l)
-        # exit()
-        lines = fr.readlines()
-        x1 = []
-        x2 = []
-        y1 = []
-        y2 = []
-        for l in lines:
-            l = l.split('\n')[0]
-            l_split = l.split()
-            # print(l_split)
-            if len(l_split) == 4:
-                band1, DN1, band2, DN2 = l.split()
-                band2 = float(band2)
-                DN2 = float(DN2)
-                x2.append(band2)
-                y2.append(DN2)
-            elif len(l_split) == 2:
-                band1, DN1 = l.split()
-            else:
-                raise UserWarning
-            band1 = float(band1)
-            DN1 = float(DN1)
-            x1.append(band1)
-            y1.append(DN1)
-        # plt.twinx()
-        plt.scatter(x1, y1, marker='o', facecolor='none', edgecolors='r', s=80, lw=1, alpha=0.6)
-        plt.scatter(x2, y2, marker='o', facecolor='none', edgecolors='r', s=80, lw=2)
-        # plt.xlabel('spectral')
-        # plt.ylabel('OO uW/m2/nm/sr')
-        # plt.xlim(300,1100)
-        # plt.show()
-
-    def __cal_ndvi_i(self,x,y):
-        # ndvi = nir-r/nir+r
-        r_list = []
-        nir_list = []
-        for i in range(len(x)):
-            spect = x[i]
-            if 625 < spect < 740:
-                r_list.append(y[i])
-            if 760 < spect < 940:
-                nir_list.append(y[i])
-        r_mean = np.mean(r_list)
-        nir_mean = np.mean(nir_list)
-        print('r_mean:{:0.2f}'.format(r_mean))
-        print('nir_mean:{:0.2f}'.format(nir_mean))
-        print('-----')
-        ndvi = (nir_mean-r_mean)/(nir_mean+r_mean)
-        return ndvi
-        pass
-
-
-    def cal_ndvi(self):
-        asd_f_green = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_DeepGreen_DigitalNumber_ASD.txt'
-        asd_f_brown = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_LightGreen_DigitalNumber_ASD.txt'
-        oo_f_green = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_Green_AbsoluteRadiance_OO.txt'
-        oo_f_brown = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_Brown_AbsoluteRadiance_OO.txt'
-        asd_green_x,asd_green_y = self.ASD(asd_f_green)
-        asd_brown_x,asd_brown_y = self.ASD(asd_f_brown)
-        oo_green_x,oo_green_y = self.OO(oo_f_green)
-        oo_brown_x,oo_brown_y = self.OO(oo_f_brown)
-        plt.plot(oo_green_x,oo_green_y,c='g')
-        plt.plot(oo_brown_x,oo_brown_y,c='r')
-        plt.figure()
-        asd_ndvi_green = self.__cal_ndvi_i(asd_green_x,asd_green_y)
-        asd_ndvi_brown = self.__cal_ndvi_i(asd_brown_x,asd_brown_y)
-
-        oo_ndvi_green = self.__cal_ndvi_i(oo_green_x,oo_green_y)
-        oo_ndvi_brown = self.__cal_ndvi_i(oo_brown_x,oo_brown_y)
-        plt.bar(['asd_ndvi_green','asd_ndvi_brown','oo_ndvi_green','oo_ndvi_brown',],[asd_ndvi_green,asd_ndvi_brown,oo_ndvi_green,oo_ndvi_brown,])
-        print([asd_ndvi_green,asd_ndvi_brown,oo_ndvi_green,oo_ndvi_brown,])
-
-        # plt.scatter(asd_brown_x,asd_brown_y)
-        # plt.figure()
-        # plt.scatter(oo_green_x,oo_green_y)
-        # plt.scatter(oo_brown_x,oo_brown_y)
-        plt.show()
-
-        pass
-
-    def __cal_sum_area_of_trapezoid(self,x,y):
-        area_list = []
-        for i in range(len(x)):
-            if i + 1 >= len(x):
-                continue
-            height = x[i + 1] - x[i]
-            up_val = y[i + 1]
-            down_val = y[i]
-            area = (up_val + down_val) * height / 2.
-            area_list.append(area)
-        area_sum = np.sum(area_list)
-        return area_sum
-        pass
-
-    def __cal_apar_to_chlf_i(self,x,y):
-        # APAR = sum 400-700 nm
-        # chlf = sum 660-800 nm
-        APAR_list = []
-        APAR_list_x = []
-        chlf_list = []
-        chlf_list_x = []
-        for i in range(len(x)):
-            spect = x[i]
-            if 400 < spect < 700:
-                APAR_list.append(y[i])
-                APAR_list_x.append(x[i])
-            if 660 < spect < 800:
-                chlf_list.append(y[i])
-                chlf_list_x.append(x[i])
-        apar_sum = self.__cal_sum_area_of_trapezoid(APAR_list_x,APAR_list)
-        chlf_sum = self.__cal_sum_area_of_trapezoid(chlf_list_x,chlf_list)
-        # apar_sum1 = np.sum(APAR_list)
-        # chlf_sum1 = np.sum(chlf_list)
-        #
-        # print(apar_sum,chlf_sum)
-        # print(apar_sum1,chlf_sum1)
-        # exit()
-        return apar_sum,chlf_sum
-
-    def cal_apar_to_chlf(self):
-
-        oo_f_green = '/Volumes/4T35/NAS/NAS/wen_assignment/assignment/1109/Data/Leaf_Green_AbsoluteRadiance_OO.txt'
-        oo_f_sif_green = self.oo_f_sif_green
-        # oo_green_x, oo_green_y = self.OO(oo_f_green)
-        oo_brown_x, oo_brown_y = self.OO(self.oo_f_brown)
-        # oo_sif_green_x, oo_sif_green_y = self.OO(oo_f_sif_green)
-        oo_sif_brown_x, oo_sif_brown_y = self.OO(self.oo_f_sif_brown)
-        oo_white_x, oo_white_y = self.OO(self.white_abs_OO)
-        # delta_oo = oo_white_y - oo_green_y
-        # plt.scatter(oo_white_x,delta_oo,c='k')
-        # plt.scatter(oo_white_x,oo_white_y,c='gray')
-        # plt.scatter(oo_white_x,oo_green_y,c='g')
-        # plt.show()
-        # apar_sum,chlf_sum = self.__cal_apar_to_chlf_i(oo_green_x, oo_green_y)
-        apar_sum,chlf_sum = self.__cal_apar_to_chlf_i(oo_brown_x, oo_brown_y)
-        # apar_sif_sum,chlf_sif_sum = self.__cal_apar_to_chlf_i(oo_sif_green_x, oo_sif_green_y)
-        apar_sif_sum,chlf_sif_sum = self.__cal_apar_to_chlf_i(oo_sif_brown_x, oo_sif_brown_y)
-        percentage1 = chlf_sif_sum/apar_sum
-        percentage2 = chlf_sum/apar_sum
-        percentage3 = chlf_sif_sum/apar_sif_sum
-        print(percentage1)
-        print(percentage2)
-        print(percentage3)
-        print(chlf_sif_sum)
-        print(apar_sum)
-        pass
-
-    def plot_OO(self):
-        oo_green_x, oo_green_y = self.OO(self.oo_f_green)
-        oo_brown_x, oo_brown_y = self.OO(self.oo_f_brown)
-        plt.scatter(oo_green_x, oo_green_y, marker='o', facecolor='none', edgecolors='b', s=80, lw=0.1,label='Green')
-        plt.scatter(oo_brown_x, oo_brown_y, marker='o', facecolor='none', edgecolors='r', s=80, lw=0.1,label='Brown')
-        # plt.xlabel('spectral')
-        # plt.xlim(680, 800)
-        # plt.ylim(-0.02, 0.06)
-        plt.xlabel('Spectral (nm)')
-        plt.ylabel('Radiance (uW/cm2/nm/sr)')
-        # plt.legend()
-        plt.title('Absolute Radiance OO')
-        plt.tight_layout()
-        # plt.ylabel('OO uW/m2/nm/sr')
-        # plt.xlim(300, 1100)
-        plt.show()
-
-    def plot_abs_sif(self):
-        oo_green_x, oo_green_y = self.OO(self.oo_f_sif_green)
-        oo_brown_x, oo_brown_y = self.OO(self.oo_f_sif_brown)
-        plt.scatter(oo_green_x, oo_green_y, marker='o', facecolor='none', edgecolors='b', s=80, lw=1,label='Green')
-        plt.scatter(oo_brown_x, oo_brown_y, marker='o', facecolor='none', edgecolors='r', s=80, lw=1,label='Brown')
-        # plt.xlabel('spectral')
-
-        plt.xlabel('Spectral (nm)')
-        plt.ylabel('SIF (uW/cm2/nm/sr)')
-        plt.legend()
-        plt.xlim(680, 800)
-        plt.ylim(-0.02, 0.06)
-        plt.tight_layout()
-        plt.title('Absolute SIF OO')
-        # plt.ylabel('OO uW/m2/nm/sr')
-        # plt.xlim(300, 1100)
-        plt.show()
-
-    def plot_ASD_white(self):
-        white_x, white_y = self.ASD(self.white_DN_ASD)
-        # plt.xlabel('spectral')
-        # plt.xlim(680, 800)
-        # plt.ylim(-0.02, 0.06)
-        plt.scatter(white_x, white_y, marker='o', facecolor='none', edgecolors='b', s=80, lw=0.1, label='Green')
-        plt.xlabel('Spectral (nm)')
-        plt.ylabel('DN')
-        # plt.legend()
-        plt.title('White reference DN ASD')
-        plt.tight_layout()
-        # plt.ylabel('OO uW/m2/nm/sr')
-        # plt.xlim(300, 1100)
-        plt.show()
-
-    def plot_ASD_green_brown(self):
-        white_x1, white_y1 = self.ASD(self.asd_f_green)
-        white_x2, white_y2 = self.ASD(self.asd_f_brown)
-        # plt.xlabel('spectral')
-        # plt.xlim(680, 800)
-        # plt.ylim(-0.02, 0.06)
-        plt.scatter(white_x1, white_y1, marker='o', facecolor='none', edgecolors='b', s=80, lw=0.1,)
-        plt.scatter(white_x1[0], white_y1[0], marker='o', facecolor='none', edgecolors='b', s=80, lw=2, label='Green',zorder=-99)
-        plt.scatter(white_x2, white_y2, marker='o', facecolor='none', edgecolors='r', s=80, lw=0.1, )
-        plt.scatter(white_x2[0], white_y2[0], marker='o', facecolor='none', edgecolors='r', s=80, lw=2, label='Brown',zorder=-99)
-        plt.xlabel('Spectral (nm)')
-        plt.ylabel('DN')
-        plt.legend()
-        plt.title('White reference DN ASD')
-        plt.tight_layout()
-        # plt.ylabel('OO uW/m2/nm/sr')
-        # plt.xlim(300, 1100)
-        plt.show()
-
-    def plot_OO_white(self):
-        white_x, white_y = self.OO(self.white_abs_OO)
-        # plt.xlabel('spectral')
-        # plt.xlim(680, 800)
-        # plt.ylim(-0.02, 0.06)
-        plt.scatter(white_x, white_y, marker='o', facecolor='none', edgecolors='b', s=80, lw=0.1, label='Green')
-        plt.xlabel('Spectral (nm)')
-        plt.ylabel('Absolute irradiance (uW/m2/nm/sr)')
-        # plt.legend()
-        plt.title('White reference Absolute Irradiance OO')
-        plt.tight_layout()
-        # plt.ylabel('OO uW/m2/nm/sr')
-        # plt.xlim(300, 1100)
-        plt.show()
-
-    def plot_OO_green_brown(self):
-        oo_green_x, oo_green_y = self.OO(self.oo_f_green)
-        oo_brown_x, oo_brown_y = self.OO(self.oo_f_brown)
-        plt.scatter(oo_green_x, oo_green_y, marker='o', facecolor='none', edgecolors='b', s=80, lw=0.1,)
-        plt.scatter(oo_green_x[0], oo_green_y[0], marker='o', facecolor='none', edgecolors='b', s=80, lw=2,label='Green')
-        plt.scatter(oo_brown_x, oo_brown_y, marker='o', facecolor='none', edgecolors='r', s=80, lw=0.1,)
-        plt.scatter(oo_brown_x[0], oo_brown_y[0], marker='o', facecolor='none', edgecolors='r', s=80, lw=2,label='Brown')
-        # plt.xlabel('spectral')
-        # plt.xlim(680, 800)
-        # plt.ylim(-0.02, 0.06)
-        plt.xlabel('Spectral (nm)')
-        plt.ylabel('Radiance (uW/cm2/nm/sr)')
-        plt.legend()
-        plt.title('Absolute Radiance OO')
-        plt.tight_layout()
-        # plt.ylabel('OO uW/m2/nm/sr')
-        # plt.xlim(300, 1100)
-        plt.show()
 
 class Phenology:
 
@@ -3095,9 +2759,10 @@ def main():
     # Unify_date_range().run()
     # check_NIRV_NDVI().run()
     # Linear_contribution().run()
-    Multi_liner_regression().run()
+    # Multi_liner_regression().run()
     # plot_partial_plot().run()
-    # Assignment_1109().run()
+    Sankey_plot_PLS().run()
+
     # Window_correlation().run()
     # check_vod()
     pass

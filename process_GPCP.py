@@ -1049,7 +1049,7 @@ def beta_save_():  # 该功能实现所有因素的beta
     time_range='2002-2018'
     period='late'
     # f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression/LAI_GIMMS/detrend_1982-2001_multi_linearearly_LAI_GIMMS.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_zscore/2000-2018_partial_correlation_late_LAI4g.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Sankey_plot/Data/LAI4g/2000-2018_PLS_late_LAI4g.npy'
     outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_original_detrend/TIFF_{}_{}_8/'.format(time_range,period)
     T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
