@@ -676,6 +676,78 @@ def nc_to_tif_landcover():
             # plt.show()
             to_raster.array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeight,array,ndv = -999999)
 
+def nc_to_tif_Trendy():
+    fdir=''
+
+    f = f'LPX-Bern_S2_lai.nc'
+    outdir = '/Users/wenzhang/Downloads/LPX-Bern_S2_lai_tif'
+    Tools().mk_dir(outdir, force=True)
+    yearlist =list(range(1982,2021))
+    nc_to_tif_template(fdir+f,var_name='lai',outdir=outdir,yearlist=yearlist)
+
+
+
+def nc_to_tif_template(fname,var_name,outdir,yearlist):
+
+    try:
+        ncin = Dataset(fname, 'r')
+    except:
+        return
+    try:
+        lat = ncin.variables['lat'][:]
+        lon = ncin.variables['lon'][:]
+    except:
+        lat = ncin.variables['latitude'][:]
+        lon = ncin.variables['longitude'][:]
+    shape = np.shape(lat)
+
+    time = ncin.variables['time'][:]
+    basetime = ncin.variables['time'].units
+    basetime = basetime.strip('days since ')
+
+    try:
+        basetime = datetime.datetime.strptime(basetime, '%Y-%m-%d')
+    except:
+        try:
+            basetime = datetime.datetime.strptime(basetime,'%Y-%m-%d %H:%M:%S')
+        except:
+            basetime = datetime.datetime.strptime(basetime,'%Y-%m-%d %H:%M:%S.%f')
+    data = ncin.variables[var_name]
+    if len(shape) == 2:
+        xx,yy = lon,lat
+    else:
+        xx,yy = np.meshgrid(lon, lat)
+    for time_i in range(len(data)):
+        date = basetime + datetime.timedelta(days=int(time[time_i]))
+
+        mon = date.month
+        year = date.year
+        day=date.day
+        if year not in yearlist:
+            continue
+        outf_name = f'{year}{mon:02d}{day:02d}.tif'
+        outpath = join(outdir, outf_name)
+        if isfile(outpath):
+            continue
+        arr = data[time_i]
+        arr = np.array(arr)
+        lon_list = []
+        lat_list = []
+        value_list = []
+        for i in range(len(arr)):
+            for j in range(len(arr[i])):
+                lon_i = xx[i][j]
+                if lon_i > 180:
+                    lon_i -= 360
+                lat_i = yy[i][j]
+                value_i = arr[i][j]
+                lon_list.append(lon_i)
+                lat_list.append(lat_i)
+                value_list.append(value_i)
+        DIC_and_TIF().lon_lat_val_to_tif(lon_list, lat_list, value_list,outpath)
+
+
+
 def transformation_array(array):
     newarray=[]
     for i in range(len(array)):
@@ -700,7 +772,8 @@ def main():
     # nc_to_tif_GLEAM()
     # montly_composite()
     # nc_to_tif_SM_CCI()
-    nc_to_tif_landcover()
+    # nc_to_tif_landcover()
+    nc_to_tif_Trendy()
 
 if __name__ == '__main__':
                 main()
