@@ -28,7 +28,9 @@ class process_data:
         # self.Mean_LST()
         # self.conversion()
         # self.read_mat()
-        self.aggregation()
+        # self.aggregation()
+        # self.resample_trendy()
+        self.unify_raster()
 
         # self.re_name()
         # self.re_name_doy_month()
@@ -77,43 +79,39 @@ class process_data:
             # plt.imshow(resample_array)
             # plt.show()
 
-    def resample(self):
-        fdir = data_root+'CCI_SM_2020/CCI_SM_montly_composite/'
-        outdir=data_root + 'CCI_SM_2020/CCI_SM_resample/'
+    def resample_trendy(self):
+        fdir_all = 'C:/Users/pcadmin/Desktop/Trendy_TIFF/'
+        outdir_all = 'C:/Users/pcadmin/Desktop/Trendy_TIFF_resample/'
 
-        T.mk_dir(outdir)
-        year=list(range(2018,2021))
-        # print(year)
-        # exit()
-        for f in tqdm(os.listdir(fdir),):
-            if not f.endswith('.tif'):
+        for fdir in tqdm(os.listdir(fdir_all)):
+            print(fdir)
+            if 'CLM5' not in fdir:
                 continue
-            if f.startswith('._'):
-                continue
+            outdir=join(outdir_all,fdir+'/')
+            T.mk_dir(outdir, force=True)
 
-            # year_selection=f.split('.')[1].split('_')[1]
-            # print(year_selection)
-            # if not int(year_selection) in year:  ##一定注意格式
-            #     continue
-            # fcheck=f.split('.')[0]+f.split('.')[1]+f.split('.')[2]+'.'+f.split('.')[3]
-            # if os.path.isfile(outdir+'resample_'+fcheck):  # 文件已经存在的时候跳过
-            #     continue
-            # date = f[0:4] + f[5:7] + f[8:10] MODIS
-            print(f)
-            # exit()
-            date=f.split('.')[0]
-            # print(date)
-            # exit()
-            dataset = gdal.Open(fdir+f)
-            # band = dataset.GetRasterBand(1)
-            # newRows = dataset.YSize * 2
-            # newCols = dataset.XSize * 2
-            try:
-                 gdal.Warp(outdir + '{}.tif'.format(date), dataset, xRes=0.5, yRes=0.5,dstSRS = 'EPSG:4326')
-            #如果不想使用默认的最近邻重采样方法，那么就在Warp函数里面增加resampleAlg参数，指定要使用的重采样方法，例如下面一行指定了重采样方法为双线性重采样：
-            # gdal.Warp("resampletif.tif", dataset, width=newCols, height=newRows, resampleAlg=gdalconst.GRIORA_Bilinear)
-            except Exception as e:
-                 pass
+            if '0.5' in fdir:
+                continue
+            for f in os.listdir(fdir_all+fdir+'/'):
+                if f.startswith('.'):
+                    continue
+                if f.endswith('.xml'):
+                    continue
+                fpath=join(fdir_all+fdir+'/',f)
+
+                dataset = gdal.Open(fpath)
+                outf = join(outdir, f)
+
+                try:
+                    gdal.Warp(outf+'.tif', dataset, xRes=0.5, yRes=0.5, dstSRS='EPSG:4326',)
+                # 如果不想使用默认的最近邻重采样方法，那么就在Warp函数里面增加resampleAlg参数，指定要使用的重采样方法，例如下面一行指定了重采样方法为双线性重采样：
+                # gdal.Warp("resampletif.tif", dataset, width=newCols, height=newRows, resampleAlg=gdalconst.GRIORA_Bilinear)
+                except Exception as e:
+                    pass
+
+
+
+
 
     def resample_NIRv(self):
         fdir = data_root+'NIRv/NIRv_tif/'
@@ -170,6 +168,45 @@ class process_data:
             # plt.show()
             # newRasterfn = outdir + '{}'.format(date) + '.tif'
             DIC_and_TIF().arr_to_tif(arr_new,outdir + 'NIRv_resample_'+'{}'.format(date) + '.tif')
+
+
+    def resample(self):
+        fdir = data_root+'CCI_SM_2020/CCI_SM_montly_composite/'
+        outdir=data_root + 'CCI_SM_2020/CCI_SM_resample/'
+
+        T.mk_dir(outdir)
+        year=list(range(2018,2021))
+        # print(year)
+        # exit()
+        for f in tqdm(os.listdir(fdir),):
+            if not f.endswith('.tif'):
+                continue
+            if f.startswith('._'):
+                continue
+
+            # year_selection=f.split('.')[1].split('_')[1]
+            # print(year_selection)
+            # if not int(year_selection) in year:  ##一定注意格式
+            #     continue
+            # fcheck=f.split('.')[0]+f.split('.')[1]+f.split('.')[2]+'.'+f.split('.')[3]
+            # if os.path.isfile(outdir+'resample_'+fcheck):  # 文件已经存在的时候跳过
+            #     continue
+            # date = f[0:4] + f[5:7] + f[8:10] MODIS
+            print(f)
+            # exit()
+            date=f.split('.')[0]
+            # print(date)
+            # exit()
+            dataset = gdal.Open(fdir+f)
+            # band = dataset.GetRasterBand(1)
+            # newRows = dataset.YSize * 2
+            # newCols = dataset.XSize * 2
+            try:
+                 gdal.Warp(outdir + '{}.tif'.format(date), dataset, xRes=0.5, yRes=0.5,dstSRS = 'EPSG:4326')
+            #如果不想使用默认的最近邻重采样方法，那么就在Warp函数里面增加resampleAlg参数，指定要使用的重采样方法，例如下面一行指定了重采样方法为双线性重采样：
+            # gdal.Warp("resampletif.tif", dataset, width=newCols, height=newRows, resampleAlg=gdalconst.GRIORA_Bilinear)
+            except Exception as e:
+                 pass
 
     def resample_VOD(self):
         fdir = data_root+'VOD/VOD_tif/'
@@ -891,46 +928,29 @@ class process_data:
                 np.save(outdir +'per_pix_dic_%03d' % (flag/10000),temp_dic)
                 temp_dic={}
         np.save(outdir + 'per_pix_dic_%03d' % 0, temp_dic)
-    def unify_raster(raster1, raster2):
-        array1 = to_raster.raster2array(raster1)[0]
-        # array1 = np.array(array1)
-        shape1 = np.shape(array1)
 
-        array2 = to_raster.raster2array(raster2)[0]
-        shape2 = np.shape(array2)
 
-        # print shape1, shape2
-        if not shape1 == shape2:
-            mincol = min(shape1[0], shape2[0])
-            minrow = min(shape1[1], shape2[1])
+    def unify_raster(self):
 
-            temp1 = array1[:mincol]
-            temp2 = array2[:mincol]
+        fdir_all = 'C:/Users/pcadmin/Desktop/Trendy_TIFF_resample/'
+        outdir_all = 'C:/Users/pcadmin/Desktop/Trendy_TIFF_resample_unify/'
 
-            array1_new = temp1.T[:minrow].T
-            array2_new = temp2.T[:minrow].T
+        for fdir in tqdm(os.listdir(fdir_all)):
+            print(fdir)
+            outdir = join(outdir_all, fdir + '/')
+            T.mk_dir(outdir, force=True)
 
-            # print np.shape(array1_new)
-            # print np.shape(array2_new)
-            return array1_new, array2_new
-            # if not shape1[0] == shape2[0] and shape1[1] == shape2[1]:
-            #     min_col = min(shape1[0],shape2[0])
-            #     array1_new = array1[:min_col]
-            #     array2_new = array2[:min_col]
-            #     print 'mincol'
-            #     return array1_new,array2_new
-            #
-            # elif not shape1[1] == shape2[1] and shape1[0] == shape2[0]:
-            #     min_row = min(shape1[1],shape2[1])
-            #     array1_new = array1.T[:min_row].T
-            #     array2_new = array2.T[:min_row].T
-            #     print 'minrow'
-            #     return array1_new,array2_new
-            #
-            # elif not shape1[0] == shape2[0] and not shape1[1] == shape2[1]:
+            for f in os.listdir(fdir_all + fdir + '/'):
+                if f.startswith('.'):
+                    continue
+                if f.endswith('.xml'):
+                    continue
+                fin = join(fdir_all + fdir + '/', f)
+                print(fin)
+                outf = join(outdir, f.split('.')[0] + '.tif')
+                print(outf)
+                ToRaster().unify_raster(fin, outf)
 
-        else:
-            return array1, array2
 
 
     def check_data_transform(fdir):

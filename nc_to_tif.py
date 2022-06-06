@@ -2,7 +2,7 @@
 # coding='utf-8'
 
 import sys
-import xarray as xr
+# import xarray as xr
 version = sys.version_info.major
 assert version == 3, 'Python Version Error'
 from matplotlib import pyplot as plt
@@ -32,6 +32,7 @@ import copy
 import scipy
 import sklearn
 import random
+from lytools import *
 
 from netCDF4 import Dataset, numpy
 import shutil
@@ -677,54 +678,128 @@ def nc_to_tif_landcover():
             to_raster.array2raster(newRasterfn,longitude_start,latitude_start,pixelWidth,pixelHeight,array,ndv = -999999)
 
 def nc_to_tif_Trendy():
-    fdir=''
+    fdir='C:/Users/pcadmin/Desktop/Trendy/'
 
-    f = f'LPX-Bern_S2_lai.nc'
-    outdir = '/Users/wenzhang/Downloads/LPX-Bern_S2_lai_tif'
-    Tools().mk_dir(outdir, force=True)
-    yearlist =list(range(1982,2021))
-    nc_to_tif_template(fdir+f,var_name='lai',outdir=outdir,yearlist=yearlist)
+    for f in os.listdir(fdir):
+        if f.startswith('.'):
+            continue
+        if 'CABLE-POP_S2_lai' not in f:
+            continue
+
+        outdir_name=f.split('.')[0]
+        print(outdir_name)
+
+        outdir = f'C:/Users/pcadmin/Desktop/Trendy_TIFF/{outdir_name}//'
+        Tools().mk_dir(outdir, force=True)
+        yearlist =list(range(1982,2021))
+
+        # nc_to_tif_template(fdir+f,var_name='lai',outdir=outdir,yearlist=yearlist)
+        try:
+            nc_to_tif_template(fdir+f,var_name='lai',outdir=outdir,yearlist=yearlist)
+        except Exception as e:
+            print(e)
+            continue
 
 
-
-def nc_to_tif_template(fname,var_name,outdir,yearlist):
+def nc_to_tif_template(fname,var_name,outdir, yearlist):
 
     try:
         ncin = Dataset(fname, 'r')
+        print(ncin.variables.keys())
+
     except:
-        return
+        raise UserWarning('File not supported: ' + fname)
+    # lon,lat = np.nan,np.nan
     try:
         lat = ncin.variables['lat'][:]
         lon = ncin.variables['lon'][:]
     except:
-        lat = ncin.variables['latitude'][:]
-        lon = ncin.variables['longitude'][:]
+        try:
+            lat = ncin.variables['latitude'][:]
+            lon = ncin.variables['longitude'][:]
+        except:
+            try:
+                lat = ncin.variables['lat_FULL'][:]
+                lon = ncin.variables['lon_FULL'][:]
+            except:
+                raise UserWarning('lat or lon not found')
     shape = np.shape(lat)
+    try:
+        time = ncin.variables['time_counter'][:]
+        basetime_str = ncin.variables['time_counter'].units
+    except:
+        time = ncin.variables['time'][:]
+        basetime_str = ncin.variables['time'].units
 
-    time = ncin.variables['time'][:]
-    basetime = ncin.variables['time'].units
-    basetime = basetime.strip('days since ')
 
+    basetime_unit = basetime_str.split('since')[0]
+    basetime_unit = basetime_unit.strip()
+    print(basetime_unit)
+    print(basetime_str)
+    if basetime_unit == 'days':
+        timedelta_unit = 'days'
+    elif basetime_unit == 'years':
+        timedelta_unit = 'years'
+    elif basetime_unit == 'month':
+        timedelta_unit = 'month'
+    elif basetime_unit == 'months':
+        timedelta_unit = 'month'
+    elif basetime_unit == 'seconds':
+        timedelta_unit = 'seconds'
+    elif basetime_unit == 'hours':
+        timedelta_unit = 'hours'
+    else:
+        raise Exception('basetime unit not supported')
+    basetime = basetime_str.strip(f'{timedelta_unit} since ')
     try:
         basetime = datetime.datetime.strptime(basetime, '%Y-%m-%d')
     except:
         try:
             basetime = datetime.datetime.strptime(basetime,'%Y-%m-%d %H:%M:%S')
         except:
-            basetime = datetime.datetime.strptime(basetime,'%Y-%m-%d %H:%M:%S.%f')
+            try:
+                basetime = datetime.datetime.strptime(basetime,'%Y-%m-%d %H:%M:%S.%f')
+            except:
+                try:
+                    basetime = datetime.datetime.strptime(basetime,'%Y-%m-%d %H:%M')
+                except:
+                    try:
+                        basetime = datetime.datetime.strptime(basetime, '%Y-%m')
+                    except:
+                        raise UserWarning('basetime format not supported')
     data = ncin.variables[var_name]
     if len(shape) == 2:
         xx,yy = lon,lat
     else:
         xx,yy = np.meshgrid(lon, lat)
-    for time_i in range(len(data)):
-        date = basetime + datetime.timedelta(days=int(time[time_i]))
-
+    for time_i in tqdm(range(len(time))):
+        if basetime_unit == 'days':
+            date = basetime + datetime.timedelta(days=int(time[time_i]))
+        elif basetime_unit == 'years':
+            date1 = basetime.strftime('%Y-%m-%d')
+            base_year = basetime.year
+            date2 = f'{int(base_year+time[time_i])}-01-01'
+            delta_days = Tools().count_days_of_two_dates(date1,date2)
+            date = basetime + datetime.timedelta(days=delta_days)
+        elif basetime_unit == 'month' or basetime_unit == 'months' :
+            date1 = basetime.strftime('%Y-%m-%d')
+            base_year = basetime.year
+            base_month = basetime.month
+            date2 = f'{int(base_year+time[time_i]//12)}-{int(base_month+time[time_i]%12)}-01'
+            delta_days = Tools().count_days_of_two_dates(date1,date2)
+            date = basetime + datetime.timedelta(days=delta_days)
+        elif basetime_unit == 'seconds':
+            date = basetime + datetime.timedelta(seconds=int(time[time_i]))
+        elif basetime_unit == 'hours':
+            date = basetime + datetime.timedelta(hours=int(time[time_i]))
+        else:
+            raise Exception('basetime unit not supported')
+        time_str = time[time_i]
         mon = date.month
         year = date.year
-        day=date.day
         if year not in yearlist:
             continue
+        day = date.day
         outf_name = f'{year}{mon:02d}{day:02d}.tif'
         outpath = join(outdir, outf_name)
         if isfile(outpath):
@@ -745,6 +820,9 @@ def nc_to_tif_template(fname,var_name,outdir,yearlist):
                 lat_list.append(lat_i)
                 value_list.append(value_i)
         DIC_and_TIF().lon_lat_val_to_tif(lon_list, lat_list, value_list,outpath)
+
+
+
 
 
 

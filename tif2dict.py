@@ -156,6 +156,84 @@ def tif2dict(fdir, outdir):
             temp_dic={}
     np.save(outdir + 'per_pix_dic_%03d' % 0, temp_dic)
 
+def tif2dict_trendy():
+    fdir_all = 'C:/Users/pcadmin/Desktop/Trendy_TIFF_resample/'
+    outdir_all = 'C:/Users/pcadmin/Desktop/DIC/'
+    NDVI_mask_f = 'D:/greening/Data/NDVI_mask.tif'
+    array_mask, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(NDVI_mask_f)
+    array_mask[array_mask < 0] = np.nan
+
+
+    all_array = []
+
+
+    for fdir in tqdm(os.listdir(fdir_all)):
+        print(fdir)
+        outdir = join(outdir_all, fdir + '/')
+        T.mk_dir(outdir, force=True)
+        year_list=list(range(2000,2021))  # 作为筛选条件
+        for f in tqdm(sorted(os.listdir(fdir_all+fdir+'/')),desc='loading...'):
+            if f.startswith('.'):
+                continue
+            if not f.endswith('.tif'):
+                continue
+            print(f)
+            if int(f.split('.')[0][0:4]) not in year_list:  #
+                continue
+
+            array, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(fdir_all+fdir+'/' + f)
+            array = np.array(array, dtype=np.float)
+            array=array[:360]  # PAR是361*720
+
+            array[array<-999]=np.nan
+            # array[array ==0] = np.nan
+            array[array < 0] = np.nan # 当变量是LAI 的时候，<0!!
+            # plt.imshow(array)
+            # plt.show()
+            array_mask=np.array(array_mask,dtype=np.float)
+            # plt.imshow(array_mask)
+            # plt.show()
+            array=array * array_mask
+            # plt.imshow(array)
+            # plt.show()
+
+            # print(np.shape(array))
+            # exit()
+            all_array.append(array)
+        # exit()
+
+            row=len(all_array[0])
+            col = len(all_array[0][0])
+            key_list=[]
+            dic={}
+
+            for r in tqdm(range(row),desc='构造key'): #构造字典的键值，并且字典的键：值初始化
+                for c in range(col):
+                    dic[(r,c)]=[]
+                    key_list.append((r,c))
+            #print(dic_key_list)
+
+
+            for r in tqdm(range(row),desc='构造time series'): # 构造time series
+                for c in range(col):
+                    for arr in all_array:
+                        value=arr[r][c]
+                        dic[(r,c)].append(value)
+                    # print(dic)
+            time_series=[]
+            flag=0
+            temp_dic={}
+            for key in tqdm(key_list,desc='output...'): #存数据
+                flag=flag+1
+                time_series=dic[key]
+                time_series=np.array(time_series)
+                temp_dic[key]=time_series
+                if flag %10000 == 0:
+                    # print(flag)
+                    np.save(outdir +'per_pix_dic_%03d' % (flag/10000),temp_dic)
+                    temp_dic={}
+            np.save(outdir + 'per_pix_dic_%03d' % 0, temp_dic)
+
 def tif2dic_single_file():
     inf = '/Volumes/1T/wen_prj/Result/trend/EOS_trend_CSIF_par_threshold_20%.tif'
     outf = '/Volumes/1T/wen_prj/Result/trend/EOS_trend_CSIF_par_threshold_20%.npy'
@@ -6680,7 +6758,7 @@ def main():
     # statistic_anaysis().plot_anomaly_for_three_seasons()
     # statistic_anaysis().save_anomaly_for_three_seasons()
     # statistic_anaysis().plot_anomaly_for_three_seasons()
-    statistic_anaysis().max_trend_among_all_variables()
+    # statistic_anaysis().max_trend_among_all_variables()
     # statistic_anaysis().product_comparison()
 
     # lc_list = ['water', 'grass', 'shrub', 'crop', 'EBF', 'ENF', 'DBF', 'DNF', 'savanna', 'urban', 'nonveg']
@@ -6689,6 +6767,7 @@ def main():
     #     outdir = f'/Volumes/SSD_sumsang/project_greening/Data/original_dataset/landcover/{lc}_dic/'
     #     # # Pre_Process().data_transform(fdir, outdir)
     #     tif2dict(fdir, outdir)
+    tif2dict_trendy()
     # Phenology_retrieval()
     # average_peak_calculation()
 
