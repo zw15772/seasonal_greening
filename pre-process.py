@@ -110,9 +110,6 @@ class process_data:
                     pass
 
 
-
-
-
     def resample_NIRv(self):
         fdir = data_root+'NIRv/NIRv_tif/'
         outdir=data_root + '/NIRv/NIRv_resample/'

@@ -463,7 +463,7 @@ class interpolate:
         mask_tif='/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
 
         mask_dic=DIC_and_TIF().spatial_tif_to_dic(mask_tif)
-        variables=['CCI_SM']
+        variables=['MODIS_LAI']
 
         periods = ['early', 'peak', 'late']
         # time_range = '1988-2016'
@@ -471,9 +471,9 @@ class interpolate:
         dic_NDVI = {}
         for variable in variables:
             for period in periods:
-                outdir = result_root + f'/extraction_original_val/2000-2018/'
+                outdir = result_root + f'/Main_flow/arr/DIC_Daily/{variable}_interpolate/'
                 Tools().mk_dir(outdir, force=True)
-                fdir = result_root + '/extraction_original_val/2000-2018/'
+                fdir = result_root + f'/Main_flow/arr/DIC_Daily/{variable}/'
                 f='during_{}_{}.npy'.format(period,variable)
 
 
@@ -804,7 +804,7 @@ def plot_dic():  # LAI4g
 def foo():
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Data/original_dataset/landcover/EBF_dic/per_pix_dic_012.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Main_flow/arr/DIC_Daily/LAI3g/per_pix_dic_007.npy'
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/during_early_CO2.npy'
     result_dic = {}
     spatial_dic={}
@@ -1211,11 +1211,11 @@ def main():
     # CSIF_par_annually_transform()
     # plot_dic()
 
-    # foo()
+    foo()
     # spatial_plot_Yang()
     # spatial_plot()
     # beta_plot()
-    beta_save_()
+    # beta_save_()
     # check_pcorr()
     # foo4()
     #  foo3()
