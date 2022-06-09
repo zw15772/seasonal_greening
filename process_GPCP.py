@@ -764,6 +764,89 @@ class interpolate:
 
             np.save(outdir + f.split('.')[0]+'_interpolation', result_dic)
 
+    def interpolation_climate_drivers_to_daily(self):
+        fdir_all = data_root + '/original_dataset/'
+        outdir = result_root + '/interpolation_climate_drivers_to_daily/'
+        Tools().mk_dir(outdir, True)
+        dic = {}
+        # variable_list=['temp','VPD','PAR']
+        variable_list = ['CCI_SM']
+        for variable in variable_list:
+            fdir=fdir_all+f'{variable}_dic/'
+
+            dic_variable={}
+
+            for f in tqdm(os.listdir(fdir)):
+
+                if f.endswith('.npy'):
+                    dic_i = dict(np.load(fdir + f, allow_pickle=True, encoding='latin1').item())
+                    dic_variable.update(dic_i)
+                outf=outdir+f'{variable}_daily_dic.npy'
+                print(outf)
+            result_dic = {}
+            spatial_dic = {}
+            for pix in tqdm(dic_variable, desc='interpolate'):
+                # r,c = pix
+                # if r>50:
+                #     continue
+                time_series = dic_variable[pix]
+
+                time_series=np.array(time_series)
+                # time_series[time_series < 0] = np.nan
+                # time_series[time_series > 1] = np.nan
+                if np.isnan(np.nanmean(time_series)):
+                    continue
+                matix = np.isnan(time_series)  # 因为检查time series 发现
+                matix = list(matix)
+                valid_number = matix.count(False)
+                # print(pix,valid_number)
+                # if valid_number / len(time_series) < 0.7:
+                #     continue
+                ynew = np.array(time_series)
+                # if ynew[0][0] < -99:
+                #     continue
+                ynew = Tools().interp_nan(ynew)
+                ## interpolation to 365days
+                if ynew[0] == None:
+                    continue
+
+                ynew_daily = linear_interpolation(ynew)
+
+                result_dic[pix] = ynew
+                # plt.plot(ynew)
+                # plt.figure()
+                # plt.plot(ynew_daily,'-o')
+                # plt.title('{}'.format(pix))
+                # plt.show()
+                print(len(result_dic[pix]))
+                spatial_dic[pix] = len(result_dic[pix])
+            arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+            # print(arr.shape)
+            # # # DIC_and_TIF().plot_back_ground_arr()
+            plt.imshow(arr)
+            plt.show()
+
+
+            np.save(outf, result_dic)
+
+
+
+def linear_interpolation(values):
+
+    values=np.array(values)
+    values[values<0]=np.nan
+
+    # x_new = np.linspace(0, 365, 365)
+    # print(len(values))
+
+    x_new = np.linspace(0, len(values), int(len(values)//12*365))
+    # print(len(x_new))
+    func = scipy.interpolate.interp1d(range(len(values)), values, kind='linear',fill_value='extrapolate')
+    y_new = func(x_new)
+    return y_new
+
+
+
 def plot_dic():  # LAI4g
     build_dataframe=green_driver_trend_contribution.Build_dataframe()
 
@@ -1207,13 +1290,14 @@ def main():
     # interpolate().interpolation_VOD()
     # interpolate().interpolation_NIRv()
     # interpolate().interpolation_MODIS_LAI()
+    interpolate().interpolation_climate_drivers_to_daily()
 
     # per_pixel_all_year_PAR()
     # spatial_check()
     # CSIF_par_annually_transform()
     # plot_dic()
 
-    foo()
+    # foo()
     # spatial_plot_Yang()
     # spatial_plot()
     # beta_plot()
