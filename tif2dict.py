@@ -1468,17 +1468,17 @@ class Main_flow_Early_Peak_Late_Dormant:
 
 
         # variables = ['MODIS_LAI','LAI4g','LAI3g',]
-        variables = ['CO2', 'CCI_SM', 'PAR', 'VPD','Temp']
+        # variables = ['CO2', 'CCI_SM', 'PAR', 'VPD','Temp']
         # variables = [ 'LAI4g','VOD']
-        # variables = ['MODIS_LAI']
+        variables = ['MODIS_LAI','LAI3g']
 
         for variable in variables:
 
             for period in periods:
                 dic_NDVI={}  # so important!!
-                # fdir = result_root + f'extraction_original_val/extraction_during_{period}_growing_season_static/'
-                fdir=result_root+f'extraction_original_val/extraction_during_{period}_growing_season_static/'
-                outdir = result_root + 'Pierre_relative_change/1982-/'
+
+                fdir=result_root+f'extraction_original_val/2000-2018_monthly/'
+                outdir = result_root + 'Pierre_relative_change/2000-2018_monthly/'
                 Tools().mk_dir(outdir, force=True)
 
                 file=fdir+f'during_{period}_{variable}.npy'
@@ -1541,16 +1541,16 @@ class Main_flow_Early_Peak_Late_Dormant:
     def zscore(self):  #
         periods = ['early', 'peak', 'late']
         # variables = ['MODIS_LAI','LAI4g','LAI3g',]
-        variables = ['CO2', 'CCI_SM', 'PAR', 'VPD','Temp']
-        # variables = [ 'LAI4g','VOD']
+        # variables = ['CO2', 'CCI_SM', 'PAR', 'VPD','Temp']
+        variables = [ 'LAI3g','MODIS_LAI']
         # variables = ['MODIS_LAI']
 
         for variable in variables:
             for period in periods:
                 dic_NDVI={}  # so important!!
                 # fdir = result_root + f'extraction_original_val/extraction_during_{period}_growing_season_static/'
-                fdir=result_root+f'extraction_original_val/extraction_during_{period}_growing_season_static/'
-                outdir = result_root + 'zscore/1982-/'
+                fdir = result_root + f'extraction_original_val/2000-2018_monthly/'
+                outdir = result_root + 'zscore/2000-2018_monthly/'
                 Tools().mk_dir(outdir, force=True)
 
                 file=fdir+f'during_{period}_{variable}.npy'
@@ -3669,9 +3669,9 @@ class statistic_anaysis:
 
         for variable in variable_list:
             phenology_df = T.load_df(
-                result_root + f'Main_flow/arr/Phenology/pick_daily_phenology/MODIS_LAI/pick_daily.df')
+                result_root + f'Main_flow/arr/Phenology/Get_Monthly_Early_Peak_Late/MODIS_LAI/Monthly_Early_Peak_Late_via_DOY.df')
 
-            fdir2 = results_root + f'/Main_flow/arr/DIC_Daily/{variable}/'
+            fdir2 = data_root + f'original_dataset/{variable}_dic/'
 
             dic_variables = {}
 
@@ -3691,7 +3691,7 @@ class statistic_anaysis:
 
             for period in period_list:
                 dic_during_variables = DIC_and_TIF().void_spatial_dic()
-                outdir = result_root + 'extraction_original_val/extraction_original_val_daily/extraction_during_{}_growing_season_static/'.format(
+                outdir = result_root + 'extraction_original_val/extraction_original_val_monthly/extraction_during_{}_growing_season_static/'.format(
                     period)
 
                 Tools().mk_dir(outdir, True)
@@ -3709,16 +3709,11 @@ class statistic_anaysis:
                     #     continue
 
                     time_series = dic_variables[pix]
-                    time_series_flatten = time_series.flatten()
-                    print(time_series_flatten)
-                    time_series_flatten = np.array(time_series_flatten)
-                    print(len(time_series_flatten))
-
-                    if len(time_series_flatten) != 20:  # (365*20)
+                    if len(time_series) != 240:  # (12*20)/12*37=444
                         continue
                     # plt.plot(time_series)
                     # plt.show()
-                    time_series = time_series_flatten.reshape(-1, 12)  # 修改
+                    time_series = time_series.reshape(-1, 12)  # 修改
                     picked_month = np.array(picked_month, dtype=int)
                     picked_month = picked_month-1
 
@@ -6644,18 +6639,10 @@ class Unify_date_range:
         end = 2018
         period='late'
 
-
-
-        X_dir=result_root+f'extraction_original_val/extraction_during_{period}_growing_season_static/'
-        outdirX=result_root+f'extraction_original_val/{start}-{end}/'
-        # X_dir=result_root+'extraction_anomaly_val/extraction_during_{}_growing_season_static/'.format(period)
-        # outdirX=result_root+'extraction_anomaly_val/{}-{}_extraction_during_{}_growing_season_static/'.format(start, end, period)
-        # X_dir=result_root+'detrend_extraction/during_{}_growing_season_static/during_{}_X/'.format(period,period)
-        # outdirX = result_root + 'detrend_extraction/{}-{}_during_{}_growing_season/X_{}-{}/'.format(start, end,
-        #                                                                                                 period, start,
-        #                                                                                                 end)
-        # X_dir = result_root+'extraction_anomaly_val/extraction_during_{}_growing_season_static/during_{}_X/'.format(period,period)
-        # outdirX = result_root+'extraction_anomaly_val/{}-{}_during_{}_growing_season/X_{}-{}/'.format(start,end,period,start,end)
+        X_dir = result_root + f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
+        outdirX = result_root + f'extraction_original_val/{start}-{end}_monthly/'
+        # X_dir=result_root+f'extraction_original_val/extraction_original_val_daily/extraction_during_{period}_growing_season_static/'
+        # outdirX = result_root + f'extraction_original_val/{start}-{end}_daily/'
 
         self.unify(X_dir,outdirX,start,end)
         # #
@@ -6681,22 +6668,22 @@ class Unify_date_range:
             # 'VOD': list(range(1988, 2017)),
             # 'CSIF': list(range(2001, 2017)),
             'LAI3g': list(range(1982, 2019)),
-            'LAI4g': list(range(1982, 2021)),
+            # 'LAI4g': list(range(1982, 2021)),
             # 'GIMMS_NDVI': list(range(1982, 2016)),
             # 'NIRv': list(range(1982, 2019)),
             'MODIS_LAI': list(range(2000, 2020)),
 
-             'CCI_SM':list(range(1982,2021)),
+             # 'CCI_SM':list(range(1982,2021)),
             # 'CCI_SM_2018': list(range(1982, 2019)),
 
             # 'Aridity': list(range(1982, 2019)),
-            'PAR':list(range(1982,2021)),
-            'CO2': list(range(1982, 2021)),
+            # 'PAR':list(range(1982,2021)),
+            # 'CO2': list(range(1982, 2021)),
             # 'Precip':list(range(1982,2019)),
             # 'root_soil_moisture':list(range(1982,2019)),
             # 'surf_soil_moisture':list(range(1982,2019)),
-            'Temp':list(range(1982,2021)),
-            'VPD':list(range(1982,2021)),
+            # 'Temp':list(range(1982,2021)),
+            # 'VPD':list(range(1982,2021)),
             # 'SPEI3':list(range(1982,2019)),
 
         }
@@ -6905,7 +6892,7 @@ def main():
     # statistic_anaysis().extraction_during_window()
     # statistic_anaysis().extraction_variables_static_pre_month()
     statistic_anaysis().extraction_variables_static_during_daily()
-    # statistic_anaysis().extraction_variables_static_during_month()
+    statistic_anaysis().extraction_variables_static_during_month()
 
 
     # statistic_anaysis().multiregression_beta_window()
@@ -6960,8 +6947,8 @@ def main():
     # Main_flow_Early_Peak_Late_Dormant().contribution()
     # Main_flow_Early_Peak_Late_Dormant().changes_NDVI_keenan()
 
-    # Main_flow_Early_Peak_Late_Dormant().anonmaly_variables()
-    # Main_flow_Early_Peak_Late_Dormant().zscore()
+    Main_flow_Early_Peak_Late_Dormant().anonmaly_variables()
+    Main_flow_Early_Peak_Late_Dormant().zscore()
 
 
     # Main_flow_Early_Peak_Late_Dormant().phenology_Yao_method()

@@ -13,10 +13,10 @@ def mk_dir(outdir):
 
 class Plot_dataframe:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_1982-2020/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_1982-2020.df'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
 
 
 
@@ -458,14 +458,14 @@ class Plot_dataframe:
 
     def call_plot_LST_for_three_seasons(self,df): # 实现变量的三个季节画在一起
 
-        df=df[df['HI_class']!='Humid']
+        df=df[df['HI_class']=='Humid']
 
         period_name=['early','peak','late']
         # period_name = ['late']
 
         color_list=['r','g','b']
         # variable_list=['1982-2020_LAI4g','1982-2018_LAI3g','2000-2019_MODIS_LAI']
-        variable_list = ['2000-2018_LAI4g', '2000-2018_LAI3g', '2000-2018_MODIS_LAI']
+        variable_list = ['2000-2018_LAI3g', '2000-2018_MODIS_LAI']
 
         fig = plt.figure()
 
@@ -478,7 +478,7 @@ class Plot_dataframe:
             for variable in variable_list:
 
 
-                column_name=f'{variable}_{period}_relative_change'
+                column_name=f'{variable}_{period}_relative_change_monthly'
 
                 print(column_name)
                 color=color_list[flag]

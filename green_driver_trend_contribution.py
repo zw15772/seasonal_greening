@@ -7,10 +7,10 @@ from pingouin import partial_corr
 class Build_dataframe:
 
     def __init__(self):
-        self.this_class_arr = results_root + 'landcover_change/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'landcover_change.df'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
         self.P_PET_fdir=data_root+'original_dataset/aridity_P_PET_dic/'
         pass
 
@@ -26,35 +26,34 @@ class Build_dataframe:
         # df = self.foo2(df)
         # df=self.add_anomaly_GIMMIS_NDVI_to_df(df)
         # df = self.add_Pierre_GIMMIS_NDVI_to_df(df)
-        # df=self.add_Keenan_GIMMIS_NDVI_to_df(df)
+        df=self.add_Keenan_GIMMIS_NDVI_to_df(df)
         # df=self.add_window_trend_to_df(df)
         # df=self.add_window_p_value_to_df(df)
         # df=self.add_row(df)
         # df = self.add_anomaly_to_df(df)
-        df=self.add_trend_to_df(df)
+        # df=self.add_trend_to_df(df)
         # df=self.add_p_val_trend_to_df(df)
 
         # df=self.add_mean_to_df(df)
         # df=self.add_CV_to_df(df)
         # df=self.add_soil_data_to_df(df)
         # df=self.add_MAP_MAT_to_df(df)
-        # df = self.add_NDVI_mask(df)
+        df = self.add_NDVI_mask(df)
         # df=self.add_winter_to_df(df)
         # df=self.add_Koppen_data_to_df(df)
         # df=self.add_landcover_data_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_partial_correlation_to_df(df)
-        P_PET_dic=self.P_PET_ratio(self.P_PET_dir)
-        P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
-        df=self.add_P_PET_to_df(df,P_PET_reclass_dic)
-        df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
+        # P_PET_dic=self.P_PET_ratio(self.P_PET_fdir)
+        # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
+        # df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
 
 
         # df=self.show_field(df)
 
 
         # df=self.__rename_dataframe_columns(df)
-        df = self.drop_field_df(df)
+        # df = self.drop_field_df(df)
 
 
         # df=self.add_trend_to_df(df)
@@ -100,7 +99,7 @@ class Build_dataframe:
 
     def foo1(self,df):
 
-        f = results_root+'extract_relative_change_window/trend_window/1982-2020_during_early_window15_conversion/early_LAI4g_15window_trend.npy'
+        f = results_root+'Pierre_relative_change/2000-2018_daily/LAI3g_early_relative_change.npy'
         dic = {}
         outf = self.dff
         result_dic = {}
@@ -109,7 +108,7 @@ class Build_dataframe:
         pix_list=[]
         change_rate_list=[]
         year=[]
-        f_name = 'LAI4g_relative_change_early_trend_window'
+        f_name = 'LAI3g'
 
         print(f_name)
         for pix in tqdm(dic):
@@ -169,7 +168,7 @@ class Build_dataframe:
 
     def add_anomaly_GIMMIS_NDVI_to_df(self, df):
         period = 'late'
-        time='1982-1998'
+        time='2000-2018'
         f = results_root + 'anomaly_variables_independently/{}_during_{}/{}_during_{}_GIMMS_NDVI.npy'.format(time,period,time,period)
 
         NDVI_dic = T.load_npy(f)
@@ -227,7 +226,7 @@ class Build_dataframe:
     def add_Keenan_GIMMIS_NDVI_to_df(self, df):
         periods = ['early','peak','late']
         # periods = ['peak']
-        variable_list=['LAI4g','LAI3g','MODIS_LAI']
+        variable_list=['LAI3g','MODIS_LAI']
         # variable_list=['MODIS_LAI']
 
         time = '2000-2018'
@@ -235,25 +234,25 @@ class Build_dataframe:
         for variable in variable_list:
             for period in periods:
 
-                f = results_root + f'Pierre_relative_change/2000-2018_Y/{variable}_{period}_relative_change.npy'
+                f = results_root + f'Pierre_relative_change/2000-2018_monthly/{variable}_{period}_relative_change.npy'
                 # f = results_root + f'Pierre_relative_change/2000-2016_Y/{variable}_{period}_relative_change.npy'
                 # f=results_root+f'extraction_original_val/extraction_during_{period}_growing_season_static/during_{period}_{variable}.npy'
                 # f=results_root+f'extraction_original_val/2000-2016/during_{period}_{variable}.npy'
                 NDVI_dic = T.load_npy(f)
-                f_name = f'{time}_{variable}_{period}_relative_change'
+                f_name = f'{time}_{variable}_{period}_relative_change_monthly'
                 # f_name = f'{time}_{variable}_{period}_raw'
                 print(f_name)
 
                 NDVI_list = []
                 for i, row in tqdm(df.iterrows(), total=len(df)):
                     year = row['year']
-                    if year<2000:
-                        NDVI_list.append(np.nan)
-                        continue
+                    # if year<2000:
+                    #     NDVI_list.append(np.nan)
+                    #     continue
                     # #
-                    if year>2018:
-                        NDVI_list.append(np.nan)
-                        continue
+                    # if year>2018:
+                    #     NDVI_list.append(np.nan)
+                    #     continue
 
                     # pix = row.pix
                     pix = row['pix']
@@ -1013,6 +1012,27 @@ class Build_dataframe:
                 # label = 2
             dic_reclass[pix] = label
         T.save_npy(dic_reclass, outf)
+        return dic_reclass
+
+    def P_PET_reclass(self,dic):
+        dic_reclass = {}
+        for pix in dic:
+            val = dic[pix]
+            label = None
+            # label = np.nan
+            if val > 0.65:
+                label = 'Humid'
+                # label = 3
+            elif val < 0.2:
+                label = 'Arid'
+                # label = 0
+            elif val > 0.2 and val < 0.5:
+                label = 'Semi Arid'
+                # label = 1
+            elif val > 0.5 and val < 0.65:
+                label = 'Semi Humid'
+                # label = 2
+            dic_reclass[pix] = label
         return dic_reclass
 
     def P_PET_ratio(self, P_PET_fdir):

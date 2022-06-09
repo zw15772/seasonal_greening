@@ -463,7 +463,8 @@ class interpolate:
         mask_tif='/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
 
         mask_dic=DIC_and_TIF().spatial_tif_to_dic(mask_tif)
-        variables=['MODIS_LAI']
+        # variables=['MODIS_LAI']
+        variables = ['LAI3g','MODIS_LAI']
 
         periods = ['early', 'peak', 'late']
         # time_range = '1988-2016'
@@ -471,9 +472,10 @@ class interpolate:
         dic_NDVI = {}
         for variable in variables:
             for period in periods:
-                outdir = result_root + f'/Main_flow/arr/DIC_Daily/{variable}_interpolate/'
+                outdir = result_root + f'/extraction_original_val/extraction_original_val_monthly/'
+
                 Tools().mk_dir(outdir, force=True)
-                fdir = result_root + f'/Main_flow/arr/DIC_Daily/{variable}/'
+                fdir = result_root + f'/extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
                 f='during_{}_{}.npy'.format(period,variable)
 
 
@@ -527,7 +529,7 @@ class interpolate:
                 # DIC_and_TIF().plot_back_ground_arr()
                 plt.imshow(arr)
                 plt.show()
-                np.save(outdir + f'during_{period}_{variable}_1', result_dic)
+                np.save(outdir + f'during_{period}_{variable}', result_dic)
 
 
     def interpolation_temp(self):  # 函数实现temp 的共计444个月的 的缺失值插值，最后生成一个字典
@@ -804,7 +806,7 @@ def plot_dic():  # LAI4g
 def foo():
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Main_flow/arr/DIC_Daily/LAI3g/per_pix_dic_007.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/zscore/2000-2018_monthly/LAI3g_early_zscore.npy'
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/during_early_CO2.npy'
     result_dic = {}
     spatial_dic={}
