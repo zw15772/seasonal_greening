@@ -1349,21 +1349,21 @@ class Multi_liner_regression:  # 实现求beta 功能
 
     def __init__(self):
 
-        self.period='peak'
-        self.variable='LAI4g'
+        self.period='early'
+        self.variable='LAI3g'
         self.time_range='2000-2018'
         # self.result_dir=results_root+'multiregression/LAI_GIMMS/'
-        self.result_dir = results_root + f'partial_correlation_zscore/'
+        self.result_dir = results_root + f'partial_correlation_zscore_detrend/'
         # self.result_f = self.result_dir+'/detrend_{}_multi_linear{}_{}.npy'.format(self.time_range,self.period,self.variable)
         self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,self.period,self.variable)
-        self.partial_correlation_R2_result_f = self.result_dir + '/{}_partial_correlation_R2_{}_{}.npy'.format(
+        self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_result_{}_{}.npy'.format(
             self.time_range, self.period,self.variable)
-        self.partial_correlation_VIP_result_f = self.result_dir + '/{}_partial_correlation_VIP_{}_{}.npy'.format(
-            self.time_range, self.period, self.variable)
-        # self.x_dir=results_root+'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(self.time_range,self.time_range,self.period)
-        self.x_dir = results_root+f'zscore/2000-2018_X/'
-        # self.y_f = results_root+'partial_correlation_X_variables_2/{}_during_{}/{}_during_{}_{}.npy'.format(self.time_range,self.period,self.time_range,self.period,self.variable)
-        self.y_f=results_root+f'zscore/2000-2018_Y/{self.variable}_{self.period}_zscore.npy'
+        # self.partial_correlation_VIP_result_f = self.result_dir + '/{}_partial_correlation_VIP_{}_{}.npy'.format(
+        #     self.time_range, self.period, self.variable)
+        self.x_dir=results_root+f'detrend_Zscore/detrend_{self.time_range}/detrend_{self.time_range}_during_{self.period}/{self.time_range}_X/'
+        # self.x_dir = results_root+f'zscore/2000-2018_daily/2000-2018_X/'
+        self.y_f = results_root+f'detrend_Zscore/detrend_{self.time_range}/detrend_{self.time_range}_during_{self.period}/{self.time_range}_Y/detrend_{self.variable}_{self.period}_zscore.npy'
+        # self.y_f=results_root+f'zscore/2000-2018_daily/2000-2018_Y/{self.variable}_{self.period}_zscore.npy'
         # self.y_mean = results_root + 'mean_calculation_original/during_{}_{}/during_{}_{}_mean.npy'.format(self.period,self.time_range,self.period,self.variable)
         T.mk_dir(self.result_dir,force=True)
         pass
@@ -1376,8 +1376,8 @@ class Multi_liner_regression:  # 实现求beta 功能
         x_var_list = self.__get_x_var_list(self.x_dir,self.period)
         # # # step 2 cal correlation
         # self.cal_multi_regression_beta(df, x_var_list,17)  #修改参数
-        # self.cal_partial_correlation(df, x_var_list,19)  #修改参数
-        self.cal_PLS(df, x_var_list, 19)  # 修改参数
+        self.cal_partial_correlation(df, x_var_list,19)  #修改参数
+        # self.cal_PLS(df, x_var_list, 19)  # 修改参数
         # self.max_contribution()
         # self.variables_contribution()
 
@@ -2065,6 +2065,728 @@ class Multi_liner_regression:  # 实现求beta 功能
             output_dic = DIC_and_TIF().spatial_arr_to_dic(arr)
             np.save(ourdir + outf_npy, output_dic)
         pass
+
+class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
+
+    def __init__(self):
+
+        self.period='early'
+        self.variable='LAI3g'
+        self.time_range='2000-2018'
+        # self.result_dir=results_root+'multiregression/LAI_GIMMS/'
+        self.result_dir = results_root + f'partial_correlation_zscore_detrend/'
+        # self.result_f = self.result_dir+'/detrend_{}_multi_linear{}_{}.npy'.format(self.time_range,self.period,self.variable)
+        self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,self.period,self.variable)
+        self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_result_{}_{}.npy'.format(
+            self.time_range, self.period,self.variable)
+        # self.partial_correlation_VIP_result_f = self.result_dir + '/{}_partial_correlation_VIP_{}_{}.npy'.format(
+        #     self.time_range, self.period, self.variable)
+        self.x_dir=results_root+f'detrend_Zscore/detrend_{self.time_range}/detrend_{self.time_range}_during_{self.period}/{self.time_range}_X/'
+        # self.x_dir = results_root+f'zscore/2000-2018_daily/2000-2018_X/'
+        self.y_f = results_root+f'detrend_Zscore/detrend_{self.time_range}/detrend_{self.time_range}_during_{self.period}/{self.time_range}_Y/detrend_{self.variable}_{self.period}_zscore.npy'
+        # self.y_f=results_root+f'zscore/2000-2018_daily/2000-2018_Y/{self.variable}_{self.period}_zscore.npy'
+        # self.y_mean = results_root + 'mean_calculation_original/during_{}_{}/during_{}_{}_mean.npy'.format(self.period,self.time_range,self.period,self.variable)
+        T.mk_dir(self.result_dir,force=True)
+        pass
+
+
+    def run(self):
+
+        # step 1 build dataframe
+        df = self.build_df(self.x_dir,self.y_f,self.period)
+        x_var_list = self.__get_x_var_list(self.x_dir,self.period)
+        # # # step 2 cal correlation
+        # self.cal_multi_regression_beta(df, x_var_list,17)  #修改参数
+        self.cal_partial_correlation(df, x_var_list,19)  #修改参数
+        # self.cal_PLS(df, x_var_list, 19)  # 修改参数
+        # self.max_contribution()
+        # self.variables_contribution()
+
+
+
+    def __get_x_var_list(self,x_dir,period):
+        # x_dir = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/2001-2015/X_2001-2015/'
+        x_f_list = []
+        for x_f in T.listdir(x_dir):
+            if not period in x_f:
+                continue
+
+            x_f_list.append(x_dir + x_f)
+
+
+
+
+        print(x_f_list)
+        x_var_list = []
+        for x_f in x_f_list:
+            split1 = x_f.split('/')[-1]
+            split2 = split1.split('.')[0]
+            var_name = '_'.join(split2.split('_')[0:-2])
+            x_var_list.append(var_name)
+        return x_var_list
+
+
+    def __linearfit(self,x, y):
+        '''
+        最小二乘法拟合直线
+        :param x:
+        :param y:
+        :return:
+        '''
+        N = float(len(x))
+        sx,sy,sxx,syy,sxy=0,0,0,0,0
+        for i in range(0,int(N)):
+            sx  += x[i]
+            sy  += y[i]
+            sxx += x[i]*x[i]
+            syy += y[i]*y[i]
+            sxy += x[i]*y[i]
+        a = (sy*sx/N -sxy)/( sx*sx/N -sxx)
+        b = (sy - a*sx)/N
+        r = -(sy*sx/N-sxy)/math.sqrt((sxx-sx*sx/N)*(syy-sy*sy/N))
+        return a,b,r
+
+
+    def build_df(self,x_dir,y_f,period):
+        x_f_list = []
+        for x_f in T.listdir(x_dir):
+            if not period in x_f:
+                continue
+
+            x_f_list.append(x_dir + x_f)
+
+
+        print(x_f_list)
+        df = pd.DataFrame()
+        y_arr = T.load_npy(y_f)
+        pix_list = []
+        y_val_list = []
+        for pix in y_arr:
+            vals = y_arr[pix]
+            # print(vals)
+            # exit()
+            if len(vals) == 0:
+                continue
+            vals = np.array(vals)
+            vals=vals
+            pix_list.append(pix)
+            y_val_list.append(vals)
+        df['pix'] = pix_list
+        df['y'] = y_val_list
+
+        x_var_list = []
+        for x_f in x_f_list:
+            # print(x_f)
+            split1 = x_f.split('/')[-1]
+            split2 = split1.split('.')[0]
+            var_name = '_'.join(split2.split('_')[0:-2])
+            x_var_list.append(var_name)
+            # print(var_name)
+            x_val_list = []
+            x_arr = T.load_npy(x_f)
+            for i,row in tqdm(df.iterrows(),total=len(df),desc=var_name):
+                pix = row.pix
+                if not pix in x_arr:
+                    x_val_list.append([])
+                    continue
+                vals = x_arr[pix]
+                vals = np.array(vals)
+                if len(vals) == 0:
+                    x_val_list.append([])
+                    continue
+                x_val_list.append(vals)
+            # x_val_list = np.array(x_val_list)
+            df[var_name] = x_val_list
+        # T.print_head_n(df)
+        # outexcel = '/Volumes/NVME2T/wen_proj/greening_contribution/1982-2015_extraction_during_late_growing_season_static/test'
+        # T.df_to_excel(df,outexcel,n=10000,random=True)
+        # exit()
+        return df
+
+
+    def cal_multi_regression_beta(self,df,x_var_list,val_len):
+        # mean_dic=T.load_npy(self.y_mean)
+        mean_dic= np.load(self.y_mean)
+
+        outf = self.result_f
+
+        multi_derivative={}
+        for i,row in tqdm(df.iterrows(),total=len(df)):
+            pix = row.pix
+            r,c = pix
+            if r > 120:
+                continue
+            y_vals = row['y']
+            y_vals=T.remove_np_nan(y_vals)
+
+            if len(y_vals)!=val_len:
+                continue
+            # print(y_vals)
+
+            y_mean=mean_dic[pix]
+
+
+            #  calculate partial derivative with multi-regression
+            df_new = pd.DataFrame()
+            x_var_list_valid = []
+
+            for x in x_var_list:
+                x_vals = row[x]
+                if not len(x_vals) == val_len:  ##
+                    continue
+                if len(x_vals) == 0:
+                    continue
+
+                if np.isnan(np.nanmean(x_vals)):
+                    continue
+                x_vals= T.interp_nan(x_vals)
+                # print(x_vals)
+                if x_vals[0]==None:
+                    continue
+                # x_vals_detrend = signal.detrend(x_vals) #detrend
+                df_new[x] = x_vals
+                # df_new[x] = x_vals_detrend   #detrend
+
+                x_var_list_valid.append(x)
+            if len(df_new) <= 3:
+                continue
+
+            df_new['y'] = y_vals   # 不detrend
+
+            # T.print_head_n(df_new)
+            df_new = df_new.dropna(axis=1,how='all')
+            x_var_list_valid_new = []
+            for v_ in x_var_list_valid:
+                if not v_ in df_new:
+                    continue
+                else:
+                    x_var_list_valid_new.append(v_)
+            # T.print_head_n(df_new)
+
+            df_new = df_new.dropna()
+            linear_model = LinearRegression()
+
+            linear_model.fit(df_new[x_var_list_valid_new],df_new['y'])
+            coef_ = np.array(linear_model.coef_)/y_mean
+            coef_dic = dict(zip(x_var_list_valid_new,coef_))
+            # print(df_new['y'])
+            # exit()
+            multi_derivative[pix]=coef_dic
+        T.save_npy(multi_derivative, outf)
+
+    def cal_partial_correlation(self,df,x_var_list,val_len):
+
+
+        outf1 = self.partial_correlation_result_f
+        outf2= self.partial_correlation_p_value_result_f
+
+        partial_correlation_dic={}
+
+        partial_p_value_dic={}
+
+        for i,row in tqdm(df.iterrows(),total=len(df)):
+            pix = row.pix
+            r,c = pix
+            if r > 120:
+                continue
+            y_vals = row['y']
+            y_vals=T.remove_np_nan(y_vals)
+
+            if len(y_vals)!=val_len:
+                continue
+            # print(y_vals)
+
+
+            #  calculate partial derivative with multi-regression
+            df_new = pd.DataFrame()
+            x_var_list_valid = []
+
+            for x in x_var_list:
+                x_vals = row[x]
+                if not len(x_vals) == val_len:  ##
+                    continue
+                if len(x_vals) == 0:
+                    continue
+
+                if np.isnan(np.nanmean(x_vals)):
+                    continue
+                x_vals= T.interp_nan(x_vals)
+                # print(x_vals)
+                if x_vals[0]==None:
+                    continue
+                # x_vals_detrend = signal.detrend(x_vals) #detrend
+                df_new[x] = x_vals
+                # df_new[x] = x_vals_detrend   #detrend
+
+                x_var_list_valid.append(x)
+            if len(df_new) <= 3:
+                continue
+
+            df_new['y'] = y_vals   # 不detrend
+
+            # T.print_head_n(df_new)
+            df_new = df_new.dropna(axis=1,how='all')
+            x_var_list_valid_new = []
+            for v_ in x_var_list_valid:
+                if not v_ in df_new:
+                    continue
+                else:
+                    x_var_list_valid_new.append(v_)
+            # T.print_head_n(df_new)
+
+            df_new = df_new.dropna()
+            partial_correlation={}
+            partial_correlation_p_value = {}
+            for x in x_var_list_valid_new:
+                x_var_list_valid_new_cov=copy.copy(x_var_list_valid_new)
+                x_var_list_valid_new_cov.remove(x)
+                r,p=self.partial_corr(df_new,x,'y',x_var_list_valid_new_cov)
+                partial_correlation[x]=r
+                partial_correlation_p_value[x] = p
+
+            partial_correlation_dic[pix]=partial_correlation
+            partial_p_value_dic[pix] = partial_correlation_p_value
+        T.save_npy(partial_correlation_dic, outf1)
+        T.save_npy(partial_p_value_dic, outf2)
+
+    def partial_corr(self, df, x, y, cov):
+        df = pd.DataFrame(df)
+        df = df.replace([np.inf, -np.inf], np.nan)
+        # print(df)
+        df = df.dropna()
+        # try:
+        # print(x)
+        # print(y)
+        stats_result = pg.partial_corr(data=df, x=x, y=y, covar=cov, method='pearson').round(3)
+        r = float(stats_result['r'])
+        p = float(stats_result['p-val'])
+        return r, p
+
+
+    def cal_PLS(self,df,x_var_list,val_len):
+
+        outf1 = self.partial_correlation_result_f
+        outf2= self.partial_correlation_R2_result_f
+        outf3 = self.partial_correlation_VIP_result_f
+
+        partial_correlation_dic={}
+
+        partial_VIP_dic={}
+
+        for i,row in tqdm(df.iterrows(),total=len(df)):
+            pix = row.pix
+            r,c = pix
+            if r > 120:
+                continue
+            y_vals = row['y']
+            y_vals=T.remove_np_nan(y_vals)
+
+            if len(y_vals)!=val_len:
+                continue
+            # print(y_vals)
+
+
+            #  calculate partial derivative with multi-regression
+            df_new = pd.DataFrame()
+            x_var_list_valid = []
+            partial_correlation={}
+
+            partial_correlation_VIP={}
+
+            for x in x_var_list:
+                x_vals = row[x]
+                if not len(x_vals) == val_len:  ##
+                    continue
+                if len(x_vals) == 0:
+                    continue
+
+                if np.isnan(np.nanmean(x_vals)):
+                    continue
+                x_vals= T.interp_nan(x_vals)
+                # print(x_vals)
+                if x_vals[0]==None:
+                    continue
+                # x_vals_detrend = signal.detrend(x_vals) #detrend
+                df_new[x] = x_vals
+                # df_new[x] = x_vals_detrend   #detrend
+
+                x_var_list_valid.append(x)
+            if len(df_new) <= 3:
+                continue
+
+            df_new['y'] = y_vals   # 不detrend
+
+            # T.print_head_n(df_new)
+            df_new = df_new.dropna(axis=1,how='all')
+            x_var_list_valid_new = []
+            for v_ in x_var_list_valid:
+                if not v_ in df_new:
+                    continue
+                else:
+                    x_var_list_valid_new.append(v_)
+            # T.print_head_n(df_new)
+
+            df_new = df_new.dropna()
+            X=df_new[x_var_list_valid_new]
+            Y=df_new['y']
+
+            coeff,VIPs=self.PLS_time_series(X,x_var_list_valid_new,Y)
+            # print(coeff)
+            if coeff is None:
+                continue
+            coeff=coeff.flatten()
+            coeff_dic=dict(zip(x_var_list_valid_new,coeff))
+            # print(coeff_dic)
+            VIP_dic=dict(zip(x_var_list_valid_new,VIPs))
+            # print(VIP_dic)
+
+            partial_correlation_dic[pix]=coeff_dic
+
+            partial_VIP_dic[pix] = VIP_dic
+
+
+        T.save_npy(partial_correlation_dic, outf1)
+        T.save_npy(partial_VIP_dic, outf3)
+
+
+    def PLS(self, X, x_var_list_valid_new, Y):
+        # print(X)
+        # print(x_var_list_valid_new)
+        # print(Y)
+        # RepeatedKFold  p次k折交叉验证
+        kf = RepeatedKFold(n_splits=2, n_repeats=5, random_state=1)
+
+
+        n_components=2
+        mse = []
+        n = len(X)
+
+        # Calculate MSE using cross-validation, adding one component at a time
+        R2_list=[]
+        coef_list=[]
+        VIPs_list=[]
+
+        for train_index, test_index in kf.split(X):
+
+
+            # print('train_index', train_index, 'test_index', test_index)
+            if len(test_index)<3:
+                continue
+            X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+            Y_train, Y_test = Y.iloc[train_index], Y.iloc[test_index]
+
+        # for i in np.arange(0, len(x_var_list_valid_new)):
+        #     pls = PLSRegression(n_components=i)
+        #     score = -1 * model_selection.cross_val_score(pls, scale(X), Y, cv=kf,
+        #                                                  scoring='neg_mean_squared_error').mean()
+        #     mse.append(score)
+        #
+        #     # plot test MSE vs. number of components
+        # plt.plot(mse)
+        # plt.xlabel('Number of PLS Components')
+        # plt.ylabel('MSE')
+        # plt.title('hp')
+
+            pls = PLSRegression(n_components,scale=True, max_iter=500, tol=1e-06, copy=True)
+            pls.fit(X_train, Y_train)
+
+            Y_pred = pls.predict(X_test)
+            # print(pls.coef_)
+
+            # # Calculate coef
+            coef_list.append(pls.coef_)
+
+            # # Calculate scores
+            Y_test=np.array(Y_test.tolist())
+            Y_test = Y_test.flatten()
+
+            Y_pred = Y_pred.tolist()
+            Y_pred = np.array(Y_pred)
+            Y_pred = Y_pred.flatten()
+
+            R,p=stats.pearsonr(Y_pred,Y_test)
+            R2=R**2
+
+
+            R2_list.append(R2)
+
+            # # Calculate importance
+
+            x_test_trans=pls.transform(X_test)
+            # print(X_test)
+            # print(pls.x_rotations_)
+            if len(pls.x_rotations_)<2:
+                continue
+            VIPs=self.compute_VIP(X_test,Y_test,pls.x_rotations_,x_test_trans,n_components)
+
+            VIPs_list.append(VIPs)
+            # plt.scatter(np.arange(0,X.shape[1]),VIPs)
+            # plt.show()
+
+        VIPs_array = np.array(VIPs_list)
+        VIPs_reshape = VIPs_array.reshape(len(x_var_list_valid_new), -1)
+
+        VIPs_majority_list=[]
+        for i in VIPs_reshape:
+            i[i<1]=0
+            i[i > 1] = 1
+            count_one=np.count_nonzero(i,axis=0)
+            if count_one>=len(i)/2:
+                VIPs_majority_list.append(1)
+            else:
+                VIPs_majority_list.append(0)
+
+        VIPs_majority = np.array(VIPs_majority_list)
+
+
+        coef_array=np.array(coef_list)
+        coef_array_flatten=coef_array.flatten()
+
+        coef_reshape=coef_array_flatten.reshape(len(x_var_list_valid_new),-1)
+        print(coef_reshape.shape)
+
+        coeff_mean_list=[]
+
+        for i in coef_reshape:
+
+            mean = np.mean(i)
+            print(list(i))
+            coeff_mean_list.append(mean)
+        coeff_mean = np.array(coeff_mean_list)
+
+        R2=np.mean(R2_list)
+
+        # plt.scatter(Y_test, Y_pred)
+        # plt.show()
+        # print(R2, coeff_mean, VIPs)
+        return R2, coeff_mean, VIPs_majority
+
+    def PLS_time_series(self, X, x_var_list_valid_new, Y): # 不做cross_validation 因为时间序列数据不能拆分
+        n_components=2
+        pls = PLSRegression(n_components,scale=True, max_iter=500, tol=1e-06, copy=True)
+        pls.fit(X, Y)
+
+        x_trans=pls.transform(X)
+
+        if len(pls.x_rotations_)<2:
+            return None,None
+
+        VIPs=self.compute_VIP(X,Y,pls.x_rotations_,x_trans,n_components)
+
+        return pls.coef_, VIPs
+
+    def compute_VIP(self,X,Y,R,T,A):
+        p=X.shape[1]
+        Q2=np.square(np.dot(Y.T,T))
+        VIPs=np.zeros(p)
+        temp=np.zeros(A)
+
+        for j in range(p):
+            for a in range (A):
+
+                temp[a]=Q2[a]*pow(R[j,a]/np.linalg.norm(R[:,a]),2)
+            VIPs[j]=np.sqrt(p*np.sum(temp)/np.sum(Q2))
+        return VIPs
+
+        pass
+
+    def performance(self,df):
+        pass
+
+
+    def contribution_bar(self,result_f,x_dir):
+        y_predicted=[]
+        # x_dir = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/2001-2015/X_2001-2015/'
+        result_dic = T.load_npy(result_f)
+        x_var_list = self.__get_x_var_list(x_dir,self.period)
+        y_trend = []
+
+        for pix in result_dic:
+            r,c = pix
+            if r > 120:
+                continue
+            dic_i = result_dic[pix]
+            y_predicted_i = dic_i['y_predicted']
+            y_trend_i = dic_i['y_trend']
+            y_predicted.append(y_predicted_i)
+            y_trend.append(y_trend_i)
+        KDE_plot().plot_scatter(y_predicted,y_trend)
+
+        plt.figure()
+        box = []
+        err = []
+        for x_var in x_var_list:
+            x_var_all = []
+            for pix in result_dic:
+                r,c = pix
+                if r > 120:
+                    continue
+                dic_i = result_dic[pix]
+                contribution_dic = dic_i['contribution_dic']
+                if not x_var in contribution_dic:
+                    continue
+                contribution_val = contribution_dic[x_var]
+                if np.isnan(contribution_val):
+                    continue
+                x_var_all.append(contribution_val)
+            box.append(np.mean(x_var_all))
+            # box.append(x_var_all)
+            err.append(np.std(x_var_all))
+        # plt.boxplot(box,labels=x_var_list,showfliers=False)
+        # plt.bar(x_var_list,box,yerr=err)
+        plt.bar(x_var_list,box,)
+        plt.show()
+
+
+
+    def max_contribution(self):
+        x_var_list = self.__get_x_var_list(self.x_dir, self.period, self.time_range)
+        x_var_list.sort()
+        result_f = self.partial_correlation_result_f
+        ourdir =self.result_dir+'/max_correlation/'
+        T.mk_dir(ourdir)
+        result_dic = T.load_npy(result_f)
+        output_dic={}
+
+        color_map = dict(zip(x_var_list,list(range(len(x_var_list)))))
+        print(color_map)
+        # exit()
+        spatial_dic = {}
+        var_name_list = []
+        for pix in result_dic:
+            result = result_dic[pix]
+            for var_i in result:
+                var_name_list.append(var_i)
+            var_name_list = list(set(var_name_list))
+            contribution_list = []
+            x_var_list_new = []
+            for x in var_name_list:
+                dic_i = result_dic[pix]
+                if not x in dic_i:
+                    continue
+                contribution_list.append(abs(dic_i[x]))
+                x_var_list_new.append(x)
+            argsort = np.argsort(contribution_list)[::-1]
+            max_x_var = x_var_list_new[argsort[0]]
+            # val = x_var_list.index(max_x_var)
+            val = color_map[max_x_var]
+            spatial_dic[pix] = val
+        tif_template = '/Volumes/SSD_sumsang/project_greening/Data/NIRv_tif_05/1982-2018/198205.tif'
+        arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)[:120]
+        DIC_and_TIF().plot_back_ground_arr_north_sphere(tif_template)
+        # cmap = sns.color_palette('hls',as_cmap=True)
+        # plt.imshow(arr,cmap='jet')
+        # plt.colorbar()
+        # plt.show()
+
+        outf_tif=f'{self.period}_{self.time_range}_max_correlation.tif'
+        outf_npy = f'{self.period}_{self.time_range}_max_correlation.npy'
+
+        DIC_and_TIF().arr_to_tif(arr,ourdir+outf_tif)
+        output_dic=DIC_and_TIF().spatial_arr_to_dic(arr)
+        np.save(ourdir+outf_npy, output_dic)
+        pass
+
+    def variables_contribution(self):
+        x_var_list = self.__get_x_var_list(self.x_dir, self.period, self.time_range)
+        x_var_list.sort()
+        # result_f = self.partial_correlation_result_f
+        result_f=self.partial_correlation_p_value_result_f
+        ourdir = self.result_dir + '/variables_contribution_CSIF/{}/'.format(self.period)
+        T.mk_dir(ourdir,force=True)
+        result_dic = T.load_npy(result_f)
+        output_dic = {}
+
+        # color_map = dict(zip(x_var_list, list(range(len(x_var_list)))))
+        # print(color_map)
+        # exit()
+        spatial_dic = {}
+        var_name_list = []
+        for pix in result_dic:
+            result = result_dic[pix]
+            for var_i in result:
+                var_name_list.append(var_i)
+            var_name_list = list(set(var_name_list))
+            var_name_list.sort()
+
+
+        for x in var_name_list:
+            for pix in result_dic:
+                if x not in result_dic[pix]:
+                    continue
+                spatial_dic[pix] = result_dic[pix][x]
+
+            tif_template = '/Volumes/SSD_sumsang/project_greening/Data/NIRv_tif_05/1982-2018/198205.tif'
+            arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)[:120]
+            DIC_and_TIF().plot_back_ground_arr_north_sphere(tif_template)
+        # cmap = sns.color_palette('hls',as_cmap=True)
+        # plt.imshow(arr,cmap='jet')
+        # plt.colorbar()
+        # plt.show()
+
+            outf_tif = f'{self.time_range}_{x}_p_value.tif'
+            outf_npy = f'{self.time_range}_{x}_p_value.npy'
+
+            # outf_tif = f'{self.time_range}_{x}.tif'
+            # outf_npy = f'{self.time_range}_{x}.npy'
+
+            DIC_and_TIF().arr_to_tif(arr, ourdir + outf_tif)
+            output_dic = DIC_and_TIF().spatial_arr_to_dic(arr)
+            np.save(ourdir + outf_npy, output_dic)
+        pass
+
+    def variables_contribution_window(self):
+
+        fdir=results_root+'trend_window/1982-2015_during_early_window15/'
+
+        for f in (os.listdir(fdir)):
+                if not f.endswith('.npy'):
+                    continue
+                if 'p_value' in f:
+                    continue
+        # ourdir = self.result_dir + '/variables_contribution_CSIF/{}/'.format(self.period)
+        # T.mk_dir(ourdir,force=True)
+        result_dic = T.load_npy(fdir+f)
+        output_dic = {}
+
+        # color_map = dict(zip(x_var_list, list(range(len(x_var_list)))))
+        # print(color_map)
+        # exit()
+        spatial_dic = {}
+        var_name_list = []
+        for pix in result_dic:
+            result = result_dic[pix]
+            for var_i in result:
+                var_name_list.append(var_i)
+            var_name_list = list(set(var_name_list))
+            var_name_list.sort()
+
+
+        for x in var_name_list:
+            for pix in result_dic:
+                if x not in result_dic[pix]:
+                    continue
+                spatial_dic[pix] = result_dic[pix][x]
+
+            tif_template = '/Volumes/SSD_sumsang/project_greening/Data/NIRv_tif_05/1982-2018/198205.tif'
+            arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)[:120]
+            DIC_and_TIF().plot_back_ground_arr_north_sphere(tif_template)
+        # cmap = sns.color_palette('hls',as_cmap=True)
+        # plt.imshow(arr,cmap='jet')
+        # plt.colorbar()
+        # plt.show()
+
+            outf_tif = f'{self.time_range}_{x}_p_value.tif'
+            outf_npy = f'{self.time_range}_{x}_p_value.npy'
+
+            # outf_tif = f'{self.time_range}_{x}.tif'
+            # outf_npy = f'{self.time_range}_{x}.npy'
+
+            DIC_and_TIF().arr_to_tif(arr, ourdir + outf_tif)
+            output_dic = DIC_and_TIF().spatial_arr_to_dic(arr)
+            np.save(ourdir + outf_npy, output_dic)
+        pass
+
 
 class plot_partial_plot():
     class Unify_date_range:
@@ -2759,9 +3481,9 @@ def main():
     # Unify_date_range().run()
     # check_NIRV_NDVI().run()
     # Linear_contribution().run()
-    # Multi_liner_regression().run()
+    Multi_liner_regression().run()
     # plot_partial_plot().run()
-    Sankey_plot_PLS().run()
+    # Sankey_plot_PLS().run()
 
     # Window_correlation().run()
     # check_vod()
