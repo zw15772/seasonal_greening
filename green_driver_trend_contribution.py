@@ -1,4 +1,5 @@
 # coding=utf-8
+import numpy as np
 
 from __init__ import *
 from pingouin import partial_corr
@@ -7,11 +8,11 @@ from pingouin import partial_corr
 class Build_dataframe:
 
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018_Trendy/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
-        self.P_PET_fdir=data_root+'original_dataset/aridity_P_PET_dic/'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018_Trendy.df'
+        self.P_PET_fdir=data_root+'Base_data/aridity_P_PET_dic/'
         pass
 
     def run(self):
@@ -26,7 +27,7 @@ class Build_dataframe:
         # df = self.foo2(df)
         # df=self.add_anomaly_GIMMIS_NDVI_to_df(df)
         # df = self.add_Pierre_GIMMIS_NDVI_to_df(df)
-        df=self.add_Keenan_GIMMIS_NDVI_to_df(df)
+        # df=self.add_Keenan_GIMMIS_NDVI_to_df(df)
         # df=self.add_window_trend_to_df(df)
         # df=self.add_window_p_value_to_df(df)
         # df=self.add_row(df)
@@ -38,10 +39,10 @@ class Build_dataframe:
         # df=self.add_CV_to_df(df)
         # df=self.add_soil_data_to_df(df)
         # df=self.add_MAP_MAT_to_df(df)
-        df = self.add_NDVI_mask(df)
+        # df = self.add_NDVI_mask(df)
         # df=self.add_winter_to_df(df)
-        # df=self.add_Koppen_data_to_df(df)
-        # df=self.add_landcover_data_to_df(df)
+        df=self.add_Koppen_data_to_df(df)
+        df=self.add_landcover_data_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_partial_correlation_to_df(df)
         # P_PET_dic=self.P_PET_ratio(self.P_PET_fdir)
@@ -99,7 +100,7 @@ class Build_dataframe:
 
     def foo1(self,df):
 
-        f = results_root+'Pierre_relative_change/2000-2018_daily/LAI3g_early_relative_change.npy'
+        f = results_root+'Pierre_relative_change/2000-2018_Trendy/CABLE-POP_S2_lai_early_relative_change.npy'
         dic = {}
         outf = self.dff
         result_dic = {}
@@ -108,12 +109,13 @@ class Build_dataframe:
         pix_list=[]
         change_rate_list=[]
         year=[]
-        f_name = 'LAI3g'
+        f_name = 'CABLE-POP_S2_lai'
 
         print(f_name)
         for pix in tqdm(dic):
             time_series=dic[pix]
-            y=0
+
+            y=1999
             for val in time_series:
                 pix_list.append(pix)
                 change_rate_list.append(val)
@@ -225,16 +227,18 @@ class Build_dataframe:
 
     def add_Keenan_GIMMIS_NDVI_to_df(self, df):
         periods = ['early','peak','late']
-        # periods = ['peak']
-        variable_list=['LAI3g','MODIS_LAI']
-        # variable_list=['MODIS_LAI']
+
+        # variable_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
+        #              'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'SDGVM_S2_lai',
+        #              'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai', 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai']
+        variable_list=['SDGVM_S2_lai']
 
         time = '2000-2018'
         # variable='LAI3g'
         for variable in variable_list:
             for period in periods:
 
-                f = results_root + f'Pierre_relative_change/2000-2018_monthly/{variable}_{period}_relative_change.npy'
+                f = results_root + f'Pierre_relative_change/2000-2018_Trendy/{variable}_{period}_relative_change.npy'
                 # f = results_root + f'Pierre_relative_change/2000-2016_Y/{variable}_{period}_relative_change.npy'
                 # f=results_root+f'extraction_original_val/extraction_during_{period}_growing_season_static/during_{period}_{variable}.npy'
                 # f=results_root+f'extraction_original_val/2000-2016/during_{period}_{variable}.npy'
@@ -250,9 +254,9 @@ class Build_dataframe:
                     #     NDVI_list.append(np.nan)
                     #     continue
                     # #
-                    # if year>2018:
-                    #     NDVI_list.append(np.nan)
-                    #     continue
+                    if year>2015:
+                        NDVI_list.append(np.nan)
+                        continue
 
                     # pix = row.pix
                     pix = row['pix']
@@ -264,14 +268,17 @@ class Build_dataframe:
                     if np.isnan(np.nanmean(vals)):
                         NDVI_list.append(np.nan)
                         continue
-                    if len(vals) != 19:
+                    if len(vals) != 16:
                         NDVI_list.append(np.nan)
                         continue
-                    #
+
                     v1 = vals[year - 2000]
                     NDVI_list.append(v1)
                 df[f_name] = NDVI_list
         return df
+
+
+
 
     def add_window_trend_to_df(self, df):
         period_list = ['early','peak','late']
@@ -816,7 +823,7 @@ class Build_dataframe:
         }
 
         landcover_dic = {}
-        fdir = data_root + 'GLC2000_0.5DEG/dic_landcover/'
+        fdir = data_root + 'Base_data/GLC2000_0.5DEG/dic_landcover/'
         for f in tqdm(os.listdir(fdir)):
             if f.endswith('.npy'):
                 dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
@@ -843,7 +850,7 @@ class Build_dataframe:
         return df
 
     def add_Koppen_data_to_df(self, df):
-        f=data_root+'Koppen/koppen_reclass_spatial_dic.npy'
+        f=data_root+'/Base_data/Koppen/koppen_reclass_spatial_dic.npy'
         koppen_dic=T.load_npy(f)
         koppen_list=[]
 
@@ -917,7 +924,7 @@ class Build_dataframe:
         }
 
         landcover_dic = {}
-        fdir = data_root + 'GLC2000_0.5DEG/dic_landcover/'
+        fdir = data_root + 'Base_data/dic_landcover/'
         for f in tqdm(os.listdir(fdir)):
             if f.endswith('.npy'):
                 dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
@@ -953,7 +960,7 @@ class Build_dataframe:
         return df
 
     def add_NDVI_mask(self,df):
-        f = '/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
+        f = data_root+'Base_data/NDVI_mask.tif'
 
         array, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(f)
         array = np.array(array, dtype=np.float)
@@ -1036,7 +1043,7 @@ class Build_dataframe:
         return dic_reclass
 
     def P_PET_ratio(self, P_PET_fdir):
-        # fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
+
         fdir = P_PET_fdir
         dic = T.load_npy_dir(fdir)
         dic_long_term = {}
@@ -1128,24 +1135,6 @@ class Build_dataframe:
 
 
 
-    def add_Koppen_data_to_df(self, df):
-        f = data_root + 'Koppen/koppen_reclass_spatial_dic.npy'
-        koppen_dic = T.load_npy(f)
-        koppen_list = []
-
-        for i, row in tqdm(df.iterrows(), total=len(df)):
-            # year = row['year']
-            # pix = row.pix
-            pix = row['pix']
-            if not pix in koppen_dic:
-                koppen_list.append(np.nan)
-                continue
-            vals = koppen_dic[pix]
-
-            koppen_list.append(vals)
-            # landcover_list.append(vals)
-        df['koppen'] = koppen_list
-        return df
 
 
 

@@ -889,7 +889,7 @@ def plot_dic():  # LAI4g
 def foo():
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/zscore/2000-2018_monthly/LAI3g_early_zscore.npy'
+    f='D:/Greening/Result/extraction_original_val/2000-2018_Trendy/during_early_ORCHIDEE_S2_lai.npy'
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/during_early_CO2.npy'
     result_dic = {}
     spatial_dic={}

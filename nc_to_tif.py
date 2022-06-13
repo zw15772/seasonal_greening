@@ -683,13 +683,13 @@ def nc_to_tif_Trendy():
     for f in os.listdir(fdir):
         if f.startswith('.'):
             continue
-        if 'CABLE-POP_S2_lai' not in f:
-            continue
+        # if 'CABLE-POP_S2_lai' not in f:
+        #     continue
 
         outdir_name=f.split('.')[0]
         print(outdir_name)
 
-        outdir = f'C:/Users/pcadmin/Desktop/Trendy_TIFF/{outdir_name}//'
+        outdir = f'D:///Greening/Data/Trendy_TIFF/{outdir_name}//'
         Tools().mk_dir(outdir, force=True)
         yearlist =list(range(1982,2021))
 

@@ -1,9 +1,13 @@
 # coding='utf-8'
 from __init__ import *
 
-project_root='/Volumes/SSD_sumsang/project_greening/'
+# project_root='/Volumes/SSD_sumsang/project_greening/'
+# data_root=project_root+'Data/'
+# results_root=project_root+'Result/new_result/'
+
+project_root='D:/Greening/'
 data_root=project_root+'Data/'
-results_root=project_root+'Result/new_result/'
+results_root=project_root+'Result/'
 
 def mk_dir(outdir):
     if not os.path.isdir(outdir):
@@ -13,10 +17,10 @@ def mk_dir(outdir):
 
 class Plot_dataframe:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018_Trendy/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018_Trendy.df'
 
 
 
@@ -34,7 +38,9 @@ class Plot_dataframe:
         # self.call_multi_correlation_bar(df)
         # self.call_plot_line_for_three_seasons(df)
         # self.call_plot_line_NDVI_three_seasons(df)
-        self.call_plot_LST_for_three_seasons(df)
+        # self.call_plot_LST_for_three_seasons(df)
+        # self.call_plot_trendy_for_three_seasons(df)
+        self.call_plot_trendy_for_three_seasons(df)
         # self.call_plot_GIMMS_NDVI_for_three_seasons_two_product(df)
         # self.plot_product_bar(df)
 
@@ -467,6 +473,7 @@ class Plot_dataframe:
         # variable_list=['1982-2020_LAI4g','1982-2018_LAI3g','2000-2019_MODIS_LAI']
         variable_list = ['2000-2018_LAI3g', '2000-2018_MODIS_LAI']
 
+
         fig = plt.figure()
 
 
@@ -475,14 +482,14 @@ class Plot_dataframe:
             flag=0
             ax = fig.add_subplot(2, 3, i)
 
-            for variable in variable_list:
+            for variable in variables_list:
 
 
-                column_name=f'{variable}_{period}_relative_change_monthly'
+                column_name=f'2000-2018_{variable}_{period}_relative_change_monthly'
 
                 print(column_name)
                 color=color_list[flag]
-                self.plot_LST_for_three_seasons(df,column_name,color)
+                self.plot_trendy_for_three_seasons(df,column_name,color)
                 flag+=1
 
             plt.legend()
@@ -546,6 +553,7 @@ class Plot_dataframe:
         # r, p_value = stats.pearsonr(xaxis, mean_val_list)
         # k_value, b_value = np.polyfit(xaxis, mean_val_list, 1)
         k_value, b_value, r, p_value=T.nan_line_fit(xaxis,mean_val_list)
+        print(k_value)
 
         mean_value_yearly = []
         up_list = []
@@ -575,6 +583,220 @@ class Plot_dataframe:
         #
         # plt.show()
         # exit()
+
+
+    def call_plot_trendy_for_three_seasons(self,df):
+
+        # 实现变量的三个季节画在一起
+
+        df = df[df['HI_class'] == 'Humid']
+
+
+        period_name=['early','peak','late']
+        # period_name = ['late']
+
+        color_list=['r','g','b','y','c','m','k','orange','purple','brown','pink','gray','olive','lime','black']
+        width_list=[0.5]*14
+        width_list.append(2)
+
+
+        variables_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
+                     'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai',
+                     'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai', 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai']
+        # variables_list = ['CABLE-POP_S2_lai','LPX-Bern_S2_lai',
+        #                   ]
+
+        # 'SDGVM_S2_lai'
+        k_value={}
+        b_value={}
+        r={}
+        p_value={}
+        all_products={}
+        for period in period_name:
+            all_products[period]={}
+
+
+
+        for period in period_name:
+
+            for variable in variables_list:
+
+                column_name=f'2000-2018_{variable}_{period}_relative_change_monthly'
+                # print(column_name)
+                mean_val_list=self.calculate_trendy_products(df,column_name)
+                all_products[period][variable]=mean_val_list
+
+
+        all_products_list=[]
+
+
+        for period in period_name:
+            for variable in all_products[period]:
+                vals=all_products[period][variable]
+                all_products_list.append(vals)
+            all_products_array=np.array(all_products_list)
+
+            all_products_array_T=all_products_array.T
+
+            row = len(all_products_array_T)
+            # print(row)
+            product_list=[]
+
+            for i in range(row):
+                product_mean = np.nanmean(all_products_array_T[i])
+                product_list.append(product_mean)
+            all_products[period]['mean'] = product_list
+
+            vals=all_products[period]['mean']
+            k_value, b_value, r, p_value = T.nan_line_fit(range(len(vals)), vals)
+            print(k_value)
+
+
+
+
+####       Start plot print(all_products)
+        year_list=list(range(2000,2019))
+        fit_value_yearly=[]
+
+        for year in year_list:
+
+            fit_value_yearly.append(k_value * (year - year_list[0]) + b_value)
+
+        fig = plt.figure()
+
+        i = 1
+
+        for period in period_name:
+            flag=0
+            ax = fig.add_subplot(2, 3, i)
+
+            for variable in all_products[period]:
+                vals=all_products[period][variable]
+                print(vals)
+
+
+                color=color_list[flag]
+                width=width_list[flag]
+                plt.plot(vals, label=variable, c=color, linewidth=width)
+
+                plt.xticks(range(len(vals)), year_list, rotation=45)
+                flag += 1
+
+            plt.plot(fit_value_yearly, linestyle='--', label='k={:0.2f},p={:0.4f}'.format(k_value, p_value), c='black')
+
+            plt.legend()
+            plt.ylabel('relative change %')
+            plt.title(f'{period}_Humid')
+            plt.ylim(-20, 30)
+            major_ticks = np.arange(0, 20, 5)
+            # major_ticks = np.arange(0, 40, 5)  ### 根据数据长度修改这里
+            ax.set_xticks(major_ticks)
+            plt.grid(which='major', alpha=0.5)
+            i = i + 1
+        plt.show()
+
+
+    def calculate_trendy_products(self,df,column_name):
+
+        dic = {}
+        mean_val = {}
+
+
+
+        year_list = []
+        for i in range(2000, 2019):
+            year_list.append(i)
+        print(year_list)
+
+        for year in tqdm(year_list):  # 构造字典的键值，并且字典的键：值初始化
+            dic[year] = []
+            mean_val[year] = []
+
+
+        for year in year_list:
+            df_pick = df[df['year'] == year]
+            for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
+                pix = row.pix
+                val = row[column_name]
+                dic[year].append(val)
+            val_list = np.array(dic[year])
+            # val_list[val_list>1000]=np.nan
+            mean_val_i = np.nanmean(val_list)
+            mean_val[year] = mean_val_i
+
+
+        # a, b, r = KDE_plot().linefit(xaxis, val)
+        mean_val_list=[]    # mean_val_list=下面的mean_value_yearly
+
+        for year in year_list:
+            mean_val_list.append(mean_val[year])
+            print(len(mean_val_list))
+
+
+        return mean_val_list
+
+    def plot_trendy_products(self, df, column_name):
+
+        dic = {}
+        mean_val = {}
+        confidence_value = {}
+        std_val = {}
+        mean_val_all_products = {}
+        # year_list = df['year'].to_list()
+        # year_list = set(year_list)  # 取唯一
+        # year_list = list(year_list)
+        # year_list.sort()
+
+        year_list = []
+        for i in range(2000, 2019):
+            year_list.append(i)
+        print(year_list)
+
+        for year in tqdm(year_list):  # 构造字典的键值，并且字典的键：值初始化
+            dic[year] = []
+            mean_val[year] = []
+            confidence_value[year] = []
+
+        for year in year_list:
+            df_pick = df[df['year'] == year]
+            for i, row in tqdm(df_pick.iterrows(), total=len(df_pick)):
+                pix = row.pix
+                val = row[column_name]
+                dic[year].append(val)
+            val_list = np.array(dic[year])
+            # val_list[val_list>1000]=np.nan
+            mean_val_i = np.nanmean(val_list)
+            mean_val[year] = mean_val_i
+
+        # a, b, r = KDE_plot().linefit(xaxis, val)
+        mean_val_list = []  # mean_val_list=下面的mean_value_yearly
+
+        for year in year_list:
+            mean_val_list.append(mean_val[year])
+        xaxis = range(len(mean_val_list))
+        xaxis = list(xaxis)
+        print(len(mean_val_list))
+        # r, p_value = stats.pearsonr(xaxis, mean_val_list)
+        # k_value, b_value = np.polyfit(xaxis, mean_val_list, 1)
+        mean_val_all_products.append(mean_val_list)
+        k_value, b_value, r, p_value = T.nan_line_fit(xaxis, mean_val_list)
+
+        mean_value_yearly = []
+        up_list = []
+        bottom_list = []
+        fit_value_yearly = []
+        p_value_yearly = []
+
+        for year in year_list:
+            mean_value_yearly.append(mean_val[year])
+
+            fit_value_yearly.append(k_value * (year - year_list[0]) + b_value)
+
+        return mean_value_yearly
+
+
+
+
 
 
     def call_greening_trend_bar(self,df):  # 实现的功能是greening_trend_percentage_bar

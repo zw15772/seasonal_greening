@@ -929,11 +929,18 @@ class process_data:
 
     def unify_raster(self):
 
-        fdir_all = 'C:/Users/pcadmin/Desktop/Trendy_TIFF_resample/'
-        outdir_all = 'C:/Users/pcadmin/Desktop/Trendy_TIFF_resample_unify/'
+        # fdir_all = 'D:/Greening/Data/Trendy_TIFF_resample/'
+        # outdir_all = 'D:/Greening/Data//Trendy_TIFF_resample_unify/'
+
+        fdir_all = 'D:/Greening/Data/Trendy_TIFF_resample_unify/'
+        outdir_all = 'D:/Greening/Data//Trendy_TIFF_resample_unify_2/'
+
+
 
         for fdir in tqdm(os.listdir(fdir_all)):
             print(fdir)
+
+
             outdir = join(outdir_all, fdir + '/')
             T.mk_dir(outdir, force=True)
 
