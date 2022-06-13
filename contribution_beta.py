@@ -1,6 +1,6 @@
 # coding=gbk
 import matplotlib.pyplot as plt
-import plotly.graph_objs as go
+# import plotly.graph_objs as go
 from __init__ import *
 import lytools
 from lytools import *
@@ -2070,37 +2070,41 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
 
     def __init__(self):
 
-        self.period='early'
-        self.variable='LAI3g'
+        self.period='peak'
+        self.variable_list= ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
+                     'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai',
+                     'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai', 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai']
         self.time_range='2000-2018'
-        # self.result_dir=results_root+'multiregression/LAI_GIMMS/'
-        self.result_dir = results_root + f'partial_correlation_zscore_detrend/'
-        # self.result_f = self.result_dir+'/detrend_{}_multi_linear{}_{}.npy'.format(self.time_range,self.period,self.variable)
-        self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,self.period,self.variable)
-        self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_result_{}_{}.npy'.format(
-            self.time_range, self.period,self.variable)
-        # self.partial_correlation_VIP_result_f = self.result_dir + '/{}_partial_correlation_VIP_{}_{}.npy'.format(
-        #     self.time_range, self.period, self.variable)
-        self.x_dir=results_root+f'detrend_Zscore/detrend_{self.time_range}/detrend_{self.time_range}_during_{self.period}/{self.time_range}_X/'
-        # self.x_dir = results_root+f'zscore/2000-2018_daily/2000-2018_X/'
-        self.y_f = results_root+f'detrend_Zscore/detrend_{self.time_range}/detrend_{self.time_range}_during_{self.period}/{self.time_range}_Y/detrend_{self.variable}_{self.period}_zscore.npy'
-        # self.y_f=results_root+f'zscore/2000-2018_daily/2000-2018_Y/{self.variable}_{self.period}_zscore.npy'
-        # self.y_mean = results_root + 'mean_calculation_original/during_{}_{}/during_{}_{}_mean.npy'.format(self.period,self.time_range,self.period,self.variable)
-        T.mk_dir(self.result_dir,force=True)
+        self.y_fdir=results_root+f'zscore/monthly/2000-2018_Trendy/'
+
+
+        self.x_dir = results_root+f'zscore/monthly/2000-2018_X/'
+
+
+
         pass
 
 
     def run(self):
 
-        # step 1 build dataframe
-        df = self.build_df(self.x_dir,self.y_f,self.period)
-        x_var_list = self.__get_x_var_list(self.x_dir,self.period)
-        # # # step 2 cal correlation
-        # self.cal_multi_regression_beta(df, x_var_list,17)  #修改参数
-        self.cal_partial_correlation(df, x_var_list,19)  #修改参数
-        # self.cal_PLS(df, x_var_list, 19)  # 修改参数
-        # self.max_contribution()
-        # self.variables_contribution()
+        for variable in self.variable_list:
+            self.y_f=self.y_fdir+f'{variable}_{self.period}_zscore.npy'
+            self.result_dir = results_root + f'partial_correlation_zscore/{variable}/'
+            T.mk_dir(self.result_dir, force=True)
+
+            self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,self.period, variable)
+            self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_result_{}_{}.npy'.format(
+                self.time_range, self.period, variable)
+
+            # step 1 build dataframe
+            df = self.build_df(self.x_dir,self.y_f,self.period)
+            x_var_list = self.__get_x_var_list(self.x_dir,self.period)
+            # # # step 2 cal correlation
+            # self.cal_multi_regression_beta(df, x_var_list,17)  #修改参数
+            self.cal_partial_correlation(df, x_var_list,19)  #修改参数
+            # self.cal_PLS(df, x_var_list, 19)  # 修改参数
+            # self.max_contribution()
+            # self.variables_contribution()
 
 
 
@@ -2122,6 +2126,8 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
             split1 = x_f.split('/')[-1]
             split2 = split1.split('.')[0]
             var_name = '_'.join(split2.split('_')[0:-2])
+            if 'CO2' in var_name:
+                continue
             x_var_list.append(var_name)
         return x_var_list
 
@@ -2180,6 +2186,8 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
             split1 = x_f.split('/')[-1]
             split2 = split1.split('.')[0]
             var_name = '_'.join(split2.split('_')[0:-2])
+            if 'CO2' in var_name:
+                continue
             x_var_list.append(var_name)
             # print(var_name)
             x_val_list = []
@@ -3481,7 +3489,8 @@ def main():
     # Unify_date_range().run()
     # check_NIRV_NDVI().run()
     # Linear_contribution().run()
-    Multi_liner_regression().run()
+    # Multi_liner_regression().run()
+    Multi_liner_regression_for_Trendy().run()
     # plot_partial_plot().run()
     # Sankey_plot_PLS().run()
 
