@@ -889,7 +889,7 @@ def plot_dic():  # LAI4g
 def foo():
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/detrend_Pierre_relative_change/detrend_2000-2018/detrend_2000-2018_during_peak/detrend_VPD_peak_relative_change.npy'
+    f='xtraction_original_val/2000-2018_monthly/during_early_Temp.npy'
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/during_early_CO2.npy'
     result_dic = {}
     spatial_dic={}
@@ -1134,7 +1134,7 @@ def beta_save_():  # 该功能实现所有因素的beta
     time_range='2002-2018'
     period='early'
     # f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression/LAI_GIMMS/detrend_1982-2001_multi_linearearly_LAI_GIMMS.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_zscore/2000-2018_partial_correlation_late_LAI3g.npy'
+    f='//Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_zscore_detrend/2000-2018_partial_correlation_early_LAI3g.npy'
     outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_original_detrend/TIFF_{}_{}_8/'.format(time_range,period)
     T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)
@@ -1297,11 +1297,11 @@ def main():
     # CSIF_par_annually_transform()
     # plot_dic()
 
-    foo()
+    # foo()
     # spatial_plot_Yang()
     # spatial_plot()
     # beta_plot()
-    # beta_save_()
+    beta_save_()
     # check_pcorr()
     # foo4()
     #  foo3()
