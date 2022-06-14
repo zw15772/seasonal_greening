@@ -6719,12 +6719,12 @@ class Unify_date_range:
         # self.__data_range_index()
         start = 2000
         end = 2018
-        period='peak'
+        period='late'
 
         # X_dir = result_root + f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
         # outdirX = result_root + f'extraction_original_val/{start}-{end}_monthly/'
-        X_dir=result_root+f'extraction_original_val/extraction_original_val_daily/extraction_during_{period}_growing_season_static/'
-        outdirX = result_root + f'extraction_original_val/{start}-{end}_daily/'
+        X_dir=result_root+f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
+        outdirX = result_root + f'extraction_original_val/{start}-{end}_monthly/'
 
         self.unify(X_dir,outdirX,start,end)
         # #
@@ -6760,7 +6760,7 @@ class Unify_date_range:
 
             # 'Aridity': list(range(1982, 2019)),
             'PAR':list(range(1982,2021)),
-            # 'CO2': list(range(1982, 2021)),
+            'CO2': list(range(1982, 2021)),
             # 'Precip':list(range(1982,2019)),
 
             'Temp':list(range(1982,2021)),
@@ -6994,7 +6994,7 @@ def main():
 
 
     # statistic_anaysis().trend_calculation()
-    statistic_anaysis().detrend()
+    # statistic_anaysis().detrend()
     # statistic_anaysis().mean_calculation()
     # statistic_anaysis().CV_calculation()
     # statistic_anaysis().extraction_winter_index()
@@ -7043,7 +7043,7 @@ def main():
 
     # Hydrothemal().plot_matrix()
     # statistic_anaysis().run()
-    # Unify_date_range().run()
+    Unify_date_range().run()
     # rename()
     # plot_results().run()
     # normalization()

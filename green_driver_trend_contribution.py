@@ -1445,7 +1445,7 @@ class Build_partial_correlation_dataframe:
                 # exit()
                 val_list = []
                 for i, row in tqdm(df.iterrows(), total=len(df)):
-                    year = row['year']
+
                     # pix = row.pix
                     pix = row['pix']
                     if not pix in val_dic:

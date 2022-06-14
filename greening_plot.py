@@ -1625,7 +1625,7 @@ class Plot_partial_correlation:
 
     def plot_boxplot_correlation(self, df_pick, koppen, period, time): ### Wen 2021/12/30
 
-        variable_list = ['CO2', 'PAR', 'Precip', 'VPD', 'temperature']
+        variable_list = ['PAR', 'Precip', 'VPD', 'temperature']
 
         mean_variable={}
 
