@@ -1143,10 +1143,10 @@ class Build_partial_correlation_dataframe:
 
     def __init__(self):
         self.__config__()
-        self.this_class_arr = results_root + 'Data_frame_1982-2018/partial_correlation_1982-2018/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018/partial_correlation_2000-2018/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Data_frame_1982-2018_df.df'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation.df'
         self.P_PET_dir = data_root + 'original_dataset/aridity_P_PET_dic/'
         pass
 
@@ -1161,7 +1161,7 @@ class Build_partial_correlation_dataframe:
         #               'temperature',
         #               'CCI_SM', ]
         self.x_var_list = [f'during_{period}_CCI_SM.npy',
-            f'during_{period}_CO2.npy',
+
                            f'during_{period}_PAR.npy',
                            f'during_{period}_VPD.npy',
                            f'during_{period}_temperature.npy',
@@ -1177,8 +1177,8 @@ class Build_partial_correlation_dataframe:
 
         # df=self.foo(df)
 
-        # df=self.add_partial_to_df(df)
-        df=self.add_trend_to_df(df)
+        df=self.add_partial_to_df(df)
+        # df=self.add_trend_to_df(df)
         # df=self.add_single_correlation_to_df(df)
         # df=self.add_difference_correlation_to_df(df)
         # df=self.add_max_correlation_to_df(df)
@@ -1215,7 +1215,7 @@ class Build_partial_correlation_dataframe:
         return df
         # return df_early,dff
 
-    def __df_to_excel(self, df, dff, n=1000, random=False):
+    def __df_to_excel(self, df, dff, n=1000, random=True):
         dff = dff.split('.')[0]
         if n == None:
             df.to_excel('{}.xlsx'.format(dff))
@@ -1242,54 +1242,7 @@ class Build_partial_correlation_dataframe:
         df['pix']=df_pix_list
         return df
 
-    def add_original_GIMMIS_NDVI_to_df(self, df):
-        period = 'late'
 
-        f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/1982-2015_original_extraction_all_seasons/1982-2015_extraction_during_{}_growing_season_static/during_{}_GIMMS_NDVI.npy'.format(period,period)
-
-        NDVI_dic = T.load_npy(f)
-        f_name = 'GIMMS_NDVI_{}_original'.format(period)
-        NDVI_list = []
-        for i, row in tqdm(df.iterrows(), total=len(df)):
-            year = row['year']
-            # pix = row.pix
-            pix = row['pix']
-            if not pix in NDVI_dic:
-                NDVI_list.append(np.nan)
-                continue
-            vals = NDVI_dic[pix]
-            if len(vals) != 34:
-                NDVI_list.append(np.nan)
-                continue
-            v1 = vals[year - 1982]
-            NDVI_list.append(v1)
-        df[f_name] = NDVI_list
-        return df
-
-
-    def add_anomaly_GIMMIS_NDVI_to_df(self, df):
-        period = 'late'
-        f = results_root + 'extraction_anomaly_val/1982-2015_anomaly_extraction_all_seasons/1982-2015_extraction_during_{}_growing_season_static/during_{}_GIMMS_NDVI.npy'.format(
-            period, period)
-
-        NDVI_dic = T.load_npy(f)
-        f_name = 'GIMMS_NDVI_{}_anomaly'.format(period)
-        NDVI_list = []
-        for i, row in tqdm(df.iterrows(), total=len(df)):
-            year = row['year']
-            # pix = row.pix
-            pix = row['pix']
-            if not pix in NDVI_dic:
-                NDVI_list.append(np.nan)
-                continue
-            vals = NDVI_dic[pix]
-            if len(vals) != 34:
-                NDVI_list.append(np.nan)
-                continue
-            v1 = vals[year - 1982]
-            NDVI_list.append(v1)
-        df[f_name] = NDVI_list
-        return df
 
     def add_trend_to_df(self, df):
         period_list = ['early', 'peak', 'late']
@@ -1497,50 +1450,50 @@ class Build_partial_correlation_dataframe:
 
     def add_partial_to_df(self, df):  # 这里
 
-        period_list = ['early' ,'peak', 'late']
-        time = '1982-2018'
 
-        for period in period_list:
-            fdir = results_root + 'partial_correlation/LAI_GIMMS/'
+        time = '2000-2018'
+        fdir_all= results_root + 'partial_correlation_zscore/'
 
-
-            # f=f'{time}_partial_correlation_{period}_anomaly_LAI_GIMMS.npy'
-            f = f'{time}_partial_correlation_p_value_{period}_anomaly_LAI_GIMMS.npy'
-
-            val_dic = T.load_npy(fdir+f)
+        for fdir in (os.listdir(fdir_all)):
             var_name_list = []
-            for pix in val_dic:
-                # print(pix)
-                vals = val_dic[pix]
-                for var_i in vals:
-                    var_name_list.append(var_i)
-            var_name_list = list(set(var_name_list))
+            for f in (os.listdir(fdir_all + fdir)):
+                if not 'late' in f:
+                    continue
+                if not f.endswith('.npy'):
+                    continue
+                dic = T.load_npy(fdir_all + fdir + '/' + f)
 
-            for var_i in var_name_list:
-                val_list = []
+                for pix in dic:
+                    # print(pix)
+                    vals = dic[pix]
+                    for var_i in vals:
+                        var_name_list.append(var_i)
+                var_name_list = list(set(var_name_list))
 
-                # df_column_name=f'{var_i}_{time}_correlation'
-                df_column_name = f'{var_i}_{time}_p_value'
+                for var_i in var_name_list:
+                    val_list = []
+                    df_column_name = f.split('.')[0]+f'_{var_i}'
 
-                print(df_column_name)
-                # exit()
-                for i, row in tqdm(df.iterrows(), total=len(df),desc=df_column_name):
-                    pix = row['pix']
-                    if pix not in val_dic:
-                        val_list.append(np.nan)
-                        continue
-                    dic_i = val_dic[pix]
-                    if not var_i in dic_i:
-                        val_list.append(np.nan)
-                        continue
-                    val = dic_i[var_i]
-                    if val < -99:
-                        val_list.append(np.nan)
-                        continue
-                    val_list.append(val)
-                df[df_column_name] = val_list
+
+                    print(df_column_name)
+                    # exit()
+                    for i, row in tqdm(df.iterrows(), total=len(df), desc=df_column_name):
+                        pix = row['pix']
+                        if pix not in dic:
+                            val_list.append(np.nan)
+                            continue
+                        dic_i = dic[pix]
+                        if not var_i in dic_i:
+                            val_list.append(np.nan)
+                            continue
+                        val = dic_i[var_i]
+                        if val < -99:
+                            val_list.append(np.nan)
+                            continue
+                        val_list.append(val)
+                    df[df_column_name] = val_list
         return df
-
+        #
     def add_single_correlation_to_df(self, df):  # 这里
         variable_list=['CO2','PAR','VPD','SPEI3','temperature','CCI_SM']
 
@@ -2568,8 +2521,8 @@ class Build_trend_dataframe:
 
 
 def main():
-    Build_dataframe().run()
-    # Build_partial_correlation_dataframe().run()
+    # Build_dataframe().run()
+    Build_partial_correlation_dataframe().run()
     # Build_trend_dataframe().run()
     pass
 
