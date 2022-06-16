@@ -5846,103 +5846,103 @@ class statistic_anaysis:
 
 
     def trend_calculation(self):
-        def trend_calculation(self):
-            # time = '1982-2015'
-            # variable='GIMMS_NDVI'
-            periods = ['early', 'peak', 'late']
 
-            for period in periods:
+        # time = '1982-2015'
+        # variable='GIMMS_NDVI'
+        periods = ['early', 'peak', 'late']
 
-                fdir_X = result_root + f'zscore/2000-2018_daily/2000-2018_Y/'
-                outdir = result_root + f'trend_zscore/2000-2018_daily/2000-2018_Y/'
-                # lc_list = ['water', 'grass', 'shrub', 'crop', 'EBF', 'ENF', 'DBF', 'DNF', 'savanna', 'urban', 'nonveg']
-                # for lc in lc_list:
-                #     fdir_X=data_root+f'original_dataset/landcover/{lc}_dic/'
-                #     outdir = result_root + f'lc_trend/'
+        for period in periods:
 
-                # fdir_X = result_root + f'Pierre_relative_change/2000-2018_Y/'
-                # outdir = result_root + f'trend_relative_change/2000-2018_Y/'
+            fdir_X = result_root + f'zscore/2000-2018_daily/2000-2018_Y/'
+            outdir = result_root + f'trend_zscore/2000-2018_daily/2000-2018_Y/'
+            # lc_list = ['water', 'grass', 'shrub', 'crop', 'EBF', 'ENF', 'DBF', 'DNF', 'savanna', 'urban', 'nonveg']
+            # for lc in lc_list:
+            #     fdir_X=data_root+f'original_dataset/landcover/{lc}_dic/'
+            #     outdir = result_root + f'lc_trend/'
 
-                # fdir_X = result_root + 'Pierre_relative_change/1982-/'
-                # outdir = result_root + f'trend_calculation_relative_change_1982_/'
-                Tools().mk_dir(outdir, force=True)
+            # fdir_X = result_root + f'Pierre_relative_change/2000-2018_Y/'
+            # outdir = result_root + f'trend_relative_change/2000-2018_Y/'
 
-                dic_climate = {}
-                spatial_dic = {}
-                spatial_dic_p_value = {}
-                spatial_dic_count = {}
+            # fdir_X = result_root + 'Pierre_relative_change/1982-/'
+            # outdir = result_root + f'trend_calculation_relative_change_1982_/'
+            Tools().mk_dir(outdir, force=True)
 
-                for f_X in tqdm(sorted(os.listdir(fdir_X))):
+            dic_climate = {}
+            spatial_dic = {}
+            spatial_dic_p_value = {}
+            spatial_dic_count = {}
 
-                    dic_i = dict(np.load(fdir_X + f_X, allow_pickle=True, ).item())
-                    dic_climate.update(dic_i)
+            for f_X in tqdm(sorted(os.listdir(fdir_X))):
 
-                    # dic_climate = dict(np.load(fdir_X + f_X, allow_pickle=True, ).item())
+                dic_i = dict(np.load(fdir_X + f_X, allow_pickle=True, ).item())
+                dic_climate.update(dic_i)
 
-                    # outf=outdir+f_X.split('.')[0]
-                    # split1 = f_X.split('.')[0].split('_')[0:]
-                    # split2='_'.join(split1)
-                    outf = outdir + f_X.split('.')[0]
-                    # outf=outdir+split2
-                    print(outf)
-                    # exit()
+                # dic_climate = dict(np.load(fdir_X + f_X, allow_pickle=True, ).item())
 
-                    # /////////////////////////////// 出错点！！！/////////////////////////////
+                # outf=outdir+f_X.split('.')[0]
+                # split1 = f_X.split('.')[0].split('_')[0:]
+                # split2='_'.join(split1)
+                outf = outdir + f_X.split('.')[0]
+                # outf=outdir+split2
+                print(outf)
+                # exit()
 
-                    for pix in tqdm(dic_climate):
-                        val = dic_climate[pix]
-                        val = np.array(val)
+                # /////////////////////////////// 出错点！！！/////////////////////////////
 
-                        val[val < -99999] = np.nan
-                        if np.isnan(np.nanmean(val)):
+                for pix in tqdm(dic_climate):
+                    val = dic_climate[pix]
+                    val = np.array(val)
+
+                    val[val < -99999] = np.nan
+                    if np.isnan(np.nanmean(val)):
+                        continue
+                    try:
+                        xaxis = list(range(len(val)))
+                        # a, b, r = KDE_plot().linefit(xaxis, val)
+                        r, p = stats.pearsonr(xaxis, val)
+                        k, b = np.polyfit(xaxis, val, 1)
+                        # print(k)
+                        spatial_dic_count[pix] = len(val)
+                        spatial_dic[pix] = k  #
+                        # spatial_dic[pix] = b  #
+                        spatial_dic_p_value[pix] = p
+
+                    except Exception as e:
+                        k = np.nan
+                        b = np.nan
+
+                count_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_count)
+                # plt.imshow(count_arr)
+                # plt.colorbar()
+                # plt.title(variable_name_list[ii])
+                # plt.show()
+                correlation_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+                correlation_arr = np.array(correlation_arr)
+                p_value_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_p_value)
+                p_value_arr = np.array(p_value_arr)
+                # trend_arr[trend_arr < -10] = np.nan
+                # trend_arr[trend_arr > 10] = np.nan
+
+                hist = []
+                for i in correlation_arr:
+                    for j in i:
+                        if np.isnan(j):
                             continue
-                        try:
-                            xaxis = list(range(len(val)))
-                            # a, b, r = KDE_plot().linefit(xaxis, val)
-                            r, p = stats.pearsonr(xaxis, val)
-                            k, b = np.polyfit(xaxis, val, 1)
-                            # print(k)
-                            spatial_dic_count[pix] = len(val)
-                            spatial_dic[pix] = k  #
-                            # spatial_dic[pix] = b  #
-                            spatial_dic_p_value[pix] = p
+                        hist.append(j)
 
-                        except Exception as e:
-                            k = np.nan
-                            b = np.nan
+                # plt.hist(hist, bins=80)
+                # plt.figure()
+                # plt.imshow(correlation_arr, cmap='jet', vmin=-0.2, vmax=0.2)
+                # plt.imshow(p_value_arr, cmap='jet', vmin=0, vmax=0.1)
+                # plt.title('')
+                # plt.colorbar()
+                # plt.show()
 
-                    count_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_count)
-                    # plt.imshow(count_arr)
-                    # plt.colorbar()
-                    # plt.title(variable_name_list[ii])
-                    # plt.show()
-                    correlation_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
-                    correlation_arr = np.array(correlation_arr)
-                    p_value_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_p_value)
-                    p_value_arr = np.array(p_value_arr)
-                    # trend_arr[trend_arr < -10] = np.nan
-                    # trend_arr[trend_arr > 10] = np.nan
-
-                    hist = []
-                    for i in correlation_arr:
-                        for j in i:
-                            if np.isnan(j):
-                                continue
-                            hist.append(j)
-
-                    # plt.hist(hist, bins=80)
-                    # plt.figure()
-                    # plt.imshow(correlation_arr, cmap='jet', vmin=-0.2, vmax=0.2)
-                    # plt.imshow(p_value_arr, cmap='jet', vmin=0, vmax=0.1)
-                    # plt.title('')
-                    # plt.colorbar()
-                    # plt.show()
-
-                    # #     # save arr to tif
-                    DIC_and_TIF().arr_to_tif(correlation_arr, outf + '_trend.tif')
-                    DIC_and_TIF().arr_to_tif(p_value_arr, outf + '_p_value.tif')
-                    np.save(outf + '_trend', correlation_arr)
-                    np.save(outf + '_p_value', p_value_arr)
+                # #     # save arr to tif
+                DIC_and_TIF().arr_to_tif(correlation_arr, outf + '_trend.tif')
+                DIC_and_TIF().arr_to_tif(p_value_arr, outf + '_p_value.tif')
+                np.save(outf + '_trend', correlation_arr)
+                np.save(outf + '_p_value', p_value_arr)
 
     def max_trend_among_all_variables(self):
 
