@@ -66,26 +66,30 @@ T=Tools()
 
 
 
-project_root='/Volumes/SSD_sumsang/project_greening/'
+# project_root='/Volumes/SSD_sumsang/project_greening/'
+# data_root=project_root+'Data/'
+# result_root=project_root+'Result/new_result/'
+
+project_root='D:/Greening/'
 data_root=project_root+'Data/'
-result_root=project_root+'Result/new_result/'
+result_root=project_root+'Result/'
 
 def mk_dir(outdir):
     if not os.path.isdir(outdir):
         os.mkdir(outdir)
 
 def tif2dict():
-    fdir='/Volumes/SSD_sumsang/project_greening/Data/LAI_3g/LAI_3g_resample'
-    outdir
+    fdir = 'D:/Greening/Data/Trendy_ensemble/'
+    outdir = 'D:/Greening/Data/DIC/Trendy_ensemble/'
 
-    NDVI_mask_f='/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
+    NDVI_mask_f='D:/Greening/Data/Base_data/NDVI_mask.tif'
     array_mask, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(NDVI_mask_f)
     array_mask[array_mask<0]=np.nan
 
     T.mk_dir(outdir,force=True)
     flist=os.listdir(fdir)
     all_array=[]
-    year_list=list(range(2001,2021))  # 作为筛选条件
+    year_list=list(range(1982,2021))  # 作为筛选条件
     for f in tqdm(sorted(flist),desc='loading...'):
         if f.startswith('.'):
             continue
@@ -343,6 +347,7 @@ def tif2dic_single_file():
         time_series = np.array(time_series)
         temp_dic[key] = time_series
     np.save(outf, temp_dic)
+
 
 def Hants_average_smooth():  #多年的曲线，平均成一年的曲线,然后插值
     fdir='/Users/admin/Downloads/dic_CSIF_par/'
@@ -3626,31 +3631,6 @@ class statistic_anaysis:
                     picked_daily = np.array(picked_daily, dtype=int)
 
 
-                    for year in range(39):  # 修改
-
-
-                        during_time_series = time_series[year][picked_daily]
-                        # print(picked_month)#!!!!!
-
-                        during_time_series=np.array(during_time_series, dtype=float)
-
-                        during_time_series[during_time_series < -99.] = np.nan
-
-                        # if np.isnan(np.nanmean(during_time_series)):  # 修改
-                        #     continue
-
-                        # variable_sum = np.nansum(during_time_series)
-                        # dic_during_variables[pix].append(variable_sum)
-                        variable_mean = np.nanmean(during_time_series)  # !!! 降雨需要是sum  # 其他变量是平均值 nanmean
-                        dic_during_variables[pix].append(variable_mean)
-
-                    dic_spatial_count[pix] = len(dic_during_variables[pix])
-                arr = DIC_and_TIF().pix_dic_to_spatial_arr(dic_spatial_count)
-                plt.imshow(arr, cmap='jet')
-                plt.colorbar()
-                plt.title('')
-                plt.show()
-                np.save(outdir + 'during_{}_{}'.format(period,variable), dic_during_variables)  # 修改
 
 
     def extraction_variables_static_during_daily_climate_variables(self):  # 静态提取during multiyear
@@ -3736,24 +3716,19 @@ class statistic_anaysis:
 
         # variable_list = ['CO2','PAR',
         #                 'Temp','VPD'] # '修改'
-        # variable_list=['CCI_SM'] #  长度为39
-        # variable_list=['GIMMS_NDVI'] #  长度为34
-        # variable_list=['VOD'] #  长度29 348
-        # variable_list = ['NIRv']  # 长度37
-        # variable_list=['Precip'] # 降雨是累计量 长度37
-        # variable_list=['Aridity'] # 降雨是累计量 长度37
-        # variable_list=['MODIS_NDVI'] #  长度为168
-        variable_list = ['MODIS_LAI']  # 240 20yr
-        # variable_list = ['CSIF_fpar']  # 长度为
-        # variable_list = ['CSIF']  # 长度为 16
+
+
+        # variable_list = ['MODIS_LAI']  # 240 20yr
+
         # variable_list = ['LAI4g'] #长度39 468
         # variable_list = ['LAI3g']  # 长度37 444
+        variable_list=['Trendy_ensemble']
 
         for variable in variable_list:
             phenology_df = T.load_df(
-                result_root + f'Main_flow/arr/Phenology/Get_Monthly_Early_Peak_Late/MODIS_LAI/Monthly_Early_Peak_Late_via_DOY.df')
-
-            fdir2 = data_root + f'original_dataset/{variable}_dic/'
+                # result_root + f'Main_flow/arr/Phenology/Get_Monthly_Early_Peak_Late/MODIS_LAI/Monthly_Early_Peak_Late_via_DOY.df')
+                data_root + f'Get_Monthly_Early_Peak_Late/Monthly_Early_Peak_Late.df')
+            fdir2 = data_root + f'DIC/{variable}/'
 
             dic_variables = {}
 
@@ -3773,7 +3748,7 @@ class statistic_anaysis:
 
             for period in period_list:
                 dic_during_variables = DIC_and_TIF().void_spatial_dic()
-                outdir = result_root + 'extraction_original_val/extraction_original_val_monthly/extraction_during_{}_growing_season_static/'.format(
+                outdir = result_root + 'extraction_original_val/extraction_original_val_trendy/extraction_during_{}_growing_season_static/'.format(
                     period)
 
                 Tools().mk_dir(outdir, True)
@@ -3791,7 +3766,7 @@ class statistic_anaysis:
                     #     continue
 
                     time_series = dic_variables[pix]
-                    if len(time_series) != 240:  # (12*20)/12*37=444
+                    if len(time_series) != 468:  # (12*20)/12*37=444
                         continue
                     # plt.plot(time_series)
                     # plt.show()
@@ -3800,7 +3775,7 @@ class statistic_anaysis:
                     picked_month = picked_month-1
 
 
-                    for year in range(20):  # 修改
+                    for year in range(39):  # 修改
 
                         during_time_series = time_series[year][picked_month]
 
@@ -6973,7 +6948,7 @@ def main():
     # statistic_anaysis().extraction_during_window()
     # statistic_anaysis().extraction_variables_static_pre_month()
     # statistic_anaysis().extraction_variables_static_during_daily()
-    # statistic_anaysis().extraction_variables_static_during_month()
+    statistic_anaysis().extraction_variables_static_during_month()
     # statistic_anaysis().extraction_variables_static_during_daily_climate_variables()
 
 
@@ -7043,7 +7018,7 @@ def main():
 
     # Hydrothemal().plot_matrix()
     # statistic_anaysis().run()
-    Unify_date_range().run()
+    # Unify_date_range().run()
     # rename()
     # plot_results().run()
     # normalization()
