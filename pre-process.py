@@ -30,11 +30,13 @@ class process_data:
         # self.read_mat()
         # self.aggregation()
         # self.resample_trendy()
-        self.unify_raster()
+
+        # self.unify_raster()
 
         # self.re_name()
         # self.re_name_doy_month()
         # self.monthly_composite_ly()
+        self.ensemble_trendy()
         # self.flip()
         # self.resample()
         # self.MVC()
@@ -878,53 +880,55 @@ class process_data:
 
         pass
 
+    def ensemble_trendy(self):  # ensemble of all trendy products
 
-    def tif2dict():
-        fdir = '/Users/admin/Downloads/MOD13C1.006_NDVI'
-        outdir = '/Users/admin/Downloads/MOD13C1.006_NDVI_MVC'
-        Tools().mk_dir(outdir)
-        datelist=[]
-        flist=os.listdir(fdir)
-        for f in flist:
-            if f.endswith('tif'):
-                date=f.split('.')[0]
-                datelist.append(date)
-        datelist.sort()
-        all_array=[]
-        for f in flist:
-            for datename in datelist:
-                temporal_date = f.split('.')[0]
-                if f.split('.')[0]==datename:
-                    array, originX, originY, pixelWidth, pixelHeight =raster2array(fdir + f)
-                    array = np.array(array, dtype=np.float64)
-                    all_array.append(array)
+        fdir_all = 'D:/Greening/Data/Trendy_TIFF_resample_unify_2/'
+        outdir = 'D:/Greening/Data/Trendy_ensemble/'
+        T.mk_dir(outdir)
 
-        key_list=[]
-        dic={}
-        for r in range(len(all_array[0])): #构造字典的键值，并且字典的键：值初始化
-            for c in range(len(all_array[1])):
-                dic[(r,c)]=[]
-                key_list.append((r,c))
-        #print(dic_key_list)
+        one_month_tif={}
+        for y in range(1982,2021):
+            for m in range(1, 13):
+                date = '{}{:02d}'.format(y, m)
+                print (date)
+                one_month_tif[date] = {}
+                arrs = []
+                for fdir in os.listdir(fdir_all):
+                    for f in os.listdir(fdir_all + fdir):
+                        if not '{}{:02d}'.format(y, m) in f:
+                            continue
+                        if not f.endswith('.tif'):
+                            continue
+                        arr, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(fdir_all+fdir + '/'+f)
+                        arr = np.array(arr, dtype=np.float)
+                        arr[arr < 0] = np.nan
+                        arr[arr > 10] = np.nan
+                        arrs.append(arr)
+                        one_month_tif[date]=arrs
 
-        for r in range(len(all_array[0])): # 构造time series
-            for c in range(len(all_array[1])):
-                for arr in all_array:
-                    value=arr[r][c]
-                    dic[(r,c)].append(value)
-                #print(dic)
-        time_series=[]
-        flag=0
-        temp_dic={}
-        for key in key_list: #存数据
-            flag=flag+1
-            time_series=dic[key]
-            time_series=np.array(time_series)
-            temp_dic[key]=time_series
-            if flag %10000 == 0:
-                np.save(outdir +'per_pix_dic_%03d' % (flag/10000),temp_dic)
-                temp_dic={}
-        np.save(outdir + 'per_pix_dic_%03d' % 0, temp_dic)
+        for date in one_month_tif:
+                arrays=one_month_tif[date]
+
+                one_month_mean = []
+                for i in range(len(arrays[0])):
+                    temp = []
+                    for j in range(len(arrays[0][0])):
+                        sum_ = []
+
+                        for k in range(len(arrays)):
+                            val = arrays[k][i][j]
+                            sum_.append(val)
+
+                        mean = np.nanmean(sum_)
+                        temp.append(mean)
+                    one_month_mean.append(temp)
+                one_month_mean = np.array(one_month_mean)
+                # arr = DIC_and_TIF().pix_dic_to_spatial_arr(one_month_mean)
+                newRasterfn = outdir + 'ensemble_trendy_'+ date + '.tif'
+                to_raster.array2raster(newRasterfn, originX, originY, pixelWidth, pixelHeight, one_month_mean, ndv=-999999)
+
+
+        pass
 
 
     def unify_raster(self):

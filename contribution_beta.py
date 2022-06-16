@@ -2089,7 +2089,7 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
 
         for variable in self.variable_list:
             self.y_f=self.y_fdir+f'{variable}_{self.period}_zscore.npy'
-            self.result_dir = results_root + f'partial_correlation_zscore/{variable}/'
+            self.result_dir = results_root + f'partial_correlation_zscore_CO2/{variable}/'
             T.mk_dir(self.result_dir, force=True)
 
             self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,self.period, variable)
@@ -2126,8 +2126,8 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
             split1 = x_f.split('/')[-1]
             split2 = split1.split('.')[0]
             var_name = '_'.join(split2.split('_')[0:-2])
-            if 'CO2' in var_name:
-                continue
+            # if 'CO2' in var_name:
+            #     continue
             x_var_list.append(var_name)
         return x_var_list
 
@@ -2186,8 +2186,8 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
             split1 = x_f.split('/')[-1]
             split2 = split1.split('.')[0]
             var_name = '_'.join(split2.split('_')[0:-2])
-            if 'CO2' in var_name:
-                continue
+            # if 'CO2' in var_name:
+            #     continue
             x_var_list.append(var_name)
             # print(var_name)
             x_val_list = []
