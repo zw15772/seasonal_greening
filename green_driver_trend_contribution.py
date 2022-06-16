@@ -1143,7 +1143,7 @@ class Build_partial_correlation_dataframe:
 
     def __init__(self):
         self.__config__()
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/partial_correlation_2000-2018/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018/partial_correlation_2000-2018_Trendy/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
         self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation.df'
@@ -1177,9 +1177,9 @@ class Build_partial_correlation_dataframe:
 
         # df=self.foo(df)
 
-        df=self.add_partial_to_df(df)
-        # df=self.add_trend_to_df(df)
-        # df=self.add_single_correlation_to_df(df)
+        # df=self.add_partial_to_df(df)
+        df=self.add_partial_correlation_to_df_remote_sensing(df)
+
         # df=self.add_difference_correlation_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_landcover_data_to_df(df)
@@ -1381,36 +1381,47 @@ class Build_partial_correlation_dataframe:
             df[f_name] = val_list
         return df
 
-    def add_correlation_to_df(self, df):
+    def add_partial_correlation_to_df_remote_sensing(self, df):
         period_list = ['early', 'peak', 'late']
-        time = '1999-2015'
-
+        fdir=results_root+'/partial_correlation_zscore/LAI3g/'
+        var_name_list = []
         for period in period_list:
-            fdir = results_root + 'partial_correlation_anomaly_NDVI/'
-            for f in (os.listdir(fdir)):
-                # print()
-                if not f.endswith('.npy'):
-                    continue
-                val_array = np.load(fdir + f)
-                val_dic = DIC_and_TIF().spatial_arr_to_dic(val_array)
-                f_name = 'anomaly_with_trend_' + f.split('.')[0] + '_{}'.format(time)
-                print(f_name)
-                # exit()
-                val_list = []
-                for i, row in tqdm(df.iterrows(), total=len(df)):
+            # f=f'2000-2018_partial_correlation_{period}_LAI3g.npy'
+            f = f'2000-2018_partial_correlation_p_value_result_{period}_LAI3g.npy'
+            dic = T.load_npy(fdir + f)
 
-                    # pix = row.pix
+            for pix in dic:
+                # print(pix)
+                vals = dic[pix]
+                for var_i in vals:
+                    var_name_list.append(var_i)
+            var_name_list = list(set(var_name_list))
+
+            for var_i in var_name_list:
+                val_list = []
+                df_column_name = f.split('.')[0] + f'_{var_i}'
+
+                print(df_column_name)
+                # exit()
+                for i, row in tqdm(df.iterrows(), total=len(df)):
                     pix = row['pix']
-                    if not pix in val_dic:
+                    if pix not in dic:
                         val_list.append(np.nan)
                         continue
-                    vals = val_dic[pix]
-                    if vals < -99:
+                    dic_i = dic[pix]
+                    if not var_i in dic_i:
                         val_list.append(np.nan)
                         continue
-                    val_list.append(vals)
-                df[f_name] = val_list
+                    val = dic_i[var_i]
+                    if val < -99:
+                        val_list.append(np.nan)
+                        continue
+                    val_list.append(val)
+                df[df_column_name] = val_list
+
         return df
+
+
 
     def add_mean_to_df(self, df):
         period_list = ['early', 'peak', 'late']
@@ -1457,8 +1468,7 @@ class Build_partial_correlation_dataframe:
         for fdir in (os.listdir(fdir_all)):
             var_name_list = []
             for f in (os.listdir(fdir_all + fdir)):
-                if not 'late' in f:
-                    continue
+
                 if not f.endswith('.npy'):
                     continue
                 dic = T.load_npy(fdir_all + fdir + '/' + f)
