@@ -1,11 +1,14 @@
 # coding='utf-8'
+import numpy as np
+
 from __init__ import *
 import pandas as pd
 import plotly.graph_objects as go
 
 import plotly.express as px
 
-project_root='/Volumes/SSD_sumsang/project_greening/'
+# project_root='/Volumes/SSD_sumsang/project_greening/'
+project_root='/Volumes/NVME2T/greening_project_old/'
 data_root=project_root+'Data/'
 results_root=project_root+'Result/new_result/'
 
@@ -1409,7 +1412,7 @@ class Plot_partial_correlation:
 
 
     def run(self):
-        df = self.__gen_df_init()
+        # df = self.__gen_df_init()
         # self.call_plot_LST_for_three_seasons()
         # self.call_CSIF_par_trend_bar(df)
         # self.plot_bar(df)
@@ -1423,7 +1426,8 @@ class Plot_partial_correlation:
         # self.plot_greening_trend_bar(df)
         # self.plot_barchartpolar(df)
         # self.plot_barchartpolar_test(df)
-        self.plot_rose()
+        # self.plot_rose()
+        self.plot_bar()
 
 
 
@@ -1985,10 +1989,12 @@ class Plot_partial_correlation:
         Tools().df_to_excel(df1,'/Volumes/SSD_sumsang/drivers_all_models_humid.xlsx')
 
     def plot_rose(self):
-        #todo: plot polar_stack_bar_for three growing season
-        f='/Volumes/SSD_sumsang/drivers_all_models_dryland.df'
+        # todo: plot polar_stack_bar_for three growing season
+
+        # f='/Volumes/SSD_sumsang/drivers_all_models_dryland.df'
+        f='/Volumes/NVME2T/greening_project_old/drivers_all_models_humid.df'
         df=T.load_df(f)
-        print(df)
+        # print(df)
         color_list = [ 'orange', 'purple', 'brown', 'pink', 'gray']
         variable_list=['CCI_SM','VPD','PAR','Temp']
         product_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
@@ -1996,7 +2002,6 @@ class Plot_partial_correlation:
                         'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'LAI3g']
 
 
-        fig = go.Figure()
         vars={}
         vals = {}
 
@@ -2013,32 +2018,137 @@ class Plot_partial_correlation:
             vals_dic[variable]=vals_list
 
         flag=0
-
+        # print(vals_dic)
+        # exit()
+        fig = go.Figure()
         for variable in vals_dic:
-
-            fig.add_trace(go.Barpolar(
-                r=vals_dic[variable],
-                name=vars[variable],
-                marker_color=color_list[flag]))
-
+            print(variable)
+            print(vals_dic[variable])
+            print(vars[variable])
+            exit()
+            fig.add_trace(go.Barpolar(r=vals_dic[variable],name=vars[variable],))
+            # fig = go.Figure((go.Barpolar(r=vals_dic[variable],name=vars[variable],)))
             flag=flag+1
-
-
-
-        fig.update_traces(text=['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
-                        'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
-                        'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'LAI3g'])
-        fig.update_layout(
-            title='A',
-            font_size=16,
-            legend_font_size=16,
-            polar_radialaxis_ticksuffix='',
-            polar_angularaxis_rotation=90,
-
-        )
-
-
+            # fig.show()
+            # pause()
+        # exit()
         fig.show()
+
+        # fig.update_traces(text=['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
+        #                 'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
+        #                 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'LAI3g'])
+        # fig.update_layout(
+        #     title='A',
+        #     font_size=16,
+        #     legend_font_size=16,
+        #     polar_radialaxis_ticksuffix='',
+        #     polar_angularaxis_rotation=90,
+        #
+        # )
+
+
+    def __get_value_from_df(self,df,col,model_name):
+        for i, row in df.iterrows():
+            if row.model_name==model_name:
+                return row[col]
+
+    def __get_bar_color(self,period,varname):
+        color_dict = {
+            'early_CCI_SM': '#007429',
+            'early_VPD': '#00c044',
+            'early_PAR': '#3aff80',
+            'early_Temp': '#b0ffcc',
+            'peak_CCI_SM': '#510000',
+            'peak_VPD': '#bf0000',
+            'peak_PAR': '#ff6868',
+            'peak_Temp': '#ffc3c3',
+            'late_CCI_SM': '#000b75',
+            'late_VPD': '#0014d3',
+            'late_PAR': '#5565ff',
+            'late_Temp': '#b7beff'
+        }
+        return color_dict[f'{period}_{varname}']
+
+        pass
+
+    def plot_bar(self):
+
+        # f='/Volumes/SSD_sumsang/drivers_all_models_dryland.df'
+        f='/Volumes/NVME2T/greening_project_old/drivers_all_models_humid.df'
+        df=T.load_df(f)
+        T.print_head_n(df,5)
+        period_list = ['early', 'peak', 'late']
+        variable_list=['CCI_SM','VPD','PAR','Temp']
+        model_name_list = T.get_df_unique_val_list(df, 'model_name')
+        cols_list = []
+        for period in period_list:
+            for variable in variable_list:
+                cols_list.append(f'{period}_{variable}')
+        all_bar_n = len(period_list) * len(variable_list) * len(model_name_list)
+        print(all_bar_n)
+        # exit()
+        print(cols_list)
+        period_theta_interval = 6
+        theta_i_interval = 1.5
+        theta_i = (360-period_theta_interval*3)/ (len(period_list) * (len(variable_list)+theta_i_interval) * len(model_name_list))
+        color_dict = {}
+
+        fig = go.Figure()
+        labels_list = []
+        value_list = []
+        theta_list = []
+        color_list = []
+        theta_init = 33
+        for i,period in enumerate(period_list):
+            for j,model in enumerate(model_name_list):
+                for k,variable in enumerate(variable_list):
+                    col = f'{period}_{variable}'
+                    val = self.__get_value_from_df(df,col,model)
+                    labels_list.append(f'{model}_{variable}')
+                    value_list.append(val)
+                    theta = theta_init + theta_i
+                    theta_list.append(theta)
+                    color_list.append(self.__get_bar_color(period,variable))
+                    theta_init = theta
+                    if k==len(variable_list)-1:
+                        value_list.append(-2)
+                        theta = theta_init + theta_i*theta_i_interval
+                        theta_list.append(theta)
+                        color_list.append('#ffffff')
+                        theta_init = theta
+                if j == len(model_name_list)-1:
+                    value_list.append(0.6)
+                    theta = theta_init + period_theta_interval
+                    theta_list.append(theta)
+                    color_list.append('#ffffff')
+                    theta_init = theta
+                    print(theta)
+        print(theta_list)
+        # exit()
+        print(len(theta_list))
+        print(len(color_list))
+        # exit()
+        # value_list.append(-.1)
+        # value_list.append(.1)
+        # theta_list.append(0)
+        # theta_list.append(180)
+        value_list = np.array(value_list)
+        fig.add_trace(go.Barpolar(r=value_list, theta=theta_list, marker_color=color_list,
+                                    #   marker_line_color="black",
+                                    # marker_line_width=1,
+                                    opacity=0.8,
+                                  ))
+        fig.update_layout(
+            template=None,
+            polar=dict(
+                # range_r=[0, 1],
+                # radialaxis=dict(range=[-0.4, 0.5]),
+                # angularaxis=dict(showticklabels=False, ticks='')
+            )
+        )
+        # fig.show()
+        fig.write_image(f'test123.pdf')
+        exit()
 
 
 class Plot_partial_moving_window:
