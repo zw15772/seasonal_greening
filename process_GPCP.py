@@ -889,7 +889,7 @@ def plot_dic():  # LAI4g
 def foo():
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='D:/Greening/Data/DIC/Trendy_ensemble/per_pix_dic_007.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/Main_flow/arr/DIC_Daily/LAI3g/per_pix_dic_011.npy'
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/during_early_CO2.npy'
     result_dic = {}
     spatial_dic={}
@@ -1134,7 +1134,7 @@ def beta_save_():  # 该功能实现所有因素的beta
     time_range='2002-2018'
     period='early'
     # f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression/LAI_GIMMS/detrend_1982-2001_multi_linearearly_LAI_GIMMS.npy'
-    f='D:/Greening/Result/partial_correlation_zscore_CO2/CLM5/2000-2018_partial_correlation_early_CLM5.npy'
+    f='//Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_zscore_detrend/2000-2018_partial_correlation_early_LAI3g.npy'
     outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_original_detrend/TIFF_{}_{}_8/'.format(time_range,period)
     T.mk_dir(outdir,force=True)
     dic = T.load_npy(f)

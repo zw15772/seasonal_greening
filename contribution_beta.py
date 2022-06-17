@@ -1352,19 +1352,19 @@ class Multi_liner_regression:  # 实现求beta 功能
         self.period='early'
         self.variable='LAI3g'
         self.time_range='2000-2018'
-        # self.result_dir=results_root+'multiregression/LAI_GIMMS/'
-        self.result_dir = results_root + f'partial_correlation_zscore_detrend/'
-        # self.result_f = self.result_dir+'/detrend_{}_multi_linear{}_{}.npy'.format(self.time_range,self.period,self.variable)
+
+        self.result_dir = results_root + f'partial_correlation_zscore_trend/'
+
         self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,self.period,self.variable)
         self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_result_{}_{}.npy'.format(
             self.time_range, self.period,self.variable)
         # self.partial_correlation_VIP_result_f = self.result_dir + '/{}_partial_correlation_VIP_{}_{}.npy'.format(
         #     self.time_range, self.period, self.variable)
-        self.x_dir=results_root+f'detrend_Zscore/detrend_{self.time_range}/detrend_{self.time_range}_during_{self.period}/{self.time_range}_X/'
-        # self.x_dir = results_root+f'zscore/2000-2018_daily/2000-2018_X/'
-        self.y_f = results_root+f'detrend_Zscore/detrend_{self.time_range}/detrend_{self.time_range}_during_{self.period}/{self.time_range}_Y/detrend_{self.variable}_{self.period}_zscore.npy'
-        # self.y_f=results_root+f'zscore/2000-2018_daily/2000-2018_Y/{self.variable}_{self.period}_zscore.npy'
-        # self.y_mean = results_root + 'mean_calculation_original/during_{}_{}/during_{}_{}_mean.npy'.format(self.period,self.time_range,self.period,self.variable)
+        # self.x_dir=results_root+f'detrend_zscore/detrend_{self.time_range}/X/'
+        self.x_dir = results_root+f'zscore/2000-2018_daily/2000-2018_X/'
+        # self.y_f = results_root+f'detrend_zscore/detrend_{self.time_range}/Y/detrend_{self.variable}_{self.period}_zscore.npy'
+        self.y_f=results_root+f'zscore/2000-2018_daily/2000-2018_Y/{self.variable}_{self.period}_zscore.npy'
+
         T.mk_dir(self.result_dir,force=True)
         pass
 
@@ -3489,8 +3489,8 @@ def main():
     # Unify_date_range().run()
     # check_NIRV_NDVI().run()
     # Linear_contribution().run()
-    # Multi_liner_regression().run()
-    Multi_liner_regression_for_Trendy().run()
+    Multi_liner_regression().run()
+    # Multi_liner_regression_for_Trendy().run()
     # plot_partial_plot().run()
     # Sankey_plot_PLS().run()
 

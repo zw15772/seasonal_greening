@@ -24,10 +24,10 @@ def mk_dir(outdir):
 
 class Plot_dataframe:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2000-2018_Trendy/'
+        self.this_class_arr = results_root + '/Data_frame_2000-2018/anomaly/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018_Trendy.df'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
 
 
 
@@ -45,7 +45,7 @@ class Plot_dataframe:
         # self.call_multi_correlation_bar(df)
         # self.call_plot_line_for_three_seasons(df)
         # self.call_plot_line_NDVI_three_seasons(df)
-        # self.call_plot_LST_for_three_seasons(df)
+        self.call_plot_LST_for_three_seasons(df)
         # self.call_plot_trendy_for_three_seasons(df)
         # self.call_plot_trendy_for_three_seasons(df)
         # self.call_plot_GIMMS_NDVI_for_three_seasons_two_product(df)
@@ -478,7 +478,7 @@ class Plot_dataframe:
 
         color_list=['r','g','b']
         # variable_list=['1982-2020_LAI4g','1982-2018_LAI3g','2000-2019_MODIS_LAI']
-        variable_list = ['2000-2018_LAI3g', '2000-2018_MODIS_LAI']
+        variable_list = ['LAI3g']
 
 
         fig = plt.figure()
@@ -489,14 +489,14 @@ class Plot_dataframe:
             flag=0
             ax = fig.add_subplot(2, 3, i)
 
-            for variable in variables_list:
+            for variable in variable_list:
 
 
                 column_name=f'2000-2018_{variable}_{period}_relative_change_monthly'
 
                 print(column_name)
                 color=color_list[flag]
-                self.plot_trendy_for_three_seasons(df,column_name,color)
+                self.plot_LST_for_three_seasons(df,column_name,color)
                 flag+=1
 
             plt.legend()
@@ -2221,8 +2221,8 @@ class Plot_partial_moving_window:
 
 def main():
 
-    # Plot_dataframe().run()
-    Plot_partial_correlation().run()
+    Plot_dataframe().run()
+    # Plot_partial_correlation().run()
     # Plot_partial_moving_window().run()
 
 
