@@ -2,6 +2,8 @@
 import numpy as np
 
 from __init__ import *
+import pandas as pd
+pd.__version__
 from pingouin import partial_corr
 ## for 1982-2015 greening project_dataframe  11/12/2021  Wen
 
@@ -1143,7 +1145,7 @@ class Build_partial_correlation_dataframe:
 
     def __init__(self):
         self.__config__()
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/partial_correlation_2000-2018_Trendy/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018/partial_correlation_2000-2018/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
         self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation.df'
@@ -1177,22 +1179,21 @@ class Build_partial_correlation_dataframe:
 
         # df=self.foo(df)
 
-        # df=self.add_partial_to_df(df)
-        df=self.add_partial_correlation_to_df_remote_sensing(df)
-
+        df=self.add_partial_to_df(df)
+        # df=self.add_trend_to_df(df)
+        # df=self.add_single_correlation_to_df(df)
         # df=self.add_difference_correlation_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_landcover_data_to_df(df)
         # df=self.add_Koppen_data_to_df(df)
         # df=self.add_row(df)
-        # df=self.add_correlation_window_to_df(df)
-        # P_PET_dic=self.P_PET_ratio(self.P_PET_dir)
-        # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
-        # df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
+        # df=self.add_Humid_nonhumid(df)
+        #
+        #
         # df=self.add_NDVI_mask(df)
 
         # df=self.__rename_dataframe_columns(df)
-        df=self.drop_field_df(df)
+        # df=self.drop_field_df(df)
 
 
         # df=self.add_Koppen_data_to_df(df)
@@ -1420,8 +1421,6 @@ class Build_partial_correlation_dataframe:
                 df[df_column_name] = val_list
 
         return df
-
-
 
     def add_mean_to_df(self, df):
         period_list = ['early', 'peak', 'late']
