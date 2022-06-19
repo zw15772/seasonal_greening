@@ -63,13 +63,13 @@ T=Tools()
 def sleep(t=1):
     time.sleep(t)
 
-this_root = '/Volumes/SSD_sumsang/project_greening/'
-data_root = '/Volumes/SSD_sumsang/project_greening/Data/'
-results_root = '/Volumes/SSD_sumsang/project_greening/Result/new_result/'
+# this_root = '/Volumes/SSD_sumsang/project_greening/'
+# data_root = '/Volumes/SSD_sumsang/project_greening/Data/'
+# results_root = '/Volumes/SSD_sumsang/project_greening/Result/new_result/'
 
-# this_root = 'D:/Greening/'
-# data_root = 'D:/Greening/Data/'
-# results_root = 'D:/Greening/Result/'
+this_root = 'D:/Greening/'
+data_root = 'D:/Greening/Data/'
+results_root = 'D:/Greening/Result/'
 # from HANTS import *
 
 # plt.rcParams['font.sans-serif'] = ['SimHei']

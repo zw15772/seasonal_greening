@@ -1422,8 +1422,8 @@ class Plot_partial_correlation:
         # self.plot_increase_decrease_Yuan(df)
         # self.plot_greening_trend_bar(df)
         # self.plot_barchartpolar(df)
-        # self.plot_barchartpolar_test(df)
-        self.plot_rose()
+        self.plot_barchartpolar_preprocess(df)
+        # self.plot_rose()
 
 
 
@@ -1921,7 +1921,7 @@ class Plot_partial_correlation:
             plt.show()
             pass
 
-    def plot_barchartpolar_test(self,df): # rose 图
+    def plot_barchartpolar_preprocess(self,df): # 所有的模型每个factor求平均
         df = df[df['row'] < 120]
         df = df[df['HI_class'] == 'Humid']
         df = df[df['NDVI_MASK'] == 1]
@@ -1932,10 +1932,11 @@ class Plot_partial_correlation:
         #
         product_list= ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
                              'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
-                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'LAI3g']
+                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai','ensemble','LAI3g','MODIS_LAI']
         # product_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai',  'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai'
         #                  ]
-        variable_list=['CCI_SM','VPD','Temp','PAR']
+        variable_list=['CO2','CCI_SM','VPD','Temp','PAR']
+
 
 
         period_list=['early','peak','late']
@@ -1952,7 +1953,7 @@ class Plot_partial_correlation:
                     flag=0
                     for i, row in tqdm(df.iterrows(), total=len(df)):
                         pix = row.pix
-                        column_name_r=f'2000-2018_partial_correlation_{period}_{product}_{variable}'
+                        column_name_r=f'2000-2018_partial_correlation_{period}_{product}_detrend_{variable}_{period}'
                         column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_{variable}'
                         if row[column_name_p_value]>0.1:
                             continue
@@ -1981,8 +1982,9 @@ class Plot_partial_correlation:
         df1 = T.dic_to_df(new_dict, 'model_name')
         print(df1)
 
-        T.save_df(df1,'/Volumes/SSD_sumsang/drivers_all_models_humid.df')# 17 * 12 列
-        Tools().df_to_excel(df1,'/Volumes/SSD_sumsang/drivers_all_models_humid.xlsx')
+        T.save_df(df1, results_root+'partial_correlation_2000-2018/Data_frame_2000-2018_relative_change_detrend/drivers_all_models_humid.df')# 17 * 12 列
+        Tools().df_to_excel(df1,'partial_correlation_2000-2018/Data_frame_2000-2018_relative_change_detrend/drivers_all_models_humid.xlsx')
+
 
     def plot_rose(self):
         #todo: plot polar_stack_bar_for three growing season

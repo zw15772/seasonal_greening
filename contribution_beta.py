@@ -2070,15 +2070,18 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
 
     def __init__(self):
 
-        self.period='late'
+        self.period='early'
         self.variable_list= ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
                      'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai',
-                     'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai', 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai']
+                     'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai', 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai','Trendy_ensemble','MODIS_LAI','LAI3g',]
         self.time_range='2000-2018'
-        self.y_fdir=results_root+f'zscore/monthly/2000-2018_Trendy/'
+        # self.y_fdir=results_root+f'Pierre_relative_change/monthly/2000-2018_Trendy/'
+        self.y_fdir=results_root+f'detrend_relative_change_monthly/detrend_2000-2018/Y/'
+
+        # self.x_dir = results_root+f'Pierre_relative_change/monthly/2000-2018_X/'
+        self.x_dir = results_root+f'detrend_relative_change_monthly/detrend_2000-2018/X/'
 
 
-        self.x_dir = results_root+f'zscore/monthly/2000-2018_X/'
 
 
 
@@ -2088,8 +2091,10 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
     def run(self):
 
         for variable in self.variable_list:
-            self.y_f=self.y_fdir+f'{variable}_{self.period}_zscore.npy'
-            self.result_dir = results_root + f'partial_correlation_zscore_CO2/{variable}/'
+
+
+            self.y_f=self.y_fdir+f'detrend_{variable}_{self.period}_relative_change.npy'
+            self.result_dir = results_root + f'partial_correlation_relative_change_detrend/{variable}/'
             T.mk_dir(self.result_dir, force=True)
 
             self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,self.period, variable)
@@ -2114,6 +2119,7 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
         for x_f in T.listdir(x_dir):
             if not period in x_f:
                 continue
+
 
             x_f_list.append(x_dir + x_f)
 
@@ -2158,6 +2164,7 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
         for x_f in T.listdir(x_dir):
             if not period in x_f:
                 continue
+
 
             x_f_list.append(x_dir + x_f)
 

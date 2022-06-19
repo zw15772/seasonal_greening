@@ -41,7 +41,7 @@ class Build_dataframe:
         # df=self.add_CV_to_df(df)
         # df=self.add_soil_data_to_df(df)
         # df=self.add_MAP_MAT_to_df(df)
-        # df = self.add_NDVI_mask(df)
+        df = self.add_NDVI_mask(df)
         # df=self.add_winter_to_df(df)
         df=self.add_Koppen_data_to_df(df)
         df=self.add_landcover_data_to_df(df)
@@ -1145,30 +1145,25 @@ class Build_partial_correlation_dataframe:
 
     def __init__(self):
         self.__config__()
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/partial_correlation_2000-2018/'
+        self.this_class_arr = results_root + 'partial_correlation_2000-2018/Data_frame_2000-2018_relative_change_trend/'
+
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation.df'
-        self.P_PET_dir = data_root + 'original_dataset/aridity_P_PET_dic/'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation_trend.df'
+        self.P_PET_dir = data_root + 'Base_data/aridity_P_PET_dic/'
         pass
 
 
 
     def __config__(self):
-        period='late'
+        period='peak'
 
         # self.x_var_list = ['CO2',
         #               'VPD',
         #               'PAR',
         #               'temperature',
         #               'CCI_SM', ]
-        self.x_var_list = [f'during_{period}_CCI_SM.npy',
 
-                           f'during_{period}_PAR.npy',
-                           f'during_{period}_VPD.npy',
-                           f'during_{period}_temperature.npy',
-
-                            ]
 
     def run(self):
         # period = 'early'
@@ -1177,7 +1172,7 @@ class Build_partial_correlation_dataframe:
 
         df = self.__gen_df_init(self.dff)
 
-        # df=self.foo(df)
+        df=self.foo(df)
 
         df=self.add_partial_to_df(df)
         # df=self.add_trend_to_df(df)
@@ -1191,12 +1186,14 @@ class Build_partial_correlation_dataframe:
         #
         #
         # df=self.add_NDVI_mask(df)
+        # P_PET_dic=self.P_PET_ratio(self.P_PET_dir)
+        # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
+        # df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
 
         # df=self.__rename_dataframe_columns(df)
         # df=self.drop_field_df(df)
 
 
-        # df=self.add_Koppen_data_to_df(df)
 
         T.save_df(df, self.dff)
         self.__df_to_excel(df, self.dff)
@@ -1460,13 +1457,16 @@ class Build_partial_correlation_dataframe:
 
     def add_partial_to_df(self, df):  # 这里
 
-
         time = '2000-2018'
-        fdir_all= results_root + 'partial_correlation_zscore/'
+        fdir_all= results_root + 'partial_correlation_relative_change/'
 
         for fdir in (os.listdir(fdir_all)):
-            var_name_list = []
+
+
+
             for f in (os.listdir(fdir_all + fdir)):
+                var_name_list=[]
+                print(f)
 
                 if not f.endswith('.npy'):
                     continue
@@ -1477,12 +1477,11 @@ class Build_partial_correlation_dataframe:
                     vals = dic[pix]
                     for var_i in vals:
                         var_name_list.append(var_i)
-                var_name_list = list(set(var_name_list))
+                    var_name_list = list(set(var_name_list))
 
                 for var_i in var_name_list:
                     val_list = []
                     df_column_name = f.split('.')[0]+f'_{var_i}'
-
 
                     print(df_column_name)
                     # exit()
@@ -1669,7 +1668,8 @@ class Build_partial_correlation_dataframe:
         return df
 
     def add_NDVI_mask(self,df):
-        f = '/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
+        # f = '/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
+        f = data_root+'Base_data/NDVI_mask.tif'
 
         array, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(f)
         array = np.array(array, dtype=np.float)
@@ -1710,25 +1710,45 @@ class Build_partial_correlation_dataframe:
         df = df.rename(columns=new_name_dic)
         return df
 
+    def drop_n_std(self, vals, n=1):
+        vals = np.array(vals)
+        mean = np.nanmean(vals)
+        std = np.nanstd(vals)
+        up = mean + n * std
+        down = mean - n * std
+        vals[vals > up] = np.nan
+        vals[vals < down] = np.nan
+        return vals
 
-    def P_PET_ratio(self, P_PET_fdir):
-        # fdir = '/Volumes/NVME2T/wen_proj/20220111/aridity_P_PET_dic'
-        fdir = P_PET_fdir
-        dic = T.load_npy_dir(fdir)
-        dic_long_term = {}
+    def P_PET_class(self):
+        outdir = join(self.this_class_arr, 'P_PET_class')
+        T.mkdir(outdir)
+        outf = join(outdir, 'P_PET_class.npy')
+        if isfile(outf):
+            return T.load_npy(outf)
+        dic = self.P_PET_ratio(self.P_PET_fdir)
+        dic_reclass = {}
         for pix in dic:
-            vals = dic[pix]
-            vals = np.array(vals)
-            T.mask_999999_arr(vals)
-            vals[vals == 0] = np.nan
-            if np.isnan(np.nanmean(vals)):
-                continue
-            vals = self.drop_n_std(vals)
-            long_term_vals = np.nanmean(vals)
-            dic_long_term[pix] = long_term_vals
-        return dic_long_term
+            val = dic[pix]
+            label = None
+            # label = np.nan
+            if val > 0.65:
+                label = 'Humid'
+                # label = 3
+            elif val < 0.2:
+                label = 'Arid'
+                # label = 0
+            elif val > 0.2 and val < 0.5:
+                label = 'Semi Arid'
+                # label = 1
+            elif val > 0.5 and val < 0.65:
+                label = 'Semi Humid'
+                # label = 2
+            dic_reclass[pix] = label
+        T.save_npy(dic_reclass, outf)
+        return dic_reclass
 
-    def P_PET_reclass(self,dic):
+    def P_PET_reclass(self, dic):
         dic_reclass = {}
         for pix in dic:
             val = dic[pix]
@@ -1749,15 +1769,30 @@ class Build_partial_correlation_dataframe:
             dic_reclass[pix] = label
         return dic_reclass
 
-    def drop_n_std(self,vals, n=1):
-        vals = np.array(vals)
-        mean = np.nanmean(vals)
-        std = np.nanstd(vals)
-        up = mean + n * std
-        down = mean - n * std
-        vals[vals > up] = np.nan
-        vals[vals < down] = np.nan
-        return vals
+    def P_PET_ratio(self, P_PET_fdir):
+
+        fdir = P_PET_fdir
+        dic = T.load_npy_dir(fdir)
+        dic_long_term = {}
+        for pix in dic:
+            vals = dic[pix]
+            vals = np.array(vals)
+            vals = T.mask_999999_arr(vals, warning=False)
+            vals[vals == 0] = np.nan
+            if T.is_all_nan(vals):
+                continue
+            vals = self.drop_n_std(vals)
+            long_term_vals = np.nanmean(vals)
+            dic_long_term[pix] = long_term_vals
+        return dic_long_term
+
+    def add_Humid_nonhumid(self, df):
+        P_PET_dic_reclass = self.P_PET_class()
+        df = T.add_spatial_dic_to_df(df, P_PET_dic_reclass, 'HI_reclass')
+        df = T.add_spatial_dic_to_df(df, P_PET_dic_reclass, 'HI_class')
+        df = df.dropna(subset=['HI_class'])
+        df.loc[df['HI_reclass'] != 'Humid', ['HI_reclass']] = 'Dryland'
+        return df
 
     def drop_field_df(self, df):
 
