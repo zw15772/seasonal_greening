@@ -17,10 +17,13 @@ import green_driver_trend_contribution
 from sklearn.metrics import mean_squared_error
 
 
+global_start_year=2000
+global_end_year=2018
 
 class Global_vars:
     def __init__(self):
         self.tif_template = this_root + 'conf/tif_template.tif'
+
         pass
 
     def koppen_landuse(self):
@@ -1350,10 +1353,11 @@ class Multi_liner_regression:  # 实现求beta 功能
     def __init__(self):
 
         self.period='early'
-        self.variable='LAI3g'
+        self.variable='LAI3g'    ### LAI3g early peak and late
         self.time_range='2000-2018'
 
-        self.result_dir = results_root + f'partial_correlation_zscore_trend/'
+        self.result_dir = results_root + f'partial_correlation_relative_change_detrend/daily/'
+        # self.result_dir = results_root + f'partial_correlation_zscore_trend/'
 
         self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,self.period,self.variable)
         self.partial_correlation_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_result_{}_{}.npy'.format(
@@ -1361,9 +1365,13 @@ class Multi_liner_regression:  # 实现求beta 功能
         # self.partial_correlation_VIP_result_f = self.result_dir + '/{}_partial_correlation_VIP_{}_{}.npy'.format(
         #     self.time_range, self.period, self.variable)
         # self.x_dir=results_root+f'detrend_zscore/detrend_{self.time_range}/X/'
-        self.x_dir = results_root+f'zscore/2000-2018_daily/2000-2018_X/'
+        # self.x_dir = results_root + f'zscore/2000-2018_daily/2000-2018_X/'
+        # self.x_dir = results_root+f'Pierre_relative_change/2000-2018_daily/2000-2018_X/'
+        self.x_dir=results_root+f'detrend/detrend_Pierre_relative_change_daily/detrend_{self.time_range}/X/'
+        # self.y_f = results_root + f'zscore/{self.time_range}_daily/2000-2018_Y/{self.variable}_{self.period}_zscore.npy'
         # self.y_f = results_root+f'detrend_zscore/detrend_{self.time_range}/Y/detrend_{self.variable}_{self.period}_zscore.npy'
-        self.y_f=results_root+f'zscore/2000-2018_daily/2000-2018_Y/{self.variable}_{self.period}_zscore.npy'
+        self.y_f=results_root+f'detrend/detrend_Pierre_relative_change_daily/detrend_{self.time_range}/Y/detrend_{self.variable}_{self.period}_relative_change.npy'
+        # self.y_f=results_root+f'Pierre_relative_change/2000-2018_daily/2000-2018_Y/{self.variable}_{self.period}_relative_change.npy'
 
         T.mk_dir(self.result_dir,force=True)
         pass
@@ -1477,6 +1485,7 @@ class Multi_liner_regression:  # 实现求beta 功能
             # x_val_list = np.array(x_val_list)
             df[var_name] = x_val_list
         # T.print_head_n(df)
+        # exit()
         # outexcel = '/Volumes/NVME2T/wen_proj/greening_contribution/1982-2015_extraction_during_late_growing_season_static/test'
         # T.df_to_excel(df,outexcel,n=10000,random=True)
         # exit()
@@ -2795,6 +2804,187 @@ class Multi_liner_regression_for_Trendy:  # 实现求beta 功能
             np.save(ourdir + outf_npy, output_dic)
         pass
 
+class SEM:
+
+    def __init__(self):
+
+        self.period = 'early'
+        self.variable = 'LAI3g'  ### LAI3g early peak and late
+        self.time_range = '2000-2018'
+
+        self.result_dir = results_root + f'partial_correlation_relative_change_detrend/daily/'
+
+        self.SEM_result_f = self.result_dir + '/{}_partial_correlation_{}_{}.npy'.format(
+            self.time_range, self.period, self.variable)
+        self.SEM_p_value_result_f = self.result_dir + '/{}_partial_correlation_p_value_result_{}_{}.npy'.format(
+            self.time_range, self.period, self.variable)
+
+        self.x_dir = results_root + f'detrend/detrend_Pierre_relative_change_daily/detrend_{self.time_range}/X/'
+
+        self.y_f = results_root + f'detrend/detrend_Pierre_relative_change_daily/detrend_{self.time_range}/Y/detrend_{self.variable}_{self.period}_relative_change.npy'
+
+        T.mk_dir(self.result_dir, force=True)
+        pass
+
+    def run(self):
+
+        # step 1 build dataframe
+        df = self.build_df_for_cluster(self.x_dir, self.y_f, self.period)
+        x_var_list = self.__get_x_var_list(self.x_dir, self.period)
+        # # # step 2 cal correlatio
+        # self.cal_multi_regression_beta(df, x_var_list,17)  #修改参数
+        # self.call_SEM(df, x_var_list, 19)  # 修改参数
+        # self.cal_PLS(df, x_var_list, 19)  # 修改参数
+        # self.max_contribution()
+        # self.variables_contribution()
+
+    def __get_x_var_list(self, x_dir, period):
+        # x_dir = '/Volumes/NVME2T/wen_proj/greening_contribution/new/unified_date_range/2001-2015/X_2001-2015/'
+        x_f_list = []
+        for x_f in T.listdir(x_dir):
+            if not period in x_f:
+                continue
+
+            x_f_list.append(x_dir + x_f)
+
+        print(x_f_list)
+        x_var_list = []
+        for x_f in x_f_list:
+            split1 = x_f.split('/')[-1]
+            split2 = split1.split('.')[0]
+            var_name = '_'.join(split2.split('_')[0:-2])
+            x_var_list.append(var_name)
+        return x_var_list
+
+    def build_df(self,x_dir,y_f,period):
+        x_f_list = []
+        for x_f in T.listdir(x_dir):
+            if not period in x_f:
+                continue
+
+            x_f_list.append(x_dir + x_f)
+
+
+        print(x_f_list)
+        df = pd.DataFrame()
+        y_arr = T.load_npy(y_f)
+        pix_list = []
+        y_val_list = []
+        for pix in y_arr:
+            vals = y_arr[pix]
+            # print(vals)
+            # exit()
+            if len(vals) == 0:
+                continue
+            vals = np.array(vals)
+            vals=vals
+            pix_list.append(pix)
+            y_val_list.append(vals)
+        df['pix'] = pix_list
+        df['y'] = y_val_list
+
+        x_var_list = []
+        for x_f in x_f_list:
+            # print(x_f)
+            split1 = x_f.split('/')[-1]
+            split2 = split1.split('.')[0]
+            var_name = '_'.join(split2.split('_')[0:-2])
+            # if 'CO2' in var_name:
+            #     continue
+            x_var_list.append(var_name)
+            # print(var_name)
+            x_val_list = []
+            x_arr = T.load_npy(x_f)
+            for i,row in tqdm(df.iterrows(),total=len(df),desc=var_name):
+                pix = row.pix
+                if not pix in x_arr:
+                    x_val_list.append([])
+                    continue
+                vals = x_arr[pix]
+                vals = np.array(vals)
+                if len(vals) == 0:
+                    x_val_list.append([])
+                    continue
+                x_val_list.append(vals)
+            # x_val_list = np.array(x_val_list)
+            df[var_name] = x_val_list
+        # T.print_head_n(df)
+        # outexcel = '/Volumes/NVME2T/wen_proj/greening_contribution/1982-2015_extraction_during_late_growing_season_static/test'
+        # T.df_to_excel(df,outexcel,n=10000,random=True)
+        # exit()
+        return df
+
+    def build_df_for_cluster(self,x_dir,y_f,period):
+        x_f_list = []
+        for x_f in T.listdir(x_dir):
+            if not period in x_f:
+                continue
+
+            x_f_list.append(x_dir + x_f)
+
+
+        print(x_f_list)
+        df = pd.DataFrame()
+        y_arr = T.load_npy(y_f)
+        pix_list = []
+        y_val_list = []
+        year_list=[]
+        for pix in y_arr:
+            vals = y_arr[pix]
+            # print(vals)
+            # exit()
+            if len(vals) == 0:
+                continue
+
+            vals = np.array(vals)
+            vals=vals
+            for i,val in enumerate(vals):
+                year=i+global_start_year
+                pix_list.append(pix)
+                y_val_list.append(val)
+                year_list.append(year)
+        df['year']=year_list
+        df['pix'] = pix_list
+        df['y'] = y_val_list
+
+        x_var_list = []
+        for x_f in x_f_list:
+            # print(x_f)
+            split1 = x_f.split('/')[-1]
+            split2 = split1.split('.')[0]
+            var_name = '_'.join(split2.split('_')[0:-2])
+            # if 'CO2' in var_name:
+            #     continue
+            x_var_list.append(var_name)
+            # print(var_name)
+            x_val_list = []
+            x_arr = T.load_npy(x_f)
+            for i,row in tqdm(df.iterrows(),total=len(df),desc=var_name):
+                pix = row.pix
+                year=row.year
+                if not pix in x_arr:
+                    x_val_list.append(np.nan)
+                    continue
+                vals = x_arr[pix]
+                vals = np.array(vals)
+                if len(vals) == 0:
+                    x_val_list.append(np.nan)
+                    continue
+                year_index=year-global_start_year
+                val=vals[year_index]
+                x_val_list.append(val)
+
+            # x_val_list = np.array(x_val_list)
+            df[var_name] = x_val_list
+        T.print_head_n(df)
+        exit()
+        # outexcel = '/Volumes/NVME2T/wen_proj/greening_contribution/1982-2015_extraction_during_late_growing_season_static/test'
+        # T.df_to_excel(df,outexcel,n=10000,random=True)
+        # exit()
+        return df
+
+
+
 
 class plot_partial_plot():
     class Unify_date_range:
@@ -3489,7 +3679,9 @@ def main():
     # Unify_date_range().run()
     # check_NIRV_NDVI().run()
     # Linear_contribution().run()
-    Multi_liner_regression().run()
+    # Multi_liner_regression().run()
+    SEM().run()
+
     # Multi_liner_regression_for_Trendy().run()
     # plot_partial_plot().run()
     # Sankey_plot_PLS().run()

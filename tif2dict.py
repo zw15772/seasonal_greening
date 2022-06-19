@@ -2335,13 +2335,14 @@ class statistic_anaysis:
         for period in periods:
             for variable in variables:
 
-                fdir_all = result_root + f'Zscore/2000-2018_daily/2000-2018_{variable}/'
-                outdir = result_root + f'detrend_Zscore/detrend_{time_range}/detrend_{time_range}_during_{period}/'
+                fdir_all = result_root + f'Pierre_relative_change/monthly/{time_range}_{variable}/'
+                outdir = result_root + f'detrend_Pierre_relative_change_monthly/detrend_{time_range}/detrend_{time_range}_during_{period}/'
                 Tools().mk_dir(outdir,force=True)
                 dic = {}
 
                 for f in tqdm(sorted(os.listdir(fdir_all ))):
-
+                    if f.startswith('._'):
+                        continue
                     dic_i = dict(np.load(fdir_all + f, allow_pickle=True, ).item())
                     dic.update(dic_i)
                     result_dic = {}
@@ -6970,7 +6971,7 @@ def main():
     # statistic_anaysis().extraction_variables_static_pre_month()
     # statistic_anaysis().extraction_variables_static_during_daily()  # only for LAI3g, MODIS
     # statistic_anaysis().extraction_variables_static_during_month()
-    statistic_anaysis().extraction_variables_static_during_daily_climate_variables()
+    # statistic_anaysis().extraction_variables_static_during_daily_climate_variables()
 
 
     # statistic_anaysis().multiregression_beta_window()
@@ -6989,8 +6990,8 @@ def main():
     # statistic_anaysis().save_moving_window_correlation()
 
 
-    statistic_anaysis().trend_calculation()
-    # statistic_anaysis().detrend()
+    # statistic_anaysis().trend_calculation()
+    statistic_anaysis().detrend()
     # statistic_anaysis().mean_calculation()
     # statistic_anaysis().CV_calculation()
     # statistic_anaysis().extraction_winter_index()

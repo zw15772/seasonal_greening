@@ -14,7 +14,8 @@ class Build_dataframe:
 
         Tools().mk_dir(self.this_class_arr, force=True)
         self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
-        self.P_PET_fdir=data_root+'Base_data/aridity_P_PET_dic/'
+        # self.P_PET_fdir=data_root+'Base_data/aridity_P_PET_dic/'
+        self.P_PET_fdir = data_root + 'original_dataset/aridity_P_PET_dic/'
         pass
 
     def run(self):
@@ -33,21 +34,21 @@ class Build_dataframe:
 
         # df=self.add_row(df)
 
-        # df=self.add_trend_to_df(df)
+        df=self.add_trend_to_df(df)
         # df=self.add_p_val_trend_to_df(df)
 
         # df=self.add_mean_to_df(df)
         # df=self.add_CV_to_df(df)
         # df=self.add_soil_data_to_df(df)
         # df=self.add_MAP_MAT_to_df(df)
-        df = self.add_NDVI_mask(df)
+        # df = self.add_NDVI_mask(df)
         # df=self.add_winter_to_df(df)
-        df=self.add_Koppen_data_to_df(df)
-        df=self.add_landcover_data_to_df(df)
+        # df=self.add_Koppen_data_to_df(df)
+        # df=self.add_landcover_data_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_partial_correlation_to_df(df)
-        P_PET_dic=self.P_PET_ratio(self.P_PET_fdir)
-        P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
+        # P_PET_dic=self.P_PET_ratio(self.P_PET_fdir)
+        # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
         # df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
 
 
@@ -233,6 +234,7 @@ class Build_dataframe:
         #              'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'SDGVM_S2_lai',
         #              'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai', 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai']
         variable_list=['LAI3g','MODIS_LAI']
+        # variable_list=['Trendy_ensemble']
 
         time = '2000-2018'
         # variable='LAI3g'
@@ -241,11 +243,11 @@ class Build_dataframe:
 
                 # f = results_root + f'Pierre_relative_change/2000-2018_Trendy/{variable}_{period}_relative_change.npy'
                 # f = results_root + f'Pierre_relative_change/2000-2018_monthly/2000-2018_Y/{variable}_{period}_relative_change.npy'
-                # f=results_root+f'extraction_original_val/extraction_during_{period}_growing_season_static/during_{period}_{variable}.npy'
-                f = results_root + f'Pierre_relative_change/monthly/2000-2018_Y/{variable}_{period}_relative_change.npy'
+                f=results_root+f'zscore/monthly/{time}_Y/{variable}_{period}_zscore.npy'
+                # f = results_root + f'Pierre_relative_change/monthly/2000-2018_Y/{variable}_{period}_relative_change.npy'
                 NDVI_dic = T.load_npy(f)
-                f_name = f'{time}_{variable}_{period}_relative_change_monthly'
-                # f_name = f'{time}_{variable}_{period}_raw'
+                # f_name = f'{time}_{variable}_{period}_relative_change_monthly'
+                f_name = f'{time}_{variable}_{period}_zscore_monthly'
                 print(f_name)
 
                 NDVI_list = []
@@ -367,6 +369,8 @@ class Build_dataframe:
         fdir = results_root + '/lc_trend/'
         for f in (os.listdir(fdir)):
                 # print()
+            if not 'max_trend' in f:
+                continue
             if not f.endswith('.npy'):
                 continue
             if 'p_value' in f:
@@ -824,7 +828,8 @@ class Build_dataframe:
         }
 
         landcover_dic = {}
-        fdir = data_root + 'Base_data/GLC2000_0.5DEG/dic_landcover/'
+        # fdir = data_root + 'Base_data/GLC2000_0.5DEG/dic_landcover/'
+        fdir=data_root+'GLC2000_0.5DEG/dic_landcover/'
         for f in tqdm(os.listdir(fdir)):
             if f.endswith('.npy'):
                 dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
@@ -852,7 +857,7 @@ class Build_dataframe:
 
     def add_Koppen_data_to_df(self, df):
         # f=data_root+'/Base_data/Koppen/koppen_reclass_spatial_dic.npy'
-        f = data_root + '/Base_data/Koppen/koppen_reclass_spatial_dic.npy'
+        f = data_root + 'Koppen/koppen_reclass_spatial_dic.npy'
         koppen_dic=T.load_npy(f)
         koppen_list=[]
 
@@ -926,7 +931,8 @@ class Build_dataframe:
         }
 
         landcover_dic = {}
-        fdir = data_root + 'Base_data/dic_landcover/'
+        # fdir = data_root + 'Base_data/dic_landcover/'
+        fdir = data_root + 'GLC2000_0.5DEG/dic_landcover/'
         for f in tqdm(os.listdir(fdir)):
             if f.endswith('.npy'):
                 dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())

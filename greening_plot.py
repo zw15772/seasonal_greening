@@ -7,8 +7,8 @@ import plotly.graph_objects as go
 
 import plotly.express as px
 
-# project_root='/Volumes/SSD_sumsang/project_greening/'
-project_root='/Volumes/NVME2T/greening_project_old/'
+project_root='/Volumes/SSD_sumsang/project_greening/'
+# project_root='/Volumes/NVME2T/greening_project_old/'
 data_root=project_root+'Data/'
 results_root=project_root+'Result/new_result/'
 
@@ -472,13 +472,16 @@ class Plot_dataframe:
     def call_plot_LST_for_three_seasons(self,df): # 实现变量的三个季节画在一起
 
         df=df[df['HI_class']=='Humid']
+        df=df[df['max_trend']<10]
+        df = df[df['landcover'] !='cropland']
 
         period_name=['early','peak','late']
         # period_name = ['late']
 
         color_list=['r','g','b']
-        # variable_list=['1982-2020_LAI4g','1982-2018_LAI3g','2000-2019_MODIS_LAI']
-        variable_list = ['LAI3g']
+        variable_list=['LAI3g','MODIS_LAI']
+        # variable_list = ['LAI3g', 'MODIS_LAI', 'Trendy_ensemble']
+        # variable_list = ['LAI3g']
 
 
         fig = plt.figure()
@@ -492,7 +495,8 @@ class Plot_dataframe:
             for variable in variable_list:
 
 
-                column_name=f'2000-2018_{variable}_{period}_relative_change_monthly'
+                # column_name=f'2000-2018_{variable}_{period}_relative_change_daily'
+                column_name=f'2000-2018_{variable}_{period}_zscore_monthly'
 
                 print(column_name)
                 color=color_list[flag]
@@ -501,10 +505,13 @@ class Plot_dataframe:
 
             plt.legend()
             plt.ylabel('relative change %')
-            plt.title(f'{period}_Dryland')
-            major_ticks = np.arange(0, 20, 5)
+            plt.title(f'{period}_Humid')
+            major_xticks = np.arange(0, 20, 5)
+            # major_yticks = np.arange(-10, 15, 5)
+            major_yticks = np.arange(-1, 1, 0.1)
             # major_ticks = np.arange(0, 40, 5)  ### 根据数据长度修改这里
-            ax.set_xticks(major_ticks)
+            ax.set_xticks(major_xticks)
+            ax.set_yticks(major_yticks)
             plt.grid(which='major', alpha=0.5)
             i = i + 1
         plt.show()
@@ -1404,15 +1411,15 @@ class Plot_dataframe:
 
 class Plot_partial_correlation:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/partial_correlation_2000-2018_Trendy/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018/Data_frame_2000-2018_relative_change_detrend/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation.df'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation_detrend.df'
 
 
 
     def run(self):
-        # df = self.__gen_df_init()
+        df = self.__gen_df_init()
         # self.call_plot_LST_for_three_seasons()
         # self.call_CSIF_par_trend_bar(df)
         # self.plot_bar(df)
@@ -1424,10 +1431,10 @@ class Plot_partial_correlation:
         # self.call_plotbox_Yuan(df)
         # self.plot_increase_decrease_Yuan(df)
         # self.plot_greening_trend_bar(df)
-        # self.plot_barchartpolar(df)
-        # self.plot_barchartpolar_test(df)
-        # self.plot_rose()
-        self.plot_bar()
+
+        # self.plot_barchartpolar_preprocess(df)
+        self.plot_barchartpolar_preprocess_average_value(df)
+        self.plot_rose()
 
 
 
@@ -1925,21 +1932,76 @@ class Plot_partial_correlation:
             plt.show()
             pass
 
-    def plot_barchartpolar_test(self,df): # rose 图
+    def plot_barchartpolar_preprocess_average_value(self,df): # 求所有模型每个factor的avarage value
+        df = df[df['row'] < 120]
+        df = df[df['HI_class'] != 'Humid']
+        df = df[df['NDVI_MASK'] == 1]
+
+        product_list= ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
+                             'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
+                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'LAI3g','MODIS_LAI']
+        # product_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai',  'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai'
+        #                  ]
+        variable_list=['CO2','CCI_SM','VPD','Temp','PAR']
+
+        period_list=['early','peak','late']
+        dic_products = {}
+
+        for period in period_list:
+            print(period)
+            dic_products[period] = {}
+            for variable in variable_list:
+                dic_products[period][variable]={}
+
+                for product in product_list:
+                    values_for_all_pixels=[]
+                    flag=0
+                    for i, row in tqdm(df.iterrows(), total=len(df)):
+                        pix = row.pix
+                        # column_name_r=f'2000-2018_partial_correlation_{period}_{product}_{variable}'
+                        # column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_{variable}'
+                        column_name_r=f'2000-2018_partial_correlation_{period}_{product}_detrend_{variable}_{period}'
+                        column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_detrend_{variable}_{period}'
+                        if row[column_name_p_value]<0.1:
+                            continue
+                        val_r = row[column_name_r]
+                        flag+=1
+                        values_for_all_pixels.append(val_r)
+                    print(flag)
+
+                    n = len(values_for_all_pixels)
+                    controling_area = n/len(df)
+                    dic_products[period][variable][product] = controling_area
+        new_dict = {}
+        for key1 in dic_products:
+            new_dict_i = {}
+            for key2 in dic_products[key1]:
+                if key2 == '__key__':
+                    continue
+                for key3 in dic_products[key1][key2]:
+                    val = dic_products[key1][key2][key3]
+                    new_key = key1 + '_' + key2
+                    new_dict_i[new_key] = val
+                    if not key3 in new_dict:
+                        new_dict[key3] = {}
+                    new_dict[key3][new_key] = val
+        df1 = T.dic_to_df(new_dict, 'model_name')
+        print(df1)
+
+        T.save_df(df1, results_root + 'polar_bar_plot/drivers_area_models_Humid.df')  # 17 * 12 列
+        Tools().df_to_excel(df1, results_root + 'polar_bar_plot/drivers_area_models_Humid.xlsx')
+
+    def plot_barchartpolar_preprocess(self,df): #
         df = df[df['row'] < 120]
         df = df[df['HI_class'] == 'Humid']
         df = df[df['NDVI_MASK'] == 1]
 
-
-        # df=df.filter(regex='VPD$')
-        # print(df.columns)
-        #
         product_list= ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
                              'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
-                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'LAI3g']
+                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'Trendy_ensemble','LAI3g', 'MODIS_LAI']
         # product_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai',  'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai'
         #                  ]
-        variable_list=['CCI_SM','VPD','Temp','PAR']
+        variable_list=['CO2','CCI_SM','VPD','Temp','PAR']
 
 
         period_list=['early','peak','late']
@@ -1956,8 +2018,9 @@ class Plot_partial_correlation:
                     flag=0
                     for i, row in tqdm(df.iterrows(), total=len(df)):
                         pix = row.pix
-                        column_name_r=f'2000-2018_partial_correlation_{period}_{product}_{variable}'
-                        column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_{variable}'
+                        column_name_r=f'2000-2018_partial_correlation_{period}_{product}_detrend_{variable}_{period}'
+                        column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_detrend_{variable}_{period}'
+
                         if row[column_name_p_value]>0.1:
                             continue
                         val_r = row[column_name_r]
@@ -1985,66 +2048,13 @@ class Plot_partial_correlation:
         df1 = T.dic_to_df(new_dict, 'model_name')
         print(df1)
 
-        T.save_df(df1,'/Volumes/SSD_sumsang/drivers_all_models_humid.df')# 17 * 12 列
-        Tools().df_to_excel(df1,'/Volumes/SSD_sumsang/drivers_all_models_humid.xlsx')
-
-    def plot_rose(self):
-        # todo: plot polar_stack_bar_for three growing season
-
-        # f='/Volumes/SSD_sumsang/drivers_all_models_dryland.df'
-        f='/Volumes/NVME2T/greening_project_old/drivers_all_models_humid.df'
-        df=T.load_df(f)
-        # print(df)
-        color_list = [ 'orange', 'purple', 'brown', 'pink', 'gray']
-        variable_list=['CCI_SM','VPD','PAR','Temp']
-        product_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
-                        'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
-                        'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'LAI3g']
+        T.save_df(df1,results_root+'polar_bar_plot/drivers_all_models_Humid.df')# 17 * 12 列
+        Tools().df_to_excel(df1,results_root+'polar_bar_plot/drivers_all_models_Humid.xlsx')
 
 
-        vars={}
-        vals = {}
 
-        vals_dic={}
 
-        for variable in variable_list:
-            vals_list = []
-            for i, row in tqdm(df.iterrows(), total=len(df)):
-                product=row.model_name
-                val = row[f'early_{variable}']
-                var=f'early_{variable}'
-                vals_list.append(val)
-                vars[variable]=var
-            vals_dic[variable]=vals_list
 
-        flag=0
-        # print(vals_dic)
-        # exit()
-        fig = go.Figure()
-        for variable in vals_dic:
-            print(variable)
-            print(vals_dic[variable])
-            print(vars[variable])
-            exit()
-            fig.add_trace(go.Barpolar(r=vals_dic[variable],name=vars[variable],))
-            # fig = go.Figure((go.Barpolar(r=vals_dic[variable],name=vars[variable],)))
-            flag=flag+1
-            # fig.show()
-            # pause()
-        # exit()
-        fig.show()
-
-        # fig.update_traces(text=['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
-        #                 'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
-        #                 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'LAI3g'])
-        # fig.update_layout(
-        #     title='A',
-        #     font_size=16,
-        #     legend_font_size=16,
-        #     polar_radialaxis_ticksuffix='',
-        #     polar_angularaxis_rotation=90,
-        #
-        # )
 
 
     def __get_value_from_df(self,df,col,model_name):
@@ -2054,14 +2064,17 @@ class Plot_partial_correlation:
 
     def __get_bar_color(self,period,varname):
         color_dict = {
+            'early_CO2': '#000000',
             'early_CCI_SM': '#007429',
             'early_VPD': '#00c044',
             'early_PAR': '#3aff80',
             'early_Temp': '#b0ffcc',
+            'peak_CO2':'#000000',
             'peak_CCI_SM': '#510000',
             'peak_VPD': '#bf0000',
             'peak_PAR': '#ff6868',
             'peak_Temp': '#ffc3c3',
+            'late_CO2':'#000000',
             'late_CCI_SM': '#000b75',
             'late_VPD': '#0014d3',
             'late_PAR': '#5565ff',
@@ -2071,14 +2084,14 @@ class Plot_partial_correlation:
 
         pass
 
-    def plot_bar(self):
+    def plot_rose(self):
 
         # f='/Volumes/SSD_sumsang/drivers_all_models_dryland.df'
-        f='/Volumes/NVME2T/greening_project_old/drivers_all_models_humid.df'
+        f=results_root+'polar_bar_plot/drivers_all_models_humid.df'
         df=T.load_df(f)
         T.print_head_n(df,5)
         period_list = ['early', 'peak', 'late']
-        variable_list=['CCI_SM','VPD','PAR','Temp']
+        variable_list=['CO2','CCI_SM','VPD','PAR','Temp']
         model_name_list = T.get_df_unique_val_list(df, 'model_name')
         cols_list = []
         for period in period_list:
@@ -2146,9 +2159,9 @@ class Plot_partial_correlation:
                 # angularaxis=dict(showticklabels=False, ticks='')
             )
         )
-        # fig.show()
-        fig.write_image(f'test123.pdf')
-        exit()
+        fig.show()
+        # fig.write_image(f'test123.pdf')
+
 
 
 class Plot_partial_moving_window:
@@ -2221,8 +2234,8 @@ class Plot_partial_moving_window:
 
 def main():
 
-    Plot_dataframe().run()
-    # Plot_partial_correlation().run()
+    # Plot_dataframe().run()
+    Plot_partial_correlation().run()
     # Plot_partial_moving_window().run()
 
 
