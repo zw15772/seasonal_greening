@@ -1473,8 +1473,8 @@ class Main_flow_Early_Peak_Late_Dormant:
 
 
         # variables = ['MODIS_LAI','LAI4g','LAI3g',]
-        # variables = [ 'CCI_SM', 'PAR', 'VPD','Temp']
-        variables = [ 'Trendy_ensemble']
+        variables = [ 'CCI_SM', 'PAR', 'VPD','Temp']
+        # variables = [ 'LAI4g','VOD']
         # variables = ['MODIS_LAI','LAI3g']
 
         for variable in variables:
@@ -1482,8 +1482,8 @@ class Main_flow_Early_Peak_Late_Dormant:
             for period in periods:
                 dic_NDVI={}  # so important!!
 
-                fdir=result_root+f'extraction_original_val/2000-2018_Trendy/'
-                outdir = result_root + 'Pierre_relative_change/2000-2018_Trendy/'
+                fdir=result_root+f'extraction_original_val/2000-2018_daily/'
+                outdir = result_root + 'Pierre_relative_change/2000-2018_daily/'
                 Tools().mk_dir(outdir, force=True)
 
                 file=fdir+f'during_{period}_{variable}.npy'
@@ -1546,16 +1546,16 @@ class Main_flow_Early_Peak_Late_Dormant:
     def zscore(self):  #
         periods = ['early', 'peak', 'late']
         # variables = ['MODIS_LAI','LAI4g','LAI3g',]
-        # variables = ['CCI_SM', 'PAR', 'VPD','Temp']
+        variables = ['CCI_SM', 'PAR', 'VPD','Temp']
         # variables = [ 'LAI3g','MODIS_LAI']
-        variables = ['Trendy_ensemble']
+        # variables = ['MODIS_LAI']
 
         for variable in variables:
             for period in periods:
                 dic_NDVI={}  # so important!!
                 # fdir = result_root + f'extraction_original_val/extraction_during_{period}_growing_season_static/'
-                fdir = result_root + f'extraction_original_val/2000-2018_Trendy/'
-                outdir = result_root + 'zscore/2000-2018_Trendy/'
+                fdir = result_root + f'extraction_original_val/2000-2018_daily/'
+                outdir = result_root + 'zscore/2000-2018_daily/'
                 Tools().mk_dir(outdir, force=True)
 
                 file=fdir+f'during_{period}_{variable}.npy'
@@ -2333,15 +2333,15 @@ class statistic_anaysis:
         #         np.save(outdir_val2 + 'per_pix_dic_%03d' % 0, temp_dic)
         time_range='2000-2018'
         periods=['early','peak','late']
-        f = data_root+'Base_data/NDVI_mask.tif'
+        f = '/Volumes/SSD_sumsang/project_greening/Data/NDVI_mask.tif'
         arr=ToRaster().raster2array(f)[0]
         dic_mask_NDVI=DIC_and_TIF().spatial_arr_to_dic(arr)
-        variables=['X','Trendy']
+        variables=['X','Y']
         for period in periods:
             for variable in variables:
 
-                fdir_all = result_root + f'Pierre_relative_change/monthly/2000-2018_{variable}/'
-                outdir = result_root + f'detrend_relative_change/detrend_{time_range}/detrend_{time_range}_during_{period}/'
+                fdir_all = result_root + f'Zscore/2000-2018_daily/2000-2018_{variable}/'
+                outdir = result_root + f'detrend_Zscore/detrend_{time_range}/detrend_{time_range}_during_{period}/'
                 Tools().mk_dir(outdir,force=True)
                 dic = {}
 
@@ -6692,8 +6692,8 @@ class Unify_date_range:
 
         # X_dir = result_root + f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
         # outdirX = result_root + f'extraction_original_val/{start}-{end}_monthly/'
-        X_dir=result_root+f'extraction_original_val/extraction_original_val_trendy/extraction_during_{period}_growing_season_static/'
-        outdirX = result_root + f'extraction_original_val/{start}-{end}_Trendy/'
+        X_dir=result_root+f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
+        outdirX = result_root + f'extraction_original_val/{start}-{end}_monthly/'
 
         self.unify(X_dir,outdirX,start,end)
         # #
@@ -6716,24 +6716,25 @@ class Unify_date_range:
             # 'CSIF_fpar':list(range(2000,2018)),
             # 'MODIS_NDVI': list(range(2002, 2016)),
 
-
-            # 'LAI3g': list(range(1982, 2019)),
+            # 'VOD': list(range(1988, 2017)),
+            # 'CSIF': list(range(2001, 2017)),
+            'LAI3g': list(range(1982, 2019)),
             # 'LAI4g': list(range(1982, 2021)),
+            # 'GIMMS_NDVI': list(range(1982, 2016)),
+            # 'NIRv': list(range(1982, 2019)),
+            'MODIS_LAI': list(range(2000, 2020)),
 
-            # 'MODIS_LAI': list(range(2000, 2020)),
-            'Trendy_ensemble': list(range(1982, 2021)),
+             'CCI_SM':list(range(1982,2021)),
+            # 'CCI_SM_2018': list(range(1982, 2019)),
 
-             # 'CCI_SM':list(range(1982,2021)),
-
-
-
-            # 'PAR':list(range(1982,2021)),
-            # 'CO2': list(range(1982, 2021)),
+            # 'Aridity': list(range(1982, 2019)),
+            'PAR':list(range(1982,2021)),
+            'CO2': list(range(1982, 2021)),
             # 'Precip':list(range(1982,2019)),
 
-            # 'Temp':list(range(1982,2021)),
-            # 'VPD':list(range(1982,2021)),
-
+            'Temp':list(range(1982,2021)),
+            'VPD':list(range(1982,2021)),
+            # 'SPEI3':list(range(1982,2019)),
 
         }
 
@@ -6961,8 +6962,8 @@ def main():
     # statistic_anaysis().save_moving_window_correlation()
 
 
-    # statistic_anaysis().trend_calculation()
-    statistic_anaysis().detrend()
+    statistic_anaysis().trend_calculation()
+    # statistic_anaysis().detrend()
     # statistic_anaysis().mean_calculation()
     # statistic_anaysis().CV_calculation()
     # statistic_anaysis().extraction_winter_index()
@@ -7011,7 +7012,7 @@ def main():
 
     # Hydrothemal().plot_matrix()
     # statistic_anaysis().run()
-   # Unify_date_range().run()
+    # Unify_date_range().run()
     # rename()
     # plot_results().run()
     # normalization()
