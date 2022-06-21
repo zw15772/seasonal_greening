@@ -1314,79 +1314,7 @@ class Main_flow_Early_Peak_Late_Dormant:
         np.save(outf + '_p_value', p_value_arr)
 
 
-    def changes_NDVI_method1(self): # 方案1 GCB Gonsamo et al., 2021 and Pierre
-        periods=['early','peak','late']
-        time_range='2002-2015'
-        len_year=14
 
-        for period in periods:
-            fdir = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(
-                time_range, time_range, period)
-            outdir = result_root + '%NDVI_Pierre/'.format(time_range, period)
-            Tools().mk_dir(outdir, force=True)
-            dic_NDVI = {}
-
-            for f in tqdm(os.listdir(fdir)):
-                if 'CSIF'not in f:
-                    continue
-
-                if f.endswith('.npy'):
-                    # if not '005' in f:
-                    #     continue
-                    dic_i = dict(np.load(fdir + f, allow_pickle=True, ).item())
-                    dic_NDVI.update(dic_i)
-
-            dic_spatial_count = {}
-            delta_dic = {}
-            for pix in tqdm(dic_NDVI):
-                val_NDVI = dic_NDVI[pix]
-
-                if len(val_NDVI) != len_year:
-                    continue
-
-
-                if np.isnan(np.nanmean(val_NDVI)):
-                    print('error')
-                    continue
-                row = len(val_NDVI)
-
-                NDVI_min = np.nanmin(val_NDVI)
-                NDVI_max = np.nanmax(val_NDVI)
-                NDVI_mean=np.nanmean(val_NDVI)
-
-
-                delta_time_series = []
-
-                for i in range(row):
-                    # delta = ((val_NDVI[i] - NDVI_min) / (NDVI_max-NDVI_min))*100
-                    delta = ((val_NDVI[i] - NDVI_mean) / (NDVI_mean)) * 100
-                    delta_time_series.append(delta)
-                delta_dic[pix]=delta_time_series
-                # print(delta_time_series)
-                # delta_dic[pix]=delta_time_series[0:17]
-                # delta_dic[pix]=delta_time_series[17:]
-                # print(delta_time_series[0:17])
-                # exit()
-
-                dic_spatial_count[pix] = len(delta_time_series)
-
-                # 画每个pix的时间序列
-                # plt.plot(delta_time_series)
-                # plt.show()
-
-                # 看看空间有多少有有效值
-
-            # arr = DIC_and_TIF().pix_dic_to_spatial_arr(dic_spatial_count)
-            # plt.imshow(arr, cmap='jet')
-            # plt.colorbar()
-            # plt.title('')
-            # plt.show()
-
-
-                # plt.plot(result_dic[pix])
-                # plt.show()
-
-            np.save(outdir + '{}_{}_CSIF.npy'.format(time_range,period), delta_dic)
 
 
     def changes_NDVI_keenan(self): # （NDVI-初始值）/初始值乘以100%
@@ -1460,8 +1388,82 @@ class Main_flow_Early_Peak_Late_Dormant:
 
             np.save(outdir + '{}_{}_{}.npy'.format(time_range,variable, period), delta_dic)
 
+    def anomaly(self):  #
+        periods = ['early', 'peak', 'late']
+        # variables = ['MODIS_LAI','LAI4g','LAI3g',]
+        variables = ['CO2','CCI_SM', 'PAR', 'VPD','Temp','MODIS_LAI','LAI3g','Trendy_ensemble']
+        # variables = [ 'LAI3g','MODIS_LAI']
+        # variables = ['MODIS_LAI']
+        #'
 
-    def anonmaly_variables(self):  # Pierre 求气候变量anomaly
+        for variable in variables:
+            for period in periods:
+                dic_NDVI={}  # so important!!
+                # fdir = result_root + f'extraction_original_val/extraction_during_{period}_growing_season_static/'
+                fdir = result_root + f'extraction_original_val/2000-2018_monthly/'
+                outdir = result_root + 'anomaly/2000-2018_monthly/'
+                Tools().mk_dir(outdir, force=True)
+
+                file=fdir+f'during_{period}_{variable}.npy'
+
+                dic_NDVI = dict(np.load(file, allow_pickle=True, ).item())
+
+
+                delta_dic = {}
+                for pix in tqdm(dic_NDVI):
+                    val_NDVI = dic_NDVI[pix]
+                    val_NDVI=np.array(val_NDVI)
+                    # print(val_NDVI)
+                    # if val_NDVI[0]==None:
+                    #     continue
+                    if np.nanmean(val_NDVI)==np.nan:
+                        continue
+                    # val_NDVI[val_NDVI<0]=np.nan  #！！！！！！！！
+
+                    # if len(val_NDVI) != len_year:
+                    #     continue
+
+                    if np.isnan(np.nanmean(val_NDVI)):
+                        print('error')
+                        continue
+                    row = len(val_NDVI)
+
+                    NDVI_mean = np.nanmean(val_NDVI)
+                    NDVI_std=np.nanstd(val_NDVI)
+
+
+                    delta_time_series = []
+
+                    for i in range(row):
+                        delta = (val_NDVI[i] - NDVI_mean)
+                        delta_time_series.append(delta)
+                    delta_dic[pix] = delta_time_series
+                    # print(delta_time_series)
+
+
+                    # dic_spatial_count[pix] = len(delta_time_series)
+
+                    # 画每个pix的时间序列
+                    # plt.plot(delta_time_series)
+                    # plt.show()
+
+                    # 看看空间有多少有有效值
+
+                # arr = DIC_and_TIF().pix_dic_to_spatial_arr(dic_spatial_count)
+                # plt.imshow(arr, cmap='jet')
+                # plt.colorbar()
+                # plt.title('')
+                # plt.show()
+
+                # plt.plot(result_dic[pix])
+                # plt.show()
+
+                np.save(outdir + f'{variable}_{period}_anomaly.npy', delta_dic)
+                # np.save(outdir + '{}_during_{}_CSIF.npy'.format(time_range, period), delta_dic)
+
+
+
+    def Pierre_relative_change(self):
 
         periods = ['early', 'peak', 'late']
 
@@ -5706,22 +5708,24 @@ class statistic_anaysis:
 
 
     def mean_calculation(self):  # 变量多年平均值
-        period = 'late'
-        time = '2002-2018'
-        fdir_X = result_root + 'extraction_original_val/{}_original_extraction_all_seasons/{}_extraction_during_{}_growing_season_static/'.format(
-            time, time, period)
-        # print(fdir_X)
-        # exit()
-        # fdir_Y = result_root + 'extraction_anomaly_val/{}_during_{}_growing_season/Y_{}/'.format(time,period,time)
 
-        outdir = result_root + 'mean_calculation_original/during_{}_{}/'.format(period, time)
+        time = '2000-2018'
+
+        fdir_X = result_root + f'extraction_original_val/{time}_daily/'
+
+
+        outdir = result_root + f'mean_calculation_original/{time}_daily/'
         Tools().mk_dir(outdir, force=True)
-        # exit()
+
         all_list = []
         variable_name_list = []
 
+
+
         for f_X in tqdm(sorted(os.listdir(fdir_X))):
             if 'LAI' not in f_X:
+                continue
+            if f_X.startswith('.'):
                 continue
 
             dic_climate = dict(np.load(fdir_X + f_X, allow_pickle=True, ).item())
@@ -5729,8 +5733,8 @@ class statistic_anaysis:
             all_list.append(dic_climate)
             variable_name_list.append(f_X)
 
-            # print(variable_name_list)
-            # print(len(all_list))
+            print(variable_name_list)
+            print(len(all_list))
 
         for ii in range(len(variable_name_list)):
             outf = outdir + variable_name_list[ii].split('.')[0]
@@ -5750,8 +5754,7 @@ class statistic_anaysis:
                     continue
                 try:
 
-                    # spatial_dic[pix] = np.mean(val[-5:])
-                    # spatial_dic[pix] = np.mean(val[:5]) # ！！！！！修改
+
                     spatial_dic[pix] = np.mean(val)
 
                     spatial_dic_count[pix] = len(val)
@@ -5759,11 +5762,11 @@ class statistic_anaysis:
                 except Exception as e:
                    print('error')
 
-            # count_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
-            # plt.imshow(count_arr)
-            # plt.colorbar()
-            # plt.title(variable_name_list[ii])
-            # plt.show()
+            count_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+            plt.imshow(count_arr)
+            plt.colorbar()
+            plt.title(variable_name_list[ii])
+            plt.show()
             mean_arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
             mean_arr = np.array(mean_arr)
 
@@ -6720,7 +6723,7 @@ class Unify_date_range:
 
         # X_dir = result_root + f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
         # outdirX = result_root + f'extraction_original_val/{start}-{end}_monthly/'
-        X_dir=result_root+f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
+        X_dir=result_root+f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static'
         outdirX = result_root + f'extraction_original_val/{start}-{end}_monthly/'
 
         self.unify(X_dir,outdirX,start,end)
@@ -6991,7 +6994,7 @@ def main():
 
 
     # statistic_anaysis().trend_calculation()
-    statistic_anaysis().detrend()
+    # statistic_anaysis().detrend()
     # statistic_anaysis().mean_calculation()
     # statistic_anaysis().CV_calculation()
     # statistic_anaysis().extraction_winter_index()
@@ -7028,6 +7031,7 @@ def main():
 
     # Main_flow_Early_Peak_Late_Dormant().anonmaly_variables()
     # Main_flow_Early_Peak_Late_Dormant().zscore()
+    Main_flow_Early_Peak_Late_Dormant().anomaly()
 
 
     # Main_flow_Early_Peak_Late_Dormant().phenology_Yao_method()

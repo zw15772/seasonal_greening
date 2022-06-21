@@ -10,12 +10,14 @@ from pingouin import partial_corr
 class Build_dataframe:
 
     def __init__(self):
+
+
         self.this_class_arr = results_root + 'Data_frame_2000-2018/anomaly/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
         self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
-        # self.P_PET_fdir=data_root+'Base_data/aridity_P_PET_dic/'
-        self.P_PET_fdir = data_root + 'original_dataset/aridity_P_PET_dic/'
+        self.P_PET_dir = data_root + 'original_dataset/aridity_P_PET_dic/'
+        pass
         pass
 
     def run(self):
@@ -30,11 +32,11 @@ class Build_dataframe:
         # df = self.foo2(df)
         # df=self.add_anomaly_GIMMIS_NDVI_to_df(df)
         # df = self.add_Pierre_GIMMIS_NDVI_to_df(df)
-        # df=self.add_Keenan_GIMMIS_NDVI_to_df(df)
+        df=self.add_Keenan_GIMMIS_NDVI_to_df(df)
 
         # df=self.add_row(df)
 
-        df=self.add_trend_to_df(df)
+        # df=self.add_trend_to_df(df)
         # df=self.add_p_val_trend_to_df(df)
 
         # df=self.add_mean_to_df(df)
@@ -233,8 +235,10 @@ class Build_dataframe:
         # variable_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
         #              'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'SDGVM_S2_lai',
         #              'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai', 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai']
-        variable_list=['LAI3g','MODIS_LAI']
+        # variable_list=['LAI3g','MODIS_LAI']
         # variable_list=['Trendy_ensemble']
+
+        variable_list = ['VPD', 'CCI_SM','PAR','CO2','Temp']
 
         time = '2000-2018'
         # variable='LAI3g'
@@ -243,11 +247,11 @@ class Build_dataframe:
 
                 # f = results_root + f'Pierre_relative_change/2000-2018_Trendy/{variable}_{period}_relative_change.npy'
                 # f = results_root + f'Pierre_relative_change/2000-2018_monthly/2000-2018_Y/{variable}_{period}_relative_change.npy'
-                f=results_root+f'zscore/monthly/{time}_Y/{variable}_{period}_zscore.npy'
-                # f = results_root + f'Pierre_relative_change/monthly/2000-2018_Y/{variable}_{period}_relative_change.npy'
+                # f=results_root+f'zscore/monthly/{time}_Y/{variable}_{period}_zscore.npy'
+                f = results_root + f'Pierre_relative_change/monthly/2000-2018_X/{variable}_{period}_relative_change.npy'
                 NDVI_dic = T.load_npy(f)
-                # f_name = f'{time}_{variable}_{period}_relative_change_monthly'
-                f_name = f'{time}_{variable}_{period}_zscore_monthly'
+                f_name = f'{time}_{variable}_{period}_relative_change_monthly'
+                # f_name = f'{time}_{variable}_{period}_zscore_monthly'
                 print(f_name)
 
                 NDVI_list = []
