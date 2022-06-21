@@ -1,4 +1,6 @@
 # coding='utf-8'
+import numpy as np
+
 from __init__ import *
 import pandas as pd
 import plotly.graph_objects as go
@@ -6,6 +8,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 
 project_root='/Volumes/SSD_sumsang/project_greening/'
+# project_root='/Volumes/NVME2T/greening_project_old/'
 data_root=project_root+'Data/'
 results_root=project_root+'Result/new_result/'
 
@@ -21,10 +24,10 @@ def mk_dir(outdir):
 
 class Plot_dataframe:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2000-2018_Trendy/'
+        self.this_class_arr = results_root + '/Data_frame_2000-2018/anomaly/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018_Trendy.df'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
 
 
 
@@ -42,7 +45,7 @@ class Plot_dataframe:
         # self.call_multi_correlation_bar(df)
         # self.call_plot_line_for_three_seasons(df)
         # self.call_plot_line_NDVI_three_seasons(df)
-        # self.call_plot_LST_for_three_seasons(df)
+        self.call_plot_LST_for_three_seasons(df)
         # self.call_plot_trendy_for_three_seasons(df)
         # self.call_plot_trendy_for_three_seasons(df)
         # self.call_plot_GIMMS_NDVI_for_three_seasons_two_product(df)
@@ -469,13 +472,16 @@ class Plot_dataframe:
     def call_plot_LST_for_three_seasons(self,df): # 实现变量的三个季节画在一起
 
         df=df[df['HI_class']=='Humid']
+        df=df[df['max_trend']<10]
+        df = df[df['landcover'] !='cropland']
 
         period_name=['early','peak','late']
         # period_name = ['late']
 
         color_list=['r','g','b']
-        # variable_list=['1982-2020_LAI4g','1982-2018_LAI3g','2000-2019_MODIS_LAI']
-        variable_list = ['2000-2018_LAI3g', '2000-2018_MODIS_LAI']
+        variable_list=['LAI3g','MODIS_LAI']
+        # variable_list = ['LAI3g', 'MODIS_LAI', 'Trendy_ensemble']
+        # variable_list = ['LAI3g']
 
 
         fig = plt.figure()
@@ -486,22 +492,26 @@ class Plot_dataframe:
             flag=0
             ax = fig.add_subplot(2, 3, i)
 
-            for variable in variables_list:
+            for variable in variable_list:
 
 
-                column_name=f'2000-2018_{variable}_{period}_relative_change_monthly'
+                # column_name=f'2000-2018_{variable}_{period}_relative_change_daily'
+                column_name=f'2000-2018_{variable}_{period}_zscore_monthly'
 
                 print(column_name)
                 color=color_list[flag]
-                self.plot_trendy_for_three_seasons(df,column_name,color)
+                self.plot_LST_for_three_seasons(df,column_name,color)
                 flag+=1
 
             plt.legend()
             plt.ylabel('relative change %')
-            plt.title(f'{period}_Dryland')
-            major_ticks = np.arange(0, 20, 5)
+            plt.title(f'{period}_Humid')
+            major_xticks = np.arange(0, 20, 5)
+            # major_yticks = np.arange(-10, 15, 5)
+            major_yticks = np.arange(-1, 1, 0.1)
             # major_ticks = np.arange(0, 40, 5)  ### 根据数据长度修改这里
-            ax.set_xticks(major_ticks)
+            ax.set_xticks(major_xticks)
+            ax.set_yticks(major_yticks)
             plt.grid(which='major', alpha=0.5)
             i = i + 1
         plt.show()
@@ -1401,10 +1411,10 @@ class Plot_dataframe:
 
 class Plot_partial_correlation:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/partial_correlation_2000-2018_Trendy/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018/Data_frame_2000-2018_relative_change_detrend/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation.df'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation_detrend.df'
 
 
 
@@ -1421,8 +1431,9 @@ class Plot_partial_correlation:
         # self.call_plotbox_Yuan(df)
         # self.plot_increase_decrease_Yuan(df)
         # self.plot_greening_trend_bar(df)
-        # self.plot_barchartpolar(df)
-        # self.plot_barchartpolar_test(df)
+
+        # self.plot_barchartpolar_preprocess(df)
+        self.plot_barchartpolar_preprocess_average_value(df)
         self.plot_rose()
 
 
@@ -1980,21 +1991,22 @@ class Plot_partial_correlation:
         T.save_df(df1, results_root + 'polar_bar_plot/drivers_area_models_Humid.df')  # 17 * 12 列
         Tools().df_to_excel(df1, results_root + 'polar_bar_plot/drivers_area_models_Humid.xlsx')
 
-    def plot_barchartpolar_preprocess(self,df): #
+
+    def plot_barchartpolar_preprocess_average_value(self,df): # 求所有模型每个factor的avarage value
         df = df[df['row'] < 120]
         df = df[df['HI_class'] == 'Humid']
         df = df[df['NDVI_MASK'] == 1]
+        df = df[df['max_trend'] < 10]
+        df=df[df['landcover']!='cropland']
+        regions='Humid'
+        title='detrend'
 
-
-        # df=df.filter(regex='VPD$')
-        # print(df.columns)
-        #
         product_list= ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
                              'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
-                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'LAI3g']
+                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'Trendy_ensemble','LAI3g', 'MODIS_LAI']
         # product_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai',  'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai'
         #                  ]
-        variable_list=['CCI_SM','VPD','Temp','PAR']
+        variable_list=['CO2','CCI_SM','VPD','Temp','PAR']
 
 
         period_list=['early','peak','late']
@@ -2011,19 +2023,21 @@ class Plot_partial_correlation:
                     flag=0
                     for i, row in tqdm(df.iterrows(), total=len(df)):
                         pix = row.pix
-                        column_name_r=f'2000-2018_partial_correlation_{period}_{product}_{variable}'
-                        column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_{variable}'
-                        if row[column_name_p_value]>0.1:
-                            continue
-                        val_r = row[column_name_r]
-                        flag+=1
-                        values_for_all_pixels.append(val_r)
+
+                        # column_name_r=f'2000-2018_partial_correlation_{period}_{product}_{variable}_{period}'
+                        # column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_{variable}_{period}'
+                        column_name_r=f'2000-2018_partial_correlation_{period}_{product}_detrend_{variable}_{period}'
+                        column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_detrend_{variable}_{period}'
+                        if row[column_name_p_value]<0.1:
+
+                            flag+=1
+
                     print(flag)
 
-                    n = len(values_for_all_pixels)
-                    mean_val_i = np.nanmean(values_for_all_pixels)
-                    std_val_i=np.nanstd(values_for_all_pixels)
-                    dic_products[period][variable][product] = mean_val_i
+                    # n = len(flag)
+                    controling_area = flag/len(df)
+                    print(controling_area)
+                    dic_products[period][variable][product] = controling_area
         new_dict = {}
         for key1 in dic_products:
             new_dict_i = {}
@@ -2151,9 +2165,9 @@ class Plot_partial_correlation:
                 # angularaxis=dict(showticklabels=False, ticks='')
             )
         )
-
-
         fig.show()
+        # fig.write_image(f'test123.pdf')
+
 
 
 class Plot_partial_moving_window:
