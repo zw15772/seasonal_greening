@@ -1355,7 +1355,7 @@ class Multi_liner_regression:  # 实现求beta 功能
         self.periods=['early','peak','late']
         self.variables=['LAI3g','MODIS_LAI','Trendy_ensemble']
         self.time_range='2000-2018'
-        self.daily_month='daily'
+        self.daily_month='monthly'
 
         self.result_dir = results_root + f'multiregression/{self.daily_month}/'
 
@@ -3098,8 +3098,8 @@ class Sankey_plot_PLS:
 
     def __init__(self):
         # self.Y_name = 'LAI3g'
-        self.Y_name = 'LAI4g'
-        # self.Y_name = 'MODIS-LAI'
+        # self.Y_name = 'LAI4g'
+        self.Y_name = 'MODIS_LAI'
         self.var_list = ['CCI_SM', 'CO2', 'PAR', 'Temp', 'VPD']
         self.period_list = ['early', 'peak', 'late']
         self.fdir = results_root+f'Sankey_plot/Data/{self.Y_name}/'
@@ -3128,8 +3128,8 @@ class Sankey_plot_PLS:
         # T.df_to_excel(df,self.dff)
 
         ## 加筛选条件
-        df=df[df['max_lc_trend']<5]
-        # df = df[df['late_CO2_VIP'] >1 ]
+        df=df[df['max_trend']<10]
+
         df = df[df['landcover'] != 'Cropland']
 
         self.plot_Sankey(df,True)
@@ -3620,12 +3620,12 @@ def main():
     # Unify_date_range().run()
     # check_NIRV_NDVI().run()
     # Linear_contribution().run()
-    Multi_liner_regression().run()
-    # SEM().run()
+    # Multi_liner_regression().run()
+
 
     # Multi_liner_regression_for_Trendy().run()
     # plot_partial_plot().run()
-    # Sankey_plot_PLS().run()
+    Sankey_plot_PLS().run()
 
     # Window_correlation().run()
     # check_vod()

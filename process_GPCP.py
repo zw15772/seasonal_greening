@@ -889,7 +889,7 @@ def plot_dic():  # LAI4g
 def foo():
 
     # f='/Volumes/SSD_sumsang/project_greening/Result/detrend/extraction_during_late_growing_season_static/during_late_CSIF_par/per_pix_dic_008.npy'
-    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/anomaly/2000-2018_monthly/LAI3g_late_anomaly.npy'
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/extraction_original_val_daily/extraction_during_late_growing_season_static/during_late_VPD.npy'
     # f='/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_anomaly_window/1982-2015_during_early/during_early_CO2.npy'
     result_dic = {}
     spatial_dic={}
@@ -1134,9 +1134,9 @@ def beta_save_():  # 该功能实现所有因素的beta
     time_range='2002-2018'
     period='early'
     # f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression/LAI_GIMMS/detrend_1982-2001_multi_linearearly_LAI_GIMMS.npy'
-    f='//Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_zscore_detrend/2000-2018_partial_correlation_early_LAI3g.npy'
-    outdir='/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_correlation_original_detrend/TIFF_{}_{}_8/'.format(time_range,period)
-    T.mk_dir(outdir,force=True)
+    f='/Volumes/SSD_sumsang/project_greening/Result/new_result/multiregression/monthly/MODIS_LAI/2000-2018_multi_regression_peak_MODIS_LAI.npy'
+
+
     dic = T.load_npy(f)
     var_list = []
     for pix in dic:
@@ -1157,14 +1157,17 @@ def beta_save_():  # 该功能实现所有因素的beta
             spatial_dic[pix] = val
         arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
         arr[arr<-99]=np.nan
+        arr[arr > 10] = np.nan
+        arr[arr < -10] = np.nan
         # DIC_and_TIF().arr_to_tif(arr,outdir+var_i+'.tif')
         std = np.nanstd(arr)
         mean = np.nanmean(arr)
         vmin = mean - std
         vmax = mean + std
         plt.figure()
-        # plt.imshow(arr,vmin=vmin,vmax=vmax)
-        plt.imshow(arr, vmin=-0.5, vmax=0.5,cmap='jet')
+
+        # plt.imshow(arr)
+        plt.imshow(arr, vmin=vmin, vmax=vmax)
         plt.title(var_i)
         plt.colorbar()
     plt.show()
@@ -1184,7 +1187,7 @@ def spatial_check():  ## 空间上查看有多少个月
 
     # fdir ='/Volumes/SSD_sumsang/project_greening/Result/new_result/trend_window/1982-2018_during_early_window15/trend_during_early_Aridity.npy'
 
-    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/partial_window/1982-2018_during_early_window15/partial_correlation_early_1982-2018_window00_correlation.npy'
+    f = '/Volumes/SSD_sumsang/project_greening/Result/new_result/extraction_original_val/extraction_original_val_monthly/extraction_during_peak_growing_season_static/during_peak_Temp.npy'
     # outdir = data_root + 'VOD/VOD_interpolation/'
     # Tools().mk_dir(outdir, True)
     dic = {}
@@ -1197,6 +1200,7 @@ def spatial_check():  ## 空间上查看有多少个月
     #         dic.update(dic_i)
     result_dic = {}
     spatial_dic = {}
+    spatial_dic_2={}
     for pix in tqdm(dic, desc=''):
         # r,c = pix
         # if r>50:
@@ -1210,13 +1214,17 @@ def spatial_check():  ## 空间上查看有多少个月
         if np.isnan(np.nanmean(time_series)):
             continue
 
-        spatial_dic[pix] = time_series
+        # spatial_dic[pix] = time_series
+        spatial_dic[pix] = np.mean(time_series)
+        # spatial_dic_2[pix] = np.min(time_series)
 
         # spatial_dic[pix] = len(dic[pix])
-    arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+    arr1 = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)
+    # arr2 = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic_2)
     # print(arr.shape)
     # # # DIC_and_TIF().plot_back_ground_arr()
-    plt.imshow(arr)
+    plt.imshow(arr1)
+
     plt.show()
 
 def foo1():
@@ -1297,11 +1305,11 @@ def main():
     # CSIF_par_annually_transform()
     # plot_dic()
 
-    foo()
+    # foo()
     # spatial_plot_Yang()
     # spatial_plot()
     # beta_plot()
-    # beta_save_()
+    beta_save_()
     # check_pcorr()
     # foo4()
     #  foo3()

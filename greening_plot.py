@@ -24,7 +24,7 @@ def mk_dir(outdir):
 
 class Plot_dataframe:
     def __init__(self):
-        self.this_class_arr = results_root + '/Data_frame_2000-2018/anomaly/'
+        self.this_class_arr = results_root + '/Data_frame_2000-2018/relative_change/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
         self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
@@ -476,7 +476,6 @@ class Plot_dataframe:
         df = df[df['landcover'] !='cropland']
 
         period_name=['early','peak','late']
-        # period_name = ['late']
 
         color_list=['r','g','b']
         # variable_list=['LAI3g','MODIS_LAI']
@@ -495,7 +494,9 @@ class Plot_dataframe:
             for variable in variable_list:
 
 
-                column_name=f'2000-2018_{variable}_{period}_relative_change_monthly'
+                # column_name=f'2000-2018_{variable}_{period}_anomaly_daily'
+                column_name = f'2000-2018_{variable}_{period}_relative_change_daily'
+
                 # column_name=f'2000-2018_{variable}_{period}_zscore_monthly'
 
                 print(column_name)
@@ -508,7 +509,9 @@ class Plot_dataframe:
             plt.title(f'{period}_Humid')
             major_xticks = np.arange(0, 20, 5)
             # major_yticks = np.arange(-10, 15, 5)
-            major_yticks = np.arange(-1, 1, 0.1)
+            major_yticks = np.arange(-15, 15, 5)
+            ax.set_ylim(-15, 15,)
+            # major_yticks = np.arange(-0.2, 0.2, 0.05)
             # major_ticks = np.arange(0, 40, 5)  ### 根据数据长度修改这里
             ax.set_xticks(major_xticks)
             ax.set_yticks(major_yticks)
@@ -1411,10 +1414,10 @@ class Plot_dataframe:
 
 class Plot_partial_correlation:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/Data_frame_2000-2018_relative_change_detrend/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018/multi_regression_2000-2018_relative_change_trend/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation_detrend.df'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018_multiregression_trend.df'
 
 
 
@@ -1432,7 +1435,7 @@ class Plot_partial_correlation:
         # self.plot_increase_decrease_Yuan(df)
         # self.plot_greening_trend_bar(df)
 
-        # self.plot_barchartpolar_preprocess(df)
+        self.plot_barchartpolar_preprocess(df)
         # self.plot_barchartpolar_preprocess_average_value(df)
         # self.plot_rose()
 
@@ -1935,16 +1938,16 @@ class Plot_partial_correlation:
 
     def plot_barchartpolar_preprocess(self,df): #
         df = df[df['row'] < 120]
-        df = df[df['HI_class'] == 'Humid']
+        df = df[df['HI_class']== 'Humid']
         df = df[df['NDVI_MASK'] == 1]
         df=df[df['max_trend']<10]
         df = df[df['landcover'] !='cropland']
-        title='detrend'
+
         regions='Humid'
 
         product_list= ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
                              'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
-                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'Trendy_ensemble','LAI3g', 'MODIS_LAI']
+                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'Trendy_ensemble','LAI3g_monthly', 'MODIS_LAI_monthly','LAI3g_daily', 'MODIS_LAI_daily']
         # product_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai',  'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai'
         #                  ]
         variable_list=['CO2','CCI_SM','VPD','Temp','PAR']
@@ -1964,14 +1967,14 @@ class Plot_partial_correlation:
                     flag=0
                     for i, row in tqdm(df.iterrows(), total=len(df)):
                         pix = row.pix
-                        column_name_r=f'2000-2018_partial_correlation_{period}_{product}_detrend_{variable}_{period}'
-                        column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_detrend_{variable}_{period}'
+                        column_name_r=f'2000-2018_multi_regression_{period}_{product}_{variable}'
+
                         # column_name_r=f'2000-2018_partial_correlation_{period}_{product}_{variable}_{period}'
                         # column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_{variable}_{period}'
 
 
-                        if row[column_name_p_value]>0.1:
-                            continue
+                        # if row[column_name_p_value]>0.1:
+                        #     continue
                         val_r = row[column_name_r]
                         flag+=1
                         values_for_all_pixels.append(val_r)
@@ -1997,8 +2000,11 @@ class Plot_partial_correlation:
         df1 = T.dic_to_df(new_dict, 'model_name')
         print(df1)
 
-        T.save_df(df1,results_root+f'polar_bar_plot/drivers_all_models_{regions}_{title}.df')# 17 * 12 列
-        Tools().df_to_excel(df1,results_root+f'polar_bar_plot/drivers_all_models_{regions}_{title}.xlsx')
+        # T.save_df(df1,results_root+f'polar_bar_plot/drivers_all_models_{regions}_{title}.df')# 17 * 12 列
+        # Tools().df_to_excel(df1,results_root+f'polar_bar_plot/drivers_all_models_{regions}_{title}.xlsx')
+
+        T.save_df(df1, results_root + f'polar_bar_plot/multiregression_drivers_all_models_{regions}.df')  # 17 * 12 列
+        Tools().df_to_excel(df1, results_root + f'polar_bar_plot/multiregression_drivers_all_models_{regions}.xlsx')
 
 
     def plot_barchartpolar_preprocess_average_value(self,df): # 求所有模型每个factor的avarage value
@@ -2247,8 +2253,8 @@ class Plot_partial_moving_window:
 
 def main():
 
-    Plot_dataframe().run()
-    # Plot_partial_correlation().run()
+    # Plot_dataframe().run()
+    Plot_partial_correlation().run()
     # Plot_partial_moving_window().run()
 
 
