@@ -12,10 +12,10 @@ class Build_dataframe:
     def __init__(self):
 
 
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/multi_regression_2000-2018_relative_change_trend/'
+        self.this_class_arr = results_root + 'partial_correlation/max_correlation_trend/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018_multiregression_trend.df'
+        self.dff = self.this_class_arr + 'max_contribution_result_df.df'
         self.P_PET_fdir = data_root + 'original_dataset/aridity_P_PET_dic/'
         pass
         pass
@@ -46,12 +46,12 @@ class Build_dataframe:
         # df = self.add_NDVI_mask(df)
         # df=self.add_winter_to_df(df)
         # df=self.add_Koppen_data_to_df(df)
-        df=self.add_landcover_data_to_df(df)
+        # df=self.add_landcover_data_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_partial_correlation_to_df(df)
-        # P_PET_dic=self.P_PET_ratio(self.P_PET_fdir)
-        # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
-        # df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
+        P_PET_dic=self.P_PET_ratio(self.P_PET_fdir)
+        P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
+        df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
 
 
         df=self.show_field(df)

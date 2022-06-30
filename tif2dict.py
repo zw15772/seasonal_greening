@@ -1469,8 +1469,8 @@ class Main_flow_Early_Peak_Late_Dormant:
 
 
 
-        # variables = ['MODIS_LAI','LAI4g','LAI3g',]
-        variables = [ 'CCI_SM', 'PAR', 'VPD','Temp']
+        # variables = ['LAI3g',]
+        variables = [ 'CCI_SM', 'PAR', 'VPD','Temp','CO2']
         # variables = [ 'LAI4g','VOD']
         # variables = ['MODIS_LAI','LAI3g']
 
@@ -1479,8 +1479,8 @@ class Main_flow_Early_Peak_Late_Dormant:
             for period in periods:
                 dic_NDVI={}  # so important!!
 
-                fdir=result_root+f'extraction_original_val/2000-2018_daily/'
-                outdir = result_root + 'Pierre_relative_change/2000-2018_daily/'
+                fdir=result_root+f'extraction_original_val/1982-2018_monthly/'
+                outdir = result_root + 'Anomaly/Pierre_relative_change/monthly/1982-2018_monthly/'
                 Tools().mk_dir(outdir, force=True)
 
                 file=fdir+f'during_{period}_{variable}.npy'
@@ -1978,26 +1978,29 @@ class statistic_anaysis:
 
     def extraction_during_window(self):
 
-        window_list=[10,15,20]
+        window_list=[15]
         period_list=['early','peak','late']
         # variables=['VPD','CCI_SM','CO2','Temp','PAR']
-        variables=['LAI4g']
+        variables=['LAI3g']
 
 
         for i in window_list:
-            fdir = results_root + f'Pierre_relative_change/1982_Y/'
 
-            outdir = result_root + f'extract_relative_change_window/{i}_year_window_1982/'
-
-            Tools().mk_dir(outdir, force=True)
             for period in period_list:
+                fdir = results_root + f'/extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
+
+                outdir = result_root + f'extract_original_value_window/{i}_year_window_1982_monthly/'
+
+                Tools().mk_dir(outdir, force=True)
 
                 for variable in variables:
 
                     for f in tqdm(sorted(os.listdir(fdir))):
+
+
                         dic = {}
 
-                        if f != f'{variable}_{period}_relative_change.npy':
+                        if f != f'during_{period}_{variable}.npy':
                             continue
 
                         if f.endswith('.npy'):
@@ -2021,8 +2024,8 @@ class statistic_anaysis:
                                 print('error')
                                 continue
 
-                            # new_x_extraction_by_window[pix]=self.forward_window_extract_anomaly(time_series,i) # extraction 窗口时同时求anomaly
-                            new_x_extraction_by_window[pix] = self.forward_window_extract(time_series, i)
+                            new_x_extraction_by_window[pix]=self.forward_window_extract_anomaly(time_series,i) # extraction 窗口时同时求anomaly
+                            # new_x_extraction_by_window[pix] = self.forward_window_extract(time_series, i)
                             # new_x_extraction_by_window[pix] = self.forward_window_extract_mean(time_series, i)
 
 
@@ -2033,7 +2036,7 @@ class statistic_anaysis:
 
     def plot_moving_window(self):
 
-        dic=dict(np.load(result_root+'partial_window/plot_moving_window_partial_correlation/moving_partial_correlation_peak_Non Humid.npy',allow_pickle=True,).item())
+        dic=dict(np.load(result_root+'trend_window_original_value/1982-2018_during_window15/trend_during_peak_LAI3g.npy',allow_pickle=True,).item())
         print(dic)
 
         early_key_list=[]
@@ -4158,7 +4161,7 @@ class statistic_anaysis:
                 for i in range(len(x_vals)):
                     if x_vals[0]==None:
                         continue
-                    x_anomaly=x_vals[i]-x_mean
+                    x_anomaly=(x_vals[i]-x_mean)/x_mean *100
 
                     anomaly.append(x_anomaly)
                 new_x_extraction_by_window.append(anomaly)
@@ -4529,11 +4532,11 @@ class statistic_anaysis:
                 np.save(outf + '_Beta', multi_derivative)
 
     def partial_correlation_window(self):  # 实现滑动相关
-        period = 'late'
+        period = 'peak'
         window = 15
-        slices=39-window
+        slices=37-window
         time_range = '1982-2020'
-        product='LAI4g'
+        product='LAI3g'
 
         fdir_all = result_root + f'extract_relative_change_window/{window}_year_window_1982/'
         outdir = result_root + 'partial_window/{}_during_{}_window{}_{}/'.format(time_range, period, window,product)
@@ -4542,38 +4545,39 @@ class statistic_anaysis:
         dic_y = {}
         # dic_climate = {}
 
-        for Y_variables in tqdm(sorted(os.listdir(fdir_all))):
+        climate_all_variables_dic = {}
+        climate_name_list = []
 
-            if Y_variables != 'LAI4g_{}_relative_change.npy'.format(period):
+        for X_variable in tqdm(sorted(os.listdir(fdir_all))):
+            print(X_variable)
+
+            if not period in X_variable:
                 continue
-            print(Y_variables)
+            # exit()
 
-           
-            dic_i = dict(np.load(fdir_all  + Y_variables, allow_pickle=True, ).item())
-            dic_y.update(dic_i)
 
-            climate_all_variables_dic = {}
-            climate_name_list = []
+            if period not in X_variable:
+                continue
 
-            for X_variable in tqdm(sorted(os.listdir(fdir_all))):
-                print(X_variable)
-                # exit()
+            dic_climate = {}
 
-                if X_variable == f'LAI4g_{period}_relative_change.npy'.format(period, ):
-                    continue
+            dic_ii = dict(np.load(fdir_all + X_variable, allow_pickle=True, ).item())
+            dic_climate.update(dic_ii)
 
-                if period not in X_variable:
-                    continue
+            climate_all_variables_dic[X_variable.split('.')[0]] = dic_climate
+            climate_name_list.append(X_variable)
 
-                dic_climate = {}
+        print(climate_name_list)
 
-                dic_ii = dict(np.load(fdir_all  + X_variable , allow_pickle=True, ).item())
-                dic_climate.update(dic_ii)
+        Y_variables=f'{product}_{period}_relative_change.npy'
+        print(Y_variables)
+        dic_i = dict(np.load(fdir_all  + Y_variables, allow_pickle=True, ).item())
+        dic_y.update(dic_i)
 
-                climate_all_variables_dic[X_variable] = dic_climate
-                climate_name_list.append(X_variable)
 
         for w in range(slices):
+
+
             outf = outdir + 'partial_correlation_{}_{}'.format(period, time_range)+'_window'+ '{:02d}'.format(w)
             print(outf)
 
@@ -4672,40 +4676,31 @@ class statistic_anaysis:
         return r, p
 
     def trend_window(self):  # 实现trend
-        period = 'early'
-        window = 15
-        slices = 39 - window
-        time_range = '1982-2020'
 
-        fdir_all = result_root + 'extract_original_window/{}_during_{}/{}_year_window/'.format(time_range,
-                                                                                                 period, window)
-        outdir = result_root + 'trend_window/{}_during_{}_window{}/'.format(time_range, period,
+        window = 15
+        slices = 37 - window
+        time_range = '1982-2018'
+
+        fdir_all = result_root + 'extract_original_value_window/15_year_window_1982_monthly/'
+        outdir = result_root + 'trend_window_original_value/{}_during_window{}/'.format(time_range,
                                                                               window)
 
         Tools().mk_dir(outdir, force=True)
 
-        # dic_climate = {}
-
-        climate_all_variables_dic = {}
-        climate_name_list = []
-        for fdir in tqdm(sorted(os.listdir(fdir_all))):
-            print(fdir)
-            if fdir!=f'during_{period}_LAI4g.npy':
+        for f in tqdm(sorted(os.listdir(fdir_all))):
+            dic_climate = {}
+            if 'peak' in f:
                 continue
 
-            dic_climate = {}
-            spatial_trend = {}
-            spatial_trend_p_value = {}
-
-            for f in tqdm(sorted(os.listdir(fdir_all+fdir+'/'))):
-
-                dic_i = dict(np.load(fdir_all + fdir+'/'+f, allow_pickle=True, ).item())
-                dic_climate.update(dic_i)
+            dic_i = dict(np.load(fdir_all +f, allow_pickle=True, ).item())
+            dic_climate.update(dic_i)
 
             for pix in tqdm(dic_climate):
                 trend_window = []
                 p_value_window = []
                 for w in range(slices):
+                    spatial_trend = {}
+                    spatial_trend_p_value = {}
 
                     x_val = dic_climate[pix][w]
                     if not len(x_val) == window:  ##
@@ -4735,8 +4730,8 @@ class statistic_anaysis:
                 spatial_trend[pix] = trend_window  # 求trend
                 spatial_trend_p_value[pix] = p_value_window
 
-            outf_trend = outdir + f'trend_{fdir}'
-            ourf_p_value=outdir + f'p_value_{fdir}'
+            outf_trend = outdir + f'trend_{f}'
+            ourf_p_value=outdir + f'p_value_{f}'
 
         #
             T.save_npy(spatial_trend, outf_trend )
@@ -4750,8 +4745,8 @@ class statistic_anaysis:
         slices = 37 - window
         time_range = '1982-2018'
 
-        fdir_all = result_root + 'extract_relative_change_window/15_year_window/'
-        outdir = result_root + 'extract_relative_change_window/trend_window/{}_during_{}_window{}_{}/'.format(time_range, period,
+        fdir_all = result_root + 'extract_relative_change_window/15_year_window_1982_daily/Y/'
+        outdir = result_root + 'extract_relative_change_window/trend_window/LAI3g_daily/{}_during_{}_window{}_{}/'.format(time_range, period,
                                                                             window,variable)
 
         Tools().mk_dir(outdir, force=True)
@@ -5015,8 +5010,8 @@ class statistic_anaysis:
         time = '1982-2018'
         for period in period_list:
 
-            fdir = result_root + f'extract_relative_change_window/trend_window/{variable}/{time}_during_{period}_window15_{variable}/'
-            outdir = result_root + f'extract_relative_change_window/trend_window/{variable}/{time}_during_{period}_window15_conversion_{variable}/'
+            fdir = result_root + f'extract_relative_change_window/trend_window/{variable}_daily/{time}_during_{period}_window15_{variable}/'
+            outdir = result_root + f'extract_relative_change_window/trend_window/{variable}_daily/{time}_during_{period}_window15_conversion_{variable}/'
             T.mk_dir(outdir,force=True)
             val_dic_list=[]
 
@@ -5026,10 +5021,10 @@ class statistic_anaysis:
 
                 if not f.endswith('.npy'):
                     continue
-                # if 'p_value' in f:
-                #     continue
-                if 'trend' in f:
+                if 'p_value' in f:
                     continue
+                # if 'trend' in f:
+                #     continue
                 print(f)
 
                 # val_dic = T.load_npy(fdir + f)
@@ -5054,7 +5049,7 @@ class statistic_anaysis:
                     continue
                 spatial_dic[pix] = val_list
 
-            np.save(outdir + f'{period}_{variable}_15window_p_value', spatial_dic)
+            np.save(outdir + f'{period}_{variable}_15window_trend', spatial_dic)
         pass
 
 
@@ -6715,13 +6710,13 @@ class Unify_date_range:
 
     def run(self):
         # self.__data_range_index()
-        start = 2000
+        start = 1982
         end = 2018
-        period='late'
+        period='peak'
 
         # X_dir = result_root + f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
         # outdirX = result_root + f'extraction_original_val/{start}-{end}_monthly/'
-        X_dir=result_root+f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static'
+        X_dir=result_root+f'extraction_original_val/extraction_original_val_monthly/extraction_during_{period}_growing_season_static/'
         outdirX = result_root + f'extraction_original_val/{start}-{end}_monthly/'
 
         self.unify(X_dir,outdirX,start,end)
@@ -6980,7 +6975,8 @@ def main():
     #
     # statistic_anaysis().plot_moving_window_correlation()
     # statistic_anaysis().trend_window()
-    # statistic_anaysis().trend_window_LAI()
+    # statistic_anaysis().plot_moving_window()
+    statistic_anaysis().trend_window_LAI()
     # statistic_anaysis().conversion_trend()
     # statistic_anaysis().variables_contribution_window()
     # statistic_anaysis().conversion()
@@ -6991,7 +6987,7 @@ def main():
     # statistic_anaysis().save_moving_window_correlation()
 
 
-    statistic_anaysis().trend_calculation()
+    # statistic_anaysis().trend_calculation()
     # statistic_anaysis().detrend()
     # statistic_anaysis().mean_calculation()
     # statistic_anaysis().CV_calculation()
@@ -7027,8 +7023,9 @@ def main():
     # Main_flow_Early_Peak_Late_Dormant().contribution()
     # Main_flow_Early_Peak_Late_Dormant().changes_NDVI_keenan()
 
-    # Main_flow_Early_Peak_Late_Dormant().anonmaly_variables()
+
     # Main_flow_Early_Peak_Late_Dormant().zscore()
+    # Main_flow_Early_Peak_Late_Dormant().Pierre_relative_change()
     # Main_flow_Early_Peak_Late_Dormant().anomaly()
 
 
