@@ -1353,11 +1353,11 @@ class Multi_liner_regression:  # 实现求beta 功能
     def __init__(self):
 
         self.periods=['early','peak','late']
-        self.variables=['LAI3g','MODIS_LAI','Trendy_ensemble']
-        self.time_range='2000-2018'
-        self.daily_month='daily'
+        self.variables=['LAI3g']
+        self.time_range='1982-2018'
+        # self.daily_month='monthly'
 
-        self.result_dir = results_root + f'multiregression/{self.daily_month}/'
+
 
 
 
@@ -1365,29 +1365,34 @@ class Multi_liner_regression:  # 实现求beta 功能
 
         for period in self.periods:
             for variable in self.variables:
-
-                self.result_f = self.result_dir+'/{}_multi_regression_{}_{}.npy'.format(self.time_range,period,variable)
-                # self.p_value_result_f = self.result_dir + '/{}_multi_regression_p_value_{}_{}.npy'.format(
-                #     self.time_range, period,variable)
-
-                self.x_dir=results_root+f'anomaly/{self.time_range}_{self.daily_month}/X/'
-
-                self.y_f=results_root+f'anomaly/{self.time_range}_{self.daily_month}/Y/{variable}_{period}_anomaly.npy'
-
-                self.y_mean=results_root+f'mean_calculation_original/{self.time_range}_{self.daily_month}/during_{period}_{variable}_mean.npy'
-
+                self.result_dir = results_root + 'partial_correlation_daily/' + f'{variable}/'
 
                 T.mk_dir(self.result_dir,force=True)
+
+
+                self.partial_correlation_result_f = self.result_dir+'/{}_partial_correlation_{}_{}.npy'.format(self.time_range,period,variable)
+
+                self.partial_correlation_p_value_result_f=self.result_dir + '/{}_partial_correlation_p_value_result_{}_{}.npy'.format(
+                    self.time_range, period,variable)
+
+                self.x_dir=results_root+f'Anomaly/Pierre_relative_change/1982-2018_daily/X/'
+
+                self.y_f=results_root+f'Anomaly/Pierre_relative_change/1982-2018_daily/Y/{variable}_{period}_relative_change.npy'
+
+                # self.y_mean=results_root+f'mean_calculation_original/{self.time_range}_{self.daily_month}/during_{period}_{variable}_mean.npy'
+
 
 
                 # step 1 build dataframe
                 df = self.build_df(self.x_dir,self.y_f,period)
                 x_var_list = self.__get_x_var_list(self.x_dir,period)
                 # # # step 2 cal correlation
-                self.cal_multi_regression_beta(df, x_var_list,19)  #修改参数
-                # self.cal_partial_correlation(df, x_var_list,19)  #修改参数
+                # self.cal_multi_regression_beta(df, x_var_list,19)  #修改参数
+                self.cal_partial_correlation(df, x_var_list,37)  #修改参数
                 # self.cal_PLS(df, x_var_list, 19)  # 修改参数
                 # self.max_contribution()
+                # self.count_max_area()
+                # self.plot_spatial_max_contribution()
                 # self.variables_contribution()
 
 
@@ -1410,6 +1415,7 @@ class Multi_liner_regression:  # 实现求beta 功能
             split1 = x_f.split('/')[-1]
             split2 = split1.split('.')[0]
             var_name = '_'.join(split2.split('_')[0:-2])
+            # var_name = '_'.join(split2.split('_')[0:-3])
             x_var_list.append(var_name)
         return x_var_list
 
@@ -1929,52 +1935,122 @@ class Multi_liner_regression:  # 实现求beta 功能
 
 
     def max_contribution(self):
-        x_var_list = self.__get_x_var_list(self.x_dir, self.period, self.time_range)
+        period_list=['early','peak','late']
+
+        product_list= ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
+                             'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
+                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'Trendy_ensemble','LAI3g_monthly', 'MODIS_LAI_monthly','LAI3g_daily', 'MODIS_LAI_daily']
+        x_var_list = ['CO2','CCI_SM','PAR','VPD','Temp']
         x_var_list.sort()
-        result_f = self.partial_correlation_result_f
-        ourdir =self.result_dir+'/max_correlation/'
-        T.mk_dir(ourdir)
-        result_dic = T.load_npy(result_f)
-        output_dic={}
+        dff = results_root+'Data_frame_2000-2018/partial_correlation_relative_change_trend_2000_2018/Data_frame_2000-2018_partial_correlation_trend.df'
+        outdir =results_root+'partial_correlation/max_correlation_trend/'
+        #'2000-2018_partial_correlation_early_MODIS_LAI_VPD_early'
+        #2000-2018_partial_correlation_p_value_result_peak_MODIS_LAI_PAR_peak
+        T.mk_dir(outdir)
+        df=T.load_df(dff)
+        df = df[df['row'] < 120]
+        df = df[df['NDVI_MASK'] == 1]
+        df = df[df['max_trend'] < 10]
+        df = df[df['landcover'] != 'cropland']
+        columns=df.columns
+        print(columns)
 
-        color_map = dict(zip(x_var_list,list(range(len(x_var_list)))))
-        print(color_map)
-        # exit()
-        spatial_dic = {}
-        var_name_list = []
-        for pix in result_dic:
-            result = result_dic[pix]
-            for var_i in result:
-                var_name_list.append(var_i)
-            var_name_list = list(set(var_name_list))
-            contribution_list = []
-            x_var_list_new = []
-            for x in var_name_list:
-                dic_i = result_dic[pix]
-                if not x in dic_i:
-                    continue
-                contribution_list.append(abs(dic_i[x]))
-                x_var_list_new.append(x)
-            argsort = np.argsort(contribution_list)[::-1]
-            max_x_var = x_var_list_new[argsort[0]]
-            # val = x_var_list.index(max_x_var)
-            val = color_map[max_x_var]
-            spatial_dic[pix] = val
-        tif_template = '/Volumes/SSD_sumsang/project_greening/Data/NIRv_tif_05/1982-2018/198205.tif'
-        arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dic)[:120]
-        DIC_and_TIF().plot_back_ground_arr_north_sphere(tif_template)
-        # cmap = sns.color_palette('hls',as_cmap=True)
-        # plt.imshow(arr,cmap='jet')
-        # plt.colorbar()
-        # plt.show()
+        max_contribution_result_dic={}
+        for period in period_list:
+            for product in product_list:
+                dict_i={}
+                for x_var in x_var_list:
+                    # col_p_calue=f'2000-2018_partial_correlation_p_value_result_{period}_{product}_{x_var}_{period}'
+                    # col_corr=f'2000-2018_partial_correlation_{period}_{product}_{x_var}_{period}'
+                    col_p_calue = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_{x_var}'
+                    col_corr = f'2000-2018_partial_correlation_{period}_{product}_{x_var}'
 
-        outf_tif=f'{self.period}_{self.time_range}_max_correlation.tif'
-        outf_npy = f'{self.period}_{self.time_range}_max_correlation.npy'
 
-        DIC_and_TIF().arr_to_tif(arr,ourdir+outf_tif)
-        output_dic=DIC_and_TIF().spatial_arr_to_dic(arr)
-        np.save(ourdir+outf_npy, output_dic)
-        pass
+                    dict_j={}
+                    for i,row in tqdm(df.iterrows(),total=len(df),desc=f'{period}_{product}_{x_var}'):
+                        pix=row.pix
+                        if row[col_p_calue]>0.05:
+                            continue
+                        dict_j[pix]=row[col_corr]
+                    dict_i[x_var]=dict_j
+                df_i=T.spatial_dics_to_df(dict_i)
+                # print(df_i)
+                key=f'{period}_{product}'
+                spatial_dict={}
+
+                for i, row in tqdm(df_i.iterrows(), total=len(df_i), desc=f'{period}_{product}'):
+                    pix = row.pix
+                    value_dic={}
+                    for var_ in x_var_list:
+                        value= row[var_]
+                        if np.isnan(value):
+                            continue
+                        value=abs(value)
+                        value_dic[var_]=value
+                    if len(value_dic)==0:
+                        continue
+                    max_var=T.get_max_key_from_dict(value_dic)
+                    spatial_dict[pix]=max_var
+                max_contribution_result_dic[key]=spatial_dict
+        max_contribution_result_df=T.spatial_dics_to_df(max_contribution_result_dic)
+        T.save_df(max_contribution_result_df,outdir+'max_contribution_result_df.df')
+        T.df_to_excel(max_contribution_result_df,outdir+'max_contribution_result_df.xlsx')
+
+
+    def count_max_area(self):
+
+        period_list = ['early', 'peak', 'late']
+        x_var_list = ['CO2', 'CCI_SM', 'PAR', 'VPD', 'Temp']
+        x_var_list.sort()
+
+        product_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
+                        'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
+                        'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'Trendy_ensemble', 'LAI3g_monthly',
+                        'MODIS_LAI_monthly', 'LAI3g_daily', 'MODIS_LAI_daily']
+
+
+        dff = results_root + 'partial_correlation/max_correlation_trend/max_contribution_result_df.df'
+        outdir = results_root + 'partial_correlation/max_correlation_trend_hotfigure/'
+
+        T.mk_dir(outdir)
+        df = T.load_df(dff)
+
+        df = df[df['HI_class']== 'Humid']
+
+        columns = df.columns
+        print(columns)
+        max_contributor={}
+
+        for period in period_list:
+            for product in product_list:
+                col = f'{period}_{product}'
+                val=df[col]
+                # print(len(val))
+                val_drop=val.dropna()
+                a=val.value_counts()
+                area=a/len(val_drop)*100
+                max_contributor[col]=area
+
+        new_dict = {}
+        for var_ in x_var_list:
+
+            new_dict[var_] = {}
+            for key1 in max_contributor:
+                new_dict[var_][key1] = max_contributor[key1][var_]
+
+        df1 = T.dic_to_df(new_dict, 'drivers')
+        print(df1)
+
+
+        T.save_df(df1, results_root + f'Humid.df')  # 17 * 12 列
+        Tools().df_to_excel(df1, results_root + f'Humid.xlsx')
+
+
+
+
+
+
+
 
     def variables_contribution(self):
         x_var_list = self.__get_x_var_list(self.x_dir, self.period, self.time_range)
@@ -3105,8 +3181,8 @@ class Sankey_plot_PLS:
 
     def __init__(self):
         # self.Y_name = 'LAI3g'
-        self.Y_name = 'LAI4g'
-        # self.Y_name = 'MODIS-LAI'
+        # self.Y_name = 'LAI4g'
+        self.Y_name = 'MODIS_LAI'
         self.var_list = ['CCI_SM', 'CO2', 'PAR', 'Temp', 'VPD']
         self.period_list = ['early', 'peak', 'late']
         self.fdir = results_root+f'Sankey_plot/Data/{self.Y_name}/'
@@ -3135,8 +3211,8 @@ class Sankey_plot_PLS:
         # T.df_to_excel(df,self.dff)
 
         ## 加筛选条件
-        df=df[df['max_lc_trend']<5]
-        # df = df[df['late_CO2_VIP'] >1 ]
+        df=df[df['max_trend']<10]
+
         df = df[df['landcover'] != 'Cropland']
 
         self.plot_Sankey(df,True)
@@ -3628,7 +3704,7 @@ def main():
     # check_NIRV_NDVI().run()
     # Linear_contribution().run()
     Multi_liner_regression().run()
-    # SEM().run()
+
 
     # Multi_liner_regression_for_Trendy().run()
     # plot_partial_plot().run()

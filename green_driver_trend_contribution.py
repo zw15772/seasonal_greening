@@ -12,11 +12,11 @@ class Build_dataframe:
     def __init__(self):
 
 
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/anomaly/'
+        self.this_class_arr = results_root + 'partial_correlation/max_correlation_trend/'
 
         Tools().mk_dir(self.this_class_arr, force=True)
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
-        self.P_PET_dir = data_root + 'original_dataset/aridity_P_PET_dic/'
+        self.dff = self.this_class_arr + 'max_contribution_result_df.df'
+        self.P_PET_fdir = data_root + 'original_dataset/aridity_P_PET_dic/'
         pass
         pass
 
@@ -32,10 +32,10 @@ class Build_dataframe:
         # df = self.foo2(df)
         # df=self.add_anomaly_GIMMIS_NDVI_to_df(df)
         # df = self.add_Pierre_GIMMIS_NDVI_to_df(df)
-        df=self.add_Keenan_GIMMIS_NDVI_to_df(df)
+        # df=self.add_Keenan_GIMMIS_NDVI_to_df(df)
 
         # df=self.add_row(df)
-
+        #
         # df=self.add_trend_to_df(df)
         # df=self.add_p_val_trend_to_df(df)
 
@@ -49,12 +49,12 @@ class Build_dataframe:
         # df=self.add_landcover_data_to_df(df)
         # df=self.add_max_correlation_to_df(df)
         # df=self.add_partial_correlation_to_df(df)
-        # P_PET_dic=self.P_PET_ratio(self.P_PET_fdir)
-        # P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
-        # df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
+        P_PET_dic=self.P_PET_ratio(self.P_PET_fdir)
+        P_PET_reclass_dic=self.P_PET_reclass(P_PET_dic)
+        df=T.add_spatial_dic_to_df(df,P_PET_reclass_dic,'HI_class')
 
 
-        # df=self.show_field(df)
+        df=self.show_field(df)
 
 
         # df=self.__rename_dataframe_columns(df)
@@ -104,7 +104,7 @@ class Build_dataframe:
 
     def foo1(self,df):
 
-        f = results_root+'/Pierre_relative_change/2000-2018_daily/2000-2018_Y/LAI3g_early_relative_change.npy'
+        f = results_root+'anomaly/2000-2018_monthly/Y/LAI3g_early_anomaly.npy'
         dic = {}
         outf = self.dff
         result_dic = {}
@@ -113,7 +113,7 @@ class Build_dataframe:
         pix_list=[]
         change_rate_list=[]
         year=[]
-        f_name = 'LAI3g'
+        f_name = 'LAI3g_early_anomaly'
 
         print(f_name)
         for pix in tqdm(dic):
@@ -235,22 +235,22 @@ class Build_dataframe:
         # variable_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
         #              'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'SDGVM_S2_lai',
         #              'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai', 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai']
-        # variable_list=['LAI3g','MODIS_LAI']
+        variable_list=['LAI3g','MODIS_LAI','Trendy_ensemble']
         # variable_list=['Trendy_ensemble']
 
-        variable_list = ['VPD', 'CCI_SM','PAR','CO2','Temp']
+        # variable_list = ['VPD', 'CCI_SM','PAR','CO2','Temp']
 
         time = '2000-2018'
-        # variable='LAI3g'
+
         for variable in variable_list:
             for period in periods:
 
                 # f = results_root + f'Pierre_relative_change/2000-2018_Trendy/{variable}_{period}_relative_change.npy'
-                # f = results_root + f'Pierre_relative_change/2000-2018_monthly/2000-2018_Y/{variable}_{period}_relative_change.npy'
+                f = results_root + f'Anomaly/Pierre_relative_change/2000-2018_daily/2000-2018_Y/{variable}_{period}_relative_change.npy'
                 # f=results_root+f'zscore/monthly/{time}_Y/{variable}_{period}_zscore.npy'
-                f = results_root + f'Pierre_relative_change/monthly/2000-2018_X/{variable}_{period}_relative_change.npy'
+                # f = results_root + f'Anomaly/anomaly/{time}_daily/Y/{variable}_{period}_relative_change.npy'
                 NDVI_dic = T.load_npy(f)
-                f_name = f'{time}_{variable}_{period}_relative_change_monthly'
+                f_name = f'{time}_{variable}_{period}_relative_change_daily'
                 # f_name = f'{time}_{variable}_{period}_zscore_monthly'
                 print(f_name)
 
