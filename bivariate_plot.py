@@ -58,7 +58,7 @@ def bivariate_plot():
     # todo: bivariate color ramp for classes needs to be fixed
     world_shp = '/Volumes/NVME2T/hotcold_drought/shp/world.shp'
     tif1 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/CCI_SM_r-trend.tif'
-    tif2 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/VPD_r-trend.tif'
+    tif2 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/CO2_r-trend.tif'
     # gdf1 = raster_to_gdf(tif1,colname='CCI_SM')
     # gdf2 = raster_to_gdf(tif2,colname='CO2')
     gdf = raster_list_to_gdf([tif1,tif2],['CCI_SM','CO2'])
@@ -67,11 +67,11 @@ def bivariate_plot():
     world = world.to_crs(crs=wkt())
     fig = plt.figure(figsize=(15, 3))
     ax = fig.add_subplot(111)
-    world.plot(ax=ax, color='gray', edgecolor='black')
-    vba_choropleth('CCI_SM', 'CO2', gdf,cmap='jet',divergent=False,revert_alpha=True,
+    world.plot(ax=ax, color='w', edgecolor='black')
+    vba_choropleth('CCI_SM', 'CO2', gdf,cmap='RdBu',divergent=False,revert_alpha=True,
                             legend=True,
-                            rgb_mapclassify=dict(classifier='std_mean', k=3),
-                            alpha_mapclassify=dict(classifier='std_mean', k=3),
+                            rgb_mapclassify=dict(classifier='std_mean', k=10),
+                            alpha_mapclassify=dict(classifier='std_mean', k=10),
                             ax=ax)
     plt.tight_layout()
     plt.show()
@@ -79,9 +79,14 @@ def bivariate_plot():
 
 
 def bivariate_tifs_to_shp_and_reclass():
-    # world_shp = '/Volumes/NVME2T/hotcold_drought/shp/world.shp'
+    # todo: change here @Wen bivariate_tifs_to_shp
+
+    ## tif1 and tif2 are the two tifs to be bivariate reclassified
     tif1 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/CCI_SM_r-trend.tif'
-    tif2 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/VPD_r-trend.tif'
+    tif2 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/Temp_r-trend.tif'
+    outshp = 'xxxx.shp'  # needs to be modified
+
+
     df = raster_list_to_gdf([tif1, tif2], ['var1', 'var2'])
     var1_std = df['var1'].std()/2
     var2_std = df['var2'].std()/2
@@ -112,7 +117,7 @@ def bivariate_tifs_to_shp_and_reclass():
     # merge var1_class and var2_class
     df['class'] = df['var1_class'] + df['var2_class']
     T.print_head_n(df, n=10)
-    df.to_file('/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/GIMMS3g_1982-2020_r-trend_class.shp')
+    df.to_file(outshp)
 
 def raster_to_gdf(intif,colname='value',unique_key='X_Y'):
     '''
@@ -184,8 +189,8 @@ def raster_list_to_gdf(intif_list,colname_list):
 
 
 def main():
-    foo()
     bivariate_tifs_to_shp_and_reclass()
+    # bivariate_plot()
 
 if __name__ == '__main__':
 
