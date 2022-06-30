@@ -24,7 +24,7 @@ def mk_dir(outdir):
 
 class Plot_dataframe:
     def __init__(self):
-        self.this_class_arr = results_root + '/Data_frame_2000-2018/relative_change/'
+        self.this_class_arr = results_root + '/Data_frame_2000-2018/anomaly/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
         self.dff = self.this_class_arr + 'Data_frame_2000-2018.df'
@@ -476,6 +476,7 @@ class Plot_dataframe:
         df = df[df['landcover'] !='cropland']
 
         period_name=['early','peak','late']
+        # period_name = ['late']
 
         color_list=['r','g','b']
         # variable_list=['LAI3g','MODIS_LAI']
@@ -494,9 +495,7 @@ class Plot_dataframe:
             for variable in variable_list:
 
 
-                # column_name=f'2000-2018_{variable}_{period}_anomaly_daily'
-                column_name = f'2000-2018_{variable}_{period}_relative_change_daily'
-
+                column_name=f'2000-2018_{variable}_{period}_relative_change_monthly'
                 # column_name=f'2000-2018_{variable}_{period}_zscore_monthly'
 
                 print(column_name)
@@ -509,9 +508,7 @@ class Plot_dataframe:
             plt.title(f'{period}_Humid')
             major_xticks = np.arange(0, 20, 5)
             # major_yticks = np.arange(-10, 15, 5)
-            major_yticks = np.arange(-15, 15, 5)
-            ax.set_ylim(-15, 15,)
-            # major_yticks = np.arange(-0.2, 0.2, 0.05)
+            major_yticks = np.arange(-1, 1, 0.1)
             # major_ticks = np.arange(0, 40, 5)  ### 根据数据长度修改这里
             ax.set_xticks(major_xticks)
             ax.set_yticks(major_yticks)
@@ -1414,10 +1411,10 @@ class Plot_dataframe:
 
 class Plot_partial_correlation:
     def __init__(self):
-        self.this_class_arr = results_root + 'Data_frame_2000-2018/multi_regression_2000-2018_relative_change_trend/'
+        self.this_class_arr = results_root + 'Data_frame_2000-2018/Data_frame_2000-2018_relative_change_detrend/'
         Tools().mk_dir(self.this_class_arr, force=True)
         # self.dff = self.this_class_arr + 'data_frame.df'
-        self.dff = self.this_class_arr + 'Data_frame_2000-2018_multiregression_trend.df'
+        self.dff = self.this_class_arr + 'Data_frame_2000-2018_partial_correlation_detrend.df'
 
 
 
@@ -1435,7 +1432,7 @@ class Plot_partial_correlation:
         # self.plot_increase_decrease_Yuan(df)
         # self.plot_greening_trend_bar(df)
 
-        self.plot_barchartpolar_preprocess(df)
+        # self.plot_barchartpolar_preprocess(df)
         # self.plot_barchartpolar_preprocess_average_value(df)
         # self.plot_rose()
 
@@ -1938,16 +1935,16 @@ class Plot_partial_correlation:
 
     def plot_barchartpolar_preprocess(self,df): #
         df = df[df['row'] < 120]
-        df = df[df['HI_class']== 'Humid']
+        df = df[df['HI_class'] == 'Humid']
         df = df[df['NDVI_MASK'] == 1]
         df=df[df['max_trend']<10]
         df = df[df['landcover'] !='cropland']
-
+        title='detrend'
         regions='Humid'
 
         product_list= ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai', 'ISAM_S2_LAI',
                              'LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai', 'ORCHIDEEv3_S2_lai',
-                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'Trendy_ensemble','LAI3g_monthly', 'MODIS_LAI_monthly','LAI3g_daily', 'MODIS_LAI_daily']
+                             'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai', 'Trendy_ensemble','LAI3g', 'MODIS_LAI']
         # product_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai',  'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai'
         #                  ]
         variable_list=['CO2','CCI_SM','VPD','Temp','PAR']
@@ -1967,14 +1964,14 @@ class Plot_partial_correlation:
                     flag=0
                     for i, row in tqdm(df.iterrows(), total=len(df)):
                         pix = row.pix
-                        column_name_r=f'2000-2018_multi_regression_{period}_{product}_{variable}'
-
+                        column_name_r=f'2000-2018_partial_correlation_{period}_{product}_detrend_{variable}_{period}'
+                        column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_detrend_{variable}_{period}'
                         # column_name_r=f'2000-2018_partial_correlation_{period}_{product}_{variable}_{period}'
                         # column_name_p_value = f'2000-2018_partial_correlation_p_value_result_{period}_{product}_{variable}_{period}'
 
 
-                        # if row[column_name_p_value]>0.1:
-                        #     continue
+                        if row[column_name_p_value]>0.1:
+                            continue
                         val_r = row[column_name_r]
                         flag+=1
                         values_for_all_pixels.append(val_r)
@@ -2000,11 +1997,8 @@ class Plot_partial_correlation:
         df1 = T.dic_to_df(new_dict, 'model_name')
         print(df1)
 
-        # T.save_df(df1,results_root+f'polar_bar_plot/drivers_all_models_{regions}_{title}.df')# 17 * 12 列
-        # Tools().df_to_excel(df1,results_root+f'polar_bar_plot/drivers_all_models_{regions}_{title}.xlsx')
-
-        T.save_df(df1, results_root + f'polar_bar_plot/multiregression_drivers_all_models_{regions}.df')  # 17 * 12 列
-        Tools().df_to_excel(df1, results_root + f'polar_bar_plot/multiregression_drivers_all_models_{regions}.xlsx')
+        T.save_df(df1,results_root+f'polar_bar_plot/drivers_all_models_{regions}_{title}.df')# 17 * 12 列
+        Tools().df_to_excel(df1,results_root+f'polar_bar_plot/drivers_all_models_{regions}_{title}.xlsx')
 
 
     def plot_barchartpolar_preprocess_average_value(self,df): # 求所有模型每个factor的avarage value
@@ -2251,10 +2245,319 @@ class Plot_partial_moving_window:
 
 
 
+
+class Trendy_plot:
+    def __init__(self):
+        pass
+
+    def run(self):
+        screening_dir = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/lc_trend'
+
+        # self.compose()
+        # self.per_pix()
+        # self.Pick_gs()
+        # self.plot_compose()
+        self.plot_wen_compose()
+
+    def compose(self):
+        outdir = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/Trendy_compose'
+        Trendy_dir = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/Trendy_TIFF_resample_unify_2'
+        Tools().mk_dir(outdir, force=True)
+        compose_dict = {}
+        for folder in T.listdir(Trendy_dir):
+            fdir = join(Trendy_dir,folder)
+            for f in T.listdir(fdir):
+                date = f.split('.')[0]
+                year_mon = date[:6]
+                compose_dict[year_mon] = []
+        for folder in T.listdir(Trendy_dir):
+            fdir = join(Trendy_dir,folder)
+            for f in T.listdir(fdir):
+                date = f.split('.')[0]
+                year_mon = date[:6]
+                compose_dict[year_mon].append(join(Trendy_dir,fdir,f))
+
+        for date in tqdm(compose_dict):
+            fpaths = compose_dict[date]
+            arrs = []
+            for f in fpaths:
+                arr, originX, originY, pixelWidth, pixelHeight = ToRaster().raster2array(f)
+                arr = np.array(arr)
+                arr[arr<=0] = np.nan
+                arr[arr>=100] = np.nan
+                arrs.append(arr)
+            arrs_mean = []
+            for i in tqdm(range(len(arrs[0]))):
+                temp = []
+                for j in range(len(arrs[0][0])):
+                    one_pix_vals = []
+                    for k in range(len(arrs)):
+                        if np.isnan(arrs[k][i][j]):
+                            continue
+                        else:
+                            one_pix_vals.append(arrs[k][i][j])
+                    if len(one_pix_vals) == 0:
+                        temp.append(np.nan)
+                    else:
+                        temp.append(np.nanmean(one_pix_vals))
+                arrs_mean.append(temp)
+            arrs_mean = np.array(arrs_mean)
+            out_path = join(outdir,date+'.tif')
+            ToRaster().array2raster(out_path, originX, originY, pixelWidth, pixelHeight, arrs_mean)
+
+
+    def per_pix(self):
+        fdir = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/Trendy_compose'
+        outdir = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/Trendy_compose_per_pix'
+        Tools().mk_dir(outdir, force=True)
+        Pre_Process().data_transform(fdir, outdir)
+
+    def Pick_gs(self):
+        fdir = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/Trendy_compose_per_pix'
+        outdir = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/Trendy_compose_per_pix_season'
+        T.mkdir(outdir)
+        EPL_dff = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/Monthly_Early_Peak_Late.df'
+
+        EPL_df = T.load_df(EPL_dff)
+        EPL_dic=  T.df_to_dic(EPL_df,'pix')
+        # print(EPL_dic)
+        # exit()
+        outf = join(outdir,'dataframe.df')
+        start_year = 1982
+        dic = T.load_npy_dir(fdir)
+        result_dic = {}
+        for pix in tqdm(dic):
+            if not pix in EPL_dic:
+                continue
+            vals = dic[pix]
+            vals = np.array(vals)
+            vals[vals<-999] = np.nan
+            EPL_dic_i = EPL_dic[pix]
+            season_vals_dic = {}
+            for season in EPL_dic_i:
+                if season == 'pix':
+                    continue
+                grow_season = EPL_dic_i[season]
+                grow_season = list(grow_season)
+                if len(grow_season) == 0:
+                    continue
+                annual_vals = T.monthly_vals_to_annual_val(vals,grow_season=grow_season)
+                season_vals_dic[season] = annual_vals
+            result_dic[pix] = season_vals_dic
+        df_i = T.dic_to_df(result_dic,'pix')
+        T.save_df(df_i,outf)
+        T.df_to_excel(df_i,outf)
+
+    def add_HI_class(self,df,old_df):
+        # dff_redo = '/Volumes/NVME2T/greening_project_redo/results/Main_flow_1/arr/Dataframe/dataframe_1982-2018.df'
+        # df_redo = T.load_df(dff_redo)
+        HI_dict = T.df_to_spatial_dic(old_df,'HI_reclass')
+        df = T.add_spatial_dic_to_df(df,HI_dict,'HI_reclass')
+        return df
+
+    def add_NDVI_mask(self,df,df_redo):
+        HI_dict = T.df_to_spatial_dic(df_redo, 'HI_reclass')
+        df = T.add_spatial_dic_to_df(df, HI_dict, 'HI_reclass')
+        return df
+        pass
+
+    def add_row_col(self,df):
+        pix_dict = T.df_to_spatial_dic(df,'pix')
+        pix_dict_row = {}
+        for pix in pix_dict:
+            row,col = pix
+            pix_dict_row[pix] = row
+        df = T.add_spatial_dic_to_df(df,pix_dict_row,'row')
+        return df
+
+    def add_max_trend(self,df):
+        tif = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/lc_trend/max_trend.tif'
+        dict_ = DIC_and_TIF().spatial_tif_to_dic(tif)
+        df = T.add_spatial_dic_to_df(df,dict_,'max_trend')
+        return df
+
+    def add_lc(self,df):
+        pass
+
+    def plot_compose(self):
+        old_dff = '/Volumes/NVME2T/greening_project_redo/results/Main_flow_1/arr/Dataframe/dataframe_1982-2018.df'
+        dff = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/Trendy_compose_per_pix_season/dataframe.df'
+        df = T.load_df(dff)
+        old_df = T.load_df(old_dff)
+        df = self.add_max_trend(df)
+        df = self.add_HI_class(df, old_df)
+        df = self.add_row_col(df)
+        df = df[df['max_trend']<10]
+        df = df[df['row']<120]
+        # region = 'Humid'
+        region = 'Non Humid'
+        df = df[df['HI_reclass']==region]
+        period_list = ['early','peak','late']
+        # period_list = ['late']
+        for period in period_list:
+            print(period)
+            dict_ = T.df_to_spatial_dic(df,period)
+            vals_list = []
+            for pix in dict_:
+                vals = dict_[pix]
+                if type(vals) == float:
+                    continue
+                vals_list.append(vals)
+            vals_list = np.array(vals_list)
+            # print(vals_list)
+            vals_list_mean = np.nanmean(vals_list,axis=0)
+            # vals_list_std = np.nanstd(vals_list,axis=0)
+            # Plot().plot_line_with_error_bar(list(range(len(vals_list_mean))),vals_list_mean,vals_list_std)
+            plt.plot(list(range(len(vals_list_mean))),vals_list_mean,label=period)
+        plt.ylabel('TRENDY Composite LAI (m2/m2)')
+        # plt.ylim(0.5,3)
+        plt.legend()
+        plt.title(region)
+        plt.show()
+
+    def plot_wen_compose(self):
+        # fdir = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/1/ensemble'
+        fdir = '/Volumes/NVME2T/greening_project_redo/data/TRENDY/1/relative_change'
+        all_dict = {}
+        col_name_list = []
+        for f in T.listdir(fdir):
+            fpath = join(fdir,f)
+            dict_i = T.load_npy(fpath)
+            col_name = f.split('.')[0]
+            col_name_list.append(col_name)
+            all_dict[col_name] = dict_i
+        df = T.spatial_dics_to_df(all_dict)
+
+        old_dff = '/Volumes/NVME2T/greening_project_redo/results/Main_flow_1/arr/Dataframe/dataframe_1982-2018.df'
+        old_df = T.load_df(old_dff)
+        df = self.add_max_trend(df)
+        df = self.add_HI_class(df, old_df)
+        df = self.add_row_col(df)
+        df = df[df['max_trend'] < 10]
+        df = df[df['row'] < 120]
+        region_list = ['Humid','Non Humid']
+        for region in region_list:
+            plt.figure()
+            df_region = df[df['HI_reclass'] == region]
+            # period_list = ['early', 'peak', 'late']
+            # period_list = ['late']
+            for col_name in col_name_list:
+                dict_ = T.df_to_spatial_dic(df_region, col_name)
+                vals_list = []
+                for pix in dict_:
+                    vals = dict_[pix]
+                    if type(vals) == float:
+                        continue
+                    vals_list.append(vals)
+                vals_list = np.array(vals_list)
+                # print(vals_list)
+                vals_list_mean = np.nanmean(vals_list, axis=0)
+                plt.plot(list(range(len(vals_list_mean))), vals_list_mean, label=col_name)
+            plt.ylabel('TRENDY Composite LAI (m2/m2)')
+            # plt.ylim(0.5,3)
+            plt.legend()
+            plt.title(region)
+        plt.show()
+
+
+class Partial_moving_window_corr:
+        # todo: @Wen, corr trend
+        def __init__(self):
+            pass
+
+        def run(self):
+            # self.r_trend()
+            self.GIMMS3g_r_trend()
+            pass
+
+        def r_trend(self):
+            fdir = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/1982-2020'
+            outdir = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/1982-2020_r-trend/'
+            T.mk_dir(outdir)
+            vars_list = ['CO2','PAR','Temp','VPD','CCI_SM']
+            variables_list = ['CABLE-POP_S2_lai', 'CLASSIC_S2_lai', 'CLASSIC-N_S2_lai', 'CLM5', 'IBIS_S2_lai',
+                              'ISAM_S2_LAI','LPJ-GUESS_S2_lai', 'LPX-Bern_S2_lai', 'OCN_S2_lai', 'ORCHIDEE_S2_lai',
+                              'ORCHIDEEv3_S2_lai', 'VISIT_S2_lai', 'YIBs_S2_Monthly_lai', 'ISBA-CTRIP_S2_lai',
+                              'Trendy_ensemble',]
+            for model in tqdm(variables_list):
+                model_name = model
+                # 1982-2020_CABLE-POP_S2_lai_early_relative_change_15
+                folder = f'1982-2020_{model_name}_early_relative_change_15'
+                outdir_i = join(outdir,model_name)
+                T.mk_dir(outdir_i)
+                for var in tqdm(vars_list):
+                    void_spatial_dict = DIC_and_TIF().void_spatial_dic()
+                    for f in T.listdir(join(fdir,folder)):
+                        fpath = join(fdir,folder,f)
+                        if not f.endswith('correlation.npy'):
+                            continue
+                        dict_corr = T.load_npy(fpath)
+                        for pix in dict_corr:
+                            corr_dict = dict_corr[pix]
+                            key = f'{var}_early_relative_change'
+                            if not key in corr_dict:
+                                continue
+                            corr = corr_dict[key]
+                            void_spatial_dict[pix].append(corr)
+
+                    spatial_dict = {}
+                    for pix in void_spatial_dict:
+                        vals = void_spatial_dict[pix]
+                        vals = np.array(vals)
+                        if len(vals) == 0:
+                            continue
+                        # vals_mean = np.nanmean(vals,axis=0)
+                        try:
+                            trend = np.polyfit(list(range(len(vals))),vals,1)[0]
+                        except:
+                            trend = np.nan
+                        spatial_dict[pix] = trend
+                    arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dict)
+                    outf = join(outdir_i,f'{var}_r-trend.tif')
+                    DIC_and_TIF().arr_to_tif(arr,outf)
+
+
+        def GIMMS3g_r_trend(self):
+            fdir = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/1982-2020'
+            outdir = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/'
+            T.mk_dir(outdir)
+            vars_list = ['CO2', 'PAR', 'Temp', 'VPD', 'CCI_SM']
+            for var in tqdm(vars_list):
+                void_spatial_dict = DIC_and_TIF().void_spatial_dic()
+                for f in T.listdir(fdir):
+                    fpath = join(fdir, f)
+                    if not f.endswith('correlation.npy'):
+                        continue
+                    dict_corr = T.load_npy(fpath)
+                    for pix in dict_corr:
+                        corr_dict = dict_corr[pix]
+                        key = f'{var}_early_relative_change'
+                        if not key in corr_dict:
+                            continue
+                        corr = corr_dict[key]
+                        void_spatial_dict[pix].append(corr)
+
+                spatial_dict = {}
+                for pix in void_spatial_dict:
+                    vals = void_spatial_dict[pix]
+                    vals = np.array(vals)
+                    if len(vals) == 0:
+                        continue
+                    # vals_mean = np.nanmean(vals,axis=0)
+                    try:
+                        trend = np.polyfit(list(range(len(vals))), vals, 1)[0]
+                    except:
+                        trend = np.nan
+                    spatial_dict[pix] = trend
+                arr = DIC_and_TIF().pix_dic_to_spatial_arr(spatial_dict)
+                outf = join(outdir, f'{var}_r-trend.tif')
+                DIC_and_TIF().arr_to_tif(arr, outf)
+
+
 def main():
 
-    # Plot_dataframe().run()
-    Plot_partial_correlation().run()
+    Plot_dataframe().run()
+    # Plot_partial_correlation().run()
     # Plot_partial_moving_window().run()
 
 
