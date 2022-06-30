@@ -54,7 +54,7 @@ def wkt():
     -180.00, 0.00, 180.00, 90.00'''
     return wkt
 
-def bivariate_plot():
+def bivariate_plot():  # not use
     # todo: bivariate color ramp for classes needs to be fixed
     world_shp = '/Volumes/NVME2T/hotcold_drought/shp/world.shp'
     tif1 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/CCI_SM_r-trend.tif'
