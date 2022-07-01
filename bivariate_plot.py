@@ -1,12 +1,12 @@
 # coding=utf-8
 
-from libpysal import examples
+# from libpysal import examples
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
 import rasterio as rio
-from splot.mapping import vba_choropleth
+# from splot.mapping import vba_choropleth
 from shapely.geometry import Point, Polygon
 
 from __init__ import *
@@ -57,8 +57,8 @@ def wkt():
 def bivariate_plot():  # not use
     # todo: bivariate color ramp for classes needs to be fixed
     world_shp = '/Volumes/NVME2T/hotcold_drought/shp/world.shp'
-    tif1 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/CCI_SM_r-trend.tif'
-    tif2 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/CO2_r-trend.tif'
+    tif1 = r'D:\ly_onedrive\OneDrive - mail.bnu.edu.cn\share\wen_proj\MAT.tif'
+    tif2 = r'D:\ly_onedrive\OneDrive - mail.bnu.edu.cn\share\wen_proj\MAP.tif'
     # gdf1 = raster_to_gdf(tif1,colname='CCI_SM')
     # gdf2 = raster_to_gdf(tif2,colname='CO2')
     gdf = raster_list_to_gdf([tif1,tif2],['CCI_SM','CO2'])
@@ -82,9 +82,52 @@ def bivariate_tifs_to_shp_and_reclass():
     # todo: change here @Wen bivariate_tifs_to_shp
 
     ## tif1 and tif2 are the two tifs to be bivariate reclassified
-    tif1 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/CCI_SM_r-trend.tif'
-    tif2 = '/Volumes/NVME2T/greening_project_redo/data/moving_window_corr/GIMMS3g_1982-2020_r-trend/Temp_r-trend.tif'
-    outshp = 'xxxx.shp'  # needs to be modified
+    tif1 = r'D:\Greening\Result\partial_window\moving_window_corr\1982-2020_r-trend\LAI3g_daily\CO2_peak_r-trend.tif'
+    tif2 = r'D:\Greening\Result\partial_correlation_relative_change\individual_conversion\LAI3g_daily\CO2_peak_corr.tif'
+    outdir=r'D:\Greening\Result\partial_correlation_relative_change\bivariate_plot\\'
+    outshp = outdir+'LAI3g_daily_windowCO2_longtermCO2_peak.shp'  # needs to be modified
+    T.mk_dir(outdir,force=True)
+
+    arr1, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(tif1)
+    arr1 = np.array(arr1, dtype=np.float)
+    arr1[arr1 < -999] = np.nan
+
+
+    arr2, originX, originY, pixelWidth, pixelHeight = to_raster.raster2array(tif2)
+    arr2 = np.array(arr2, dtype=np.float)
+    arr2[arr2 < -99] = np.nan
+
+
+    # arr1 = arr1.reshape(arr1.shape[0], arr1.shape[1])
+
+    hist = []
+    for i in arr1:
+        for j in i:
+            if np.isnan(j):
+                continue
+            hist.append(j)
+    plt.hist(hist, bins=80)
+    plt.show()
+
+    hist = []
+    for i in arr2:
+        for j in i:
+            if np.isnan(j):
+                continue
+            hist.append(j)
+
+    plt.hist(hist, bins=80)
+    plt.show()
+
+    plt.imshow(arr1,cmap='jet')
+
+    plt.figure()
+
+    plt.imshow(arr2, cmap='jet')
+    plt.title('')
+    plt.colorbar()
+    plt.show()
+    exit()
 
 
     df = raster_list_to_gdf([tif1, tif2], ['var1', 'var2'])
